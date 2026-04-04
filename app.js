@@ -145,108 +145,67 @@ class Header {
 
 class Directory {
     constructor() {
-        this.employees = [
-            {
-                id: 1,
-                name: 'Sarah Johnson',
-                email: 'sarah.johnson@ascentia.com',
-                avatar: 'https://picsum.photos/seed/sarah/40/40.jpg',
-                jobTitle: 'Senior Developer',
-                department: 'Engineering',
-                location: 'San Francisco',
-                status: 'Active'
-            },
-            {
-                id: 2,
-                name: 'Michael Chen',
-                email: 'michael.chen@ascentia.com',
-                avatar: 'https://picsum.photos/seed/michael/40/40.jpg',
-                jobTitle: 'Product Manager',
-                department: 'Product',
-                location: 'New York',
-                status: 'Active'
-            },
-            {
-                id: 3,
-                name: 'Emily Davis',
-                email: 'emily.davis@ascentia.com',
-                avatar: 'https://picsum.photos/seed/emily/40/40.jpg',
-                jobTitle: 'UX Designer',
-                department: 'Design',
-                location: 'Remote',
-                status: 'Remote'
-            },
-            {
-                id: 4,
-                name: 'James Wilson',
-                email: 'james.wilson@ascentia.com',
-                avatar: 'https://picsum.photos/seed/james/40/40.jpg',
-                jobTitle: 'Marketing Manager',
-                department: 'Marketing',
-                location: 'Chicago',
-                status: 'Active'
-            },
-            {
-                id: 5,
-                name: 'Lisa Anderson',
-                email: 'lisa.anderson@ascentia.com',
-                avatar: 'https://picsum.photos/seed/lisa/40/40.jpg',
-                jobTitle: 'HR Specialist',
-                department: 'Human Resources',
-                location: 'Boston',
-                status: 'Onboarding'
-            },
-            {
-                id: 6,
-                name: 'David Martinez',
-                email: 'david.martinez@ascentia.com',
-                avatar: 'https://picsum.photos/seed/david/40/40.jpg',
-                jobTitle: 'Sales Director',
-                department: 'Sales',
-                location: 'Los Angeles',
-                status: 'Active'
-            },
-            {
-                id: 7,
-                name: 'Jennifer Taylor',
-                email: 'jennifer.taylor@ascentia.com',
-                avatar: 'https://picsum.photos/seed/jennifer/40/40.jpg',
-                jobTitle: 'Data Analyst',
-                department: 'Analytics',
-                location: 'Remote',
-                status: 'Remote'
-            },
-            {
-                id: 8,
-                name: 'Robert Brown',
-                email: 'robert.brown@ascentia.com',
-                avatar: 'https://picsum.photos/seed/robert/40/40.jpg',
-                jobTitle: 'DevOps Engineer',
-                department: 'Engineering',
-                location: 'Seattle',
-                status: 'Active'
-            },
-            {
-                id: 9,
-                name: 'Amanda Garcia',
-                email: 'amanda.garcia@ascentia.com',
-                avatar: 'https://picsum.photos/seed/amanda/40/40.jpg',
-                jobTitle: 'Content Writer',
-                department: 'Marketing',
-                location: 'Austin',
-                status: 'Onboarding'
-            },
-            {
-                id: 10,
-                name: 'Christopher Lee',
-                email: 'chris.lee@ascentia.com',
-                avatar: 'https://picsum.photos/seed/chris/40/40.jpg',
-                jobTitle: 'Finance Manager',
-                department: 'Finance',
-                location: 'Miami',
-                status: 'Active'
+        this.employees = [];
+        this.loading = false;
+        this.error = null;
+        this.fetchEmployees();
+    }
+
+    async fetchEmployees() {
+        this.loading = true;
+        this.error = null;
+        
+        try {
+            const response = await fetch('http://localhost:3000/employees');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-        ];
+            const employeesData = await response.json();
+            
+            // Add avatar URLs to the employee data from API
+            this.employees = employeesData.map(emp => ({
+                ...emp,
+                avatar: `https://picsum.photos/seed/${emp.name.toLowerCase().replace(' ', '')}/40/40.jpg`
+            }));
+            
+        } catch (error) {
+            console.error('Error fetching employees:', error);
+            this.error = 'Failed to load employee data';
+            // Fallback to mock data if API fails
+            this.employees = [
+                {
+                    id: 1,
+                    name: 'Sarah Johnson',
+                    email: 'sarah.johnson@ascentia.com',
+                    avatar: 'https://picsum.photos/seed/sarah/40/40.jpg',
+                    jobTitle: 'Senior Developer',
+                    department: 'Engineering',
+                    location: 'San Francisco',
+                    status: 'Active'
+                },
+                {
+                    id: 2,
+                    name: 'Michael Chen',
+                    email: 'michael.chen@ascentia.com',
+                    avatar: 'https://picsum.photos/seed/michael/40/40.jpg',
+                    jobTitle: 'Product Manager',
+                    department: 'Product',
+                    location: 'New York',
+                    status: 'Active'
+                }
+            ];
+        } finally {
+            this.loading = false;
+        }
+    }
+
+    async refreshEmployees() {
+        await this.fetchEmployees();
+        // Re-render the app to show updated data
+        if (window.app) {
+            const appElement = document.getElementById('app');
+            appElement.innerHTML = window.app.render();
+        }
     }
 
     getStatusBadge(status) {
@@ -481,10 +440,15 @@ class Directory {
                             <!-- Results Summary -->
                             <div class="bg-slate-800/40 backdrop-blur-xl rounded-xl p-3 border border-slate-700/50 mb-4">
                                 <div class="flex items-center justify-between">
-                                    <p class="text-gray-300 text-sm">Showing <span class="text-white font-medium">124</span> employees</p>
-                                    <button class="text-blue-400 hover:text-blue-300 transition-colors duration-200 text-sm">
-                                        <i class="fas fa-download mr-1"></i>Export
-                                    </button>
+                                    <p class="text-gray-300 text-sm">Showing <span class="text-white font-medium">${this.employees.length}</span> employees</p>
+                                    <div class="flex gap-2">
+                                        <button onclick="app.directory.refreshEmployees()" class="text-blue-400 hover:text-blue-300 transition-colors duration-200 text-sm">
+                                            <i class="fas fa-sync-alt mr-1"></i>Refresh
+                                        </button>
+                                        <button class="text-blue-400 hover:text-blue-300 transition-colors duration-200 text-sm">
+                                            <i class="fas fa-download mr-1"></i>Export
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -500,9 +464,28 @@ class Directory {
                             </div>
                             
                             <!-- Employee Rows -->
-                            <div class="space-y-2">
-                                ${this.employees.map(employee => this.renderEmployeeRow(employee)).join('')}
-                            </div>
+                            ${this.loading ? `
+                                <div class="bg-slate-800/40 backdrop-blur-sm rounded-lg p-8 border border-slate-700/50 text-center">
+                                    <div class="flex flex-col items-center justify-center">
+                                        <i class="fas fa-spinner fa-spin text-3xl text-blue-400 mb-4"></i>
+                                        <p class="text-gray-300">Loading employee data...</p>
+                                    </div>
+                                </div>
+                            ` : this.error ? `
+                                <div class="bg-slate-800/40 backdrop-blur-sm rounded-lg p-8 border border-slate-700/50 text-center">
+                                    <div class="flex flex-col items-center justify-center">
+                                        <i class="fas fa-exclamation-triangle text-3xl text-red-400 mb-4"></i>
+                                        <p class="text-gray-300 mb-2">${this.error}</p>
+                                        <button onclick="app.directory.refreshEmployees()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                                            <i class="fas fa-retry mr-2"></i>Try Again
+                                        </button>
+                                    </div>
+                                </div>
+                            ` : `
+                                <div class="space-y-2">
+                                    ${this.employees.map(employee => this.renderEmployeeRow(employee)).join('')}
+                                </div>
+                            ` }
                             
                             <!-- Pagination -->
                             <div class="mt-6 flex items-center justify-between">
