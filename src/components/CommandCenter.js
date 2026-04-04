@@ -1,5 +1,3 @@
-import { StatCard } from './StatCard.js';
-
 class CommandCenter {
     constructor() {
         this.statCards = [

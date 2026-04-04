@@ -1,4 +1,4 @@
-class StatCard {
+    class StatCard {
     constructor(title, value, changeText, changeType = 'positive', icon = 'fas fa-chart-line', iconColor = 'text-teal-400') {
         this.title = title;
         this.value = value;
@@ -27,5 +27,3 @@ class StatCard {
         `;
     }
 }
-
-export { StatCard };

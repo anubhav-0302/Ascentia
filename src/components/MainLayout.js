@@ -1,6 +1,3 @@
-import { Sidebar } from './Sidebar.js';
-import { Header } from './Header.js';
-
 class MainLayout {
     constructor() {
         this.sidebar = new Sidebar();
