@@ -35,6 +35,7 @@ function getStatusBadge(status) {
 function Directory() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // 🔥 FETCH FROM BACKEND
   useEffect(() => {
@@ -49,6 +50,13 @@ function Directory() {
         setLoading(false);
       });
   }, []);
+
+  // 🔍 SEARCH FILTER
+  const filteredEmployees = employees.filter((emp) =>
+    `${emp.name} ${emp.email} ${emp.department} ${emp.jobTitle}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+  );
 
   // 🔥 LOADING STATE
   if (loading) {
@@ -70,6 +78,20 @@ function Directory() {
           </div>
         </div>
 
+        {/* 🔍 SEARCH BAR */}
+        <div className="mb-6">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search employees..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-slate-700/60 text-white rounded-xl pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 border border-slate-600/50"
+            />
+            <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+          </div>
+        </div>
+
         {/* Table Header */}
         <div className="bg-slate-800/20 rounded-xl p-4 border border-slate-700/30 mb-4">
           <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-400">
@@ -83,7 +105,7 @@ function Directory() {
 
         {/* Employee Rows */}
         <div className="space-y-3">
-          {employees.map((employee) => (
+          {filteredEmployees.map((employee) => (
             <div
               key={employee.id}
               className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50 hover:bg-slate-800/60 transition-all"
@@ -127,6 +149,13 @@ function Directory() {
             </div>
           ))}
         </div>
+
+        {/* 🔍 NO RESULTS */}
+        {filteredEmployees.length === 0 && (
+          <div className="text-center text-gray-400 mt-6">
+            No employees found
+          </div>
+        )}
       </div>
     </main>
   );
