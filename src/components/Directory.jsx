@@ -1,37 +1,4 @@
-import React, { useState } from "react";
-
-const initialEmployees = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    email: "sarah.johnson@ascentia.com",
-    avatar: "https://picsum.photos/seed/sarah/40/40.jpg",
-    jobTitle: "Senior Developer",
-    department: "Engineering",
-    location: "San Francisco",
-    status: "Active",
-  },
-  {
-    id: 2,
-    name: "Michael Chen",
-    email: "michael.chen@ascentia.com",
-    avatar: "https://picsum.photos/seed/michael/40/40.jpg",
-    jobTitle: "Product Manager",
-    department: "Product",
-    location: "New York",
-    status: "Active",
-  },
-  {
-    id: 3,
-    name: "Emily Davis",
-    email: "emily.davis@ascentia.com",
-    avatar: "https://picsum.photos/seed/emily/40/40.jpg",
-    jobTitle: "UX Designer",
-    department: "Design",
-    location: "Remote",
-    status: "Remote",
-  },
-];
+import React, { useState, useEffect } from "react";
 
 function getStatusBadge(status) {
   const statusConfig = {
@@ -66,7 +33,27 @@ function getStatusBadge(status) {
 }
 
 function Directory() {
-  const [employees] = useState(initialEmployees);
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // 🔥 FETCH FROM BACKEND
+  useEffect(() => {
+    fetch("http://localhost:5000/api/employees")
+      .then((res) => res.json())
+      .then((data) => {
+        setEmployees(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching employees:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  // 🔥 LOADING STATE
+  if (loading) {
+    return <div className="text-white p-6">Loading employees...</div>;
+  }
 
   return (
     <main className="ml-64 mt-16 p-6 h-screen overflow-y-auto">
@@ -104,7 +91,10 @@ function Directory() {
               <div className="grid grid-cols-12 gap-4 items-center">
                 <div className="col-span-4 flex items-center space-x-3">
                   <img
-                    src={employee.avatar}
+                    src={
+                      employee.avatar ||
+                      `https://picsum.photos/seed/${employee.id}/40/40`
+                    }
                     alt={employee.name}
                     className="w-10 h-10 rounded-full border-2 border-slate-600"
                   />
