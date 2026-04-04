@@ -27,3 +27,5 @@ class StatCard {
         `;
     }
 }
+
+export { StatCard };
