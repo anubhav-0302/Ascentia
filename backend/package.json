@@ -11,7 +11,8 @@
     "db:studio": "prisma studio --url=postgresql://postgres:postgres@localhost:5433/ascentia",
     "db:reset": "prisma migrate reset --force --url=postgresql://postgres:postgres@localhost:5433/ascentia",
     "db:pull": "prisma db pull --url=postgresql://postgres:postgres@localhost:5433/ascentia",
-    "db:push": "prisma db push --url=postgresql://postgres:postgres@localhost:5433/ascentia"
+    "db:push": "prisma db push --url=postgresql://postgres:postgres@localhost:5433/ascentia",
+    "seed": "node prisma/seed.js"
   },
   "keywords": [],
   "author": "",

@@ -1,7 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import Dashboard from './components/DashboardSimple'; // Using simple version
+import Dashboard from './components/Dashboard';
 import Directory from './components/Directory';
 import CommandCenter from './components/CommandCenter'; // Now correctly named
 import WorkflowHub from './components/WorkflowHub';
