@@ -43,11 +43,20 @@ const Directory: React.FC = () => {
 
   // Filter employees based on all filter criteria
   const filteredEmployees = useMemo(() => {
-    return employees.filter(employee => {
-      // Name search filter
+    console.log('Search term:', searchTerm);
+    console.log('All employees:', employees);
+    
+    const filtered = employees.filter(employee => {
+      // Name search filter - now includes name, email, department, and location
       const matchesSearch = searchTerm === '' || 
         employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        employee.email.toLowerCase().includes(searchTerm.toLowerCase());
+        employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        employee.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        employee.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        employee.jobTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        employee.status.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      console.log(`Employee: ${employee.name}, Location: ${employee.location}, Matches: ${matchesSearch}`);
       
       // Department filter
       const matchesDepartment = selectedDepartment === '' || 
@@ -59,6 +68,9 @@ const Directory: React.FC = () => {
       
       return matchesSearch && matchesDepartment && matchesLocation;
     });
+    
+    console.log('Filtered results:', filtered);
+    return filtered;
   }, [employees, searchTerm, selectedDepartment, selectedLocation]);
 
   const handleRefresh = async () => {
@@ -208,7 +220,7 @@ const Directory: React.FC = () => {
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search by name or email..."
+                placeholder="Search by name, email, department, location..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full bg-slate-700/60 text-white rounded-lg pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all duration-300 border border-slate-600/50"

@@ -53,7 +53,7 @@ function Directory() {
 
   // 🔍 SEARCH FILTER
   const filteredEmployees = employees.filter((emp) =>
-    `${emp.name} ${emp.email} ${emp.department} ${emp.jobTitle}`
+    `${emp.name} ${emp.email} ${emp.department} ${emp.jobTitle} ${emp.location} ${emp.status}`
       .toLowerCase()
       .includes(searchTerm.toLowerCase())
   );
@@ -83,7 +83,7 @@ function Directory() {
           <div className="relative">
             <input
               type="text"
-              placeholder="Search employees..."
+              placeholder="Search by name, email, department, location, status..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-slate-700/60 text-white rounded-xl pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 border border-slate-600/50"

@@ -17,7 +17,7 @@ export interface ApiResponse<T> {
 }
 
 // API configuration
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = 'http://localhost:5000';
 
 // Error handling class
 class ApiError extends Error {
