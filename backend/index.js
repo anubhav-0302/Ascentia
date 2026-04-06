@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import prisma from './lib/prisma.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -8,116 +9,225 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Mock employee data
-const employees = [
-    {
-        id: 1,
-        name: 'Sarah Johnson',
-        email: 'sarah.johnson@ascentia.com',
-        jobTitle: 'Senior Developer',
-        department: 'Engineering',
-        location: 'San Francisco',
-        status: 'Active'
-    },
-    {
-        id: 2,
-        name: 'Michael Chen',
-        email: 'michael.chen@ascentia.com',
-        jobTitle: 'Product Manager',
-        department: 'Product',
-        location: 'New York',
-        status: 'Active'
-    },
-    {
-        id: 3,
-        name: 'Emily Davis',
-        email: 'emily.davis@ascentia.com',
-        jobTitle: 'UX Designer',
-        department: 'Design',
-        location: 'Chicago',
-        status: 'Remote'
-    },
-    {
-        id: 4,
-        name: 'James Wilson',
-        email: 'james.wilson@ascentia.com',
-        jobTitle: 'Marketing Lead',
-        department: 'Marketing',
-        location: 'Los Angeles',
-        status: 'Active'
-    },
-    {
-        id: 5,
-        name: 'Lisa Anderson',
-        email: 'lisa.anderson@ascentia.com',
-        jobTitle: 'Sales Manager',
-        department: 'Sales',
-        location: 'Boston',
-        status: 'Onboarding'
-    },
-    {
-        id: 6,
-        name: 'David Martinez',
-        email: 'david.martinez@ascentia.com',
-        jobTitle: 'DevOps Engineer',
-        department: 'Engineering',
-        location: 'Seattle',
-        status: 'Active'
-    },
-    {
-        id: 7,
-        name: 'Jennifer Taylor',
-        email: 'jennifer.taylor@ascentia.com',
-        jobTitle: 'HR Specialist',
-        department: 'Human Resources',
-        location: 'Austin',
-        status: 'Active'
-    },
-    {
-        id: 8,
-        name: 'Robert Brown',
-        email: 'robert.brown@ascentia.com',
-        jobTitle: 'Data Analyst',
-        department: 'Analytics',
-        location: 'Miami',
-        status: 'Remote'
-    },
-    {
-        id: 9,
-        name: 'Maria Garcia',
-        email: 'maria.garcia@ascentia.com',
-        jobTitle: 'Frontend Developer',
-        department: 'Engineering',
-        location: 'San Francisco',
-        status: 'Active'
-    },
-    {
-        id: 10,
-        name: 'Thomas Lee',
-        email: 'thomas.lee@ascentia.com',
-        jobTitle: 'Finance Manager',
-        department: 'Finance',
-        location: 'New York',
-        status: 'Active'
-    }
-];
+// Helper function for error handling
+const handleError = (res, error, message = 'Internal server error') => {
+  console.error('API Error:', error);
+  res.status(500).json({
+    success: false,
+    message,
+    error: error.message
+  });
+};
+
+// Helper function for success response
+const successResponse = (res, data, message = 'Success') => {
+  res.json({
+    success: true,
+    message,
+    data
+  });
+};
 
 // Root route
 app.get('/', (req, res) => {
-    res.json({ message: 'Ascentia API running' });
+  res.json({ message: 'Ascentia API running' });
 });
 
-// API routes
-app.get('/api/employees', (req, res) => {
-    res.json(employees);
+// GET /api/employees - Get all employees
+app.get('/api/employees', async (req, res) => {
+  try {
+    const employees = await prisma.employee.findMany({
+      orderBy: { id: 'asc' }
+    });
+    successResponse(res, employees, 'Employees retrieved successfully');
+  } catch (error) {
+    handleError(res, error, 'Failed to fetch employees');
+  }
 });
 
-// Optional - keep old route for compatibility
-app.get('/employees', (req, res) => {
+// GET /api/employees/:id - Get employee by ID
+app.get('/api/employees/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid employee ID'
+      });
+    }
+
+    const employee = await prisma.employee.findUnique({
+      where: { id }
+    });
+
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee not found'
+      });
+    }
+
+    successResponse(res, employee, 'Employee retrieved successfully');
+  } catch (error) {
+    handleError(res, error, 'Failed to fetch employee');
+  }
+});
+
+// POST /api/employees - Create new employee
+app.post('/api/employees', async (req, res) => {
+  try {
+    const { name, email, jobTitle, department, location, status } = req.body;
+
+    // Validation
+    if (!name || !email || !jobTitle || !department) {
+      return res.status(400).json({
+        success: false,
+        message: 'Required fields: name, email, jobTitle, department'
+      });
+    }
+
+    // Check if email already exists
+    const existingEmployee = await prisma.employee.findUnique({
+      where: { email }
+    });
+
+    if (existingEmployee) {
+      return res.status(400).json({
+        success: false,
+        message: 'Employee with this email already exists'
+      });
+    }
+
+    const employee = await prisma.employee.create({
+      data: {
+        name,
+        email,
+        jobTitle,
+        department,
+        location: location || '',
+        status: status || 'Active'
+      }
+    });
+
+    successResponse(res, employee, 'Employee created successfully');
+  } catch (error) {
+    handleError(res, error, 'Failed to create employee');
+  }
+});
+
+// PUT /api/employees/:id - Update employee
+app.put('/api/employees/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid employee ID'
+      });
+    }
+
+    const { name, email, jobTitle, department, location, status } = req.body;
+
+    // Validation
+    if (!name || !email || !jobTitle || !department) {
+      return res.status(400).json({
+        success: false,
+        message: 'Required fields: name, email, jobTitle, department'
+      });
+    }
+
+    // Check if employee exists
+    const existingEmployee = await prisma.employee.findUnique({
+      where: { id }
+    });
+
+    if (!existingEmployee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee not found'
+      });
+    }
+
+    // Check if email is taken by another employee
+    const emailCheck = await prisma.employee.findFirst({
+      where: {
+        email,
+        id: { not: id }
+      }
+    });
+
+    if (emailCheck) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is already used by another employee'
+      });
+    }
+
+    const employee = await prisma.employee.update({
+      where: { id },
+      data: {
+        name,
+        email,
+        jobTitle,
+        department,
+        location: location || '',
+        status: status || 'Active'
+      }
+    });
+
+    successResponse(res, employee, 'Employee updated successfully');
+  } catch (error) {
+    handleError(res, error, 'Failed to update employee');
+  }
+});
+
+// DELETE /api/employees/:id - Delete employee
+app.delete('/api/employees/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid employee ID'
+      });
+    }
+
+    // Check if employee exists
+    const existingEmployee = await prisma.employee.findUnique({
+      where: { id }
+    });
+
+    if (!existingEmployee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee not found'
+      });
+    }
+
+    await prisma.employee.delete({
+      where: { id }
+    });
+
+    successResponse(res, { id }, 'Employee deleted successfully');
+  } catch (error) {
+    handleError(res, error, 'Failed to delete employee');
+  }
+});
+
+// Optional - keep old routes for compatibility
+app.get('/employees', async (req, res) => {
+  try {
+    const employees = await prisma.employee.findMany({
+      orderBy: { id: 'asc' }
+    });
     res.json(employees);
+  } catch (error) {
+    handleError(res, error, 'Failed to fetch employees');
+  }
 });
 
 // Start server
 app.listen(PORT, () => {
-    console.log(`🚀 Ascentia API running on http://localhost:${PORT}`);
+  console.log(`🚀 Ascentia API running on http://localhost:${PORT}`);
+  console.log(`📊 Prisma database connected`);
 });
