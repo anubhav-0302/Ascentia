@@ -1,5 +1,3 @@
-import React from "react";
-
 const LeaveAttendance = () => {
   return (
     <div className="text-white">

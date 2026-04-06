@@ -1,4 +1,7 @@
-// Employee API interface definitions
+import axios from 'axios';
+import type { AxiosInstance, AxiosError } from 'axios';
+
+// Employee interface
 export interface Employee {
   id: number;
   name: string;
@@ -16,13 +19,10 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
-// API configuration
-const API_BASE_URL = 'http://localhost:5000';
-
-// Error handling class
-class ApiError extends Error {
-  status?: number;
-  data?: any;
+// Custom API Error class
+export class ApiError extends Error {
+  public status?: number;
+  public data?: any;
 
   constructor(
     message: string,
@@ -36,57 +36,58 @@ class ApiError extends Error {
   }
 }
 
-// Generic fetch wrapper with error handling
-async function apiRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
-  
-  try {
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
-      ...options,
-    });
+// Create reusable API instance
+const api: AxiosInstance = axios.create({
+  baseURL: 'http://localhost:5000/api',
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-    // Check if response is ok
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new ApiError(
-        errorData.message || `HTTP error! status: ${response.status}`,
-        response.status,
-        errorData
-      );
-    }
-
-    // Parse JSON response
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    // Handle network errors
-    if (error instanceof ApiError) {
-      throw error;
-    }
-    
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new ApiError('Network error: Unable to connect to the server. Please check if the backend is running.');
-    }
-    
-    // Handle other unexpected errors
-    throw new ApiError(error instanceof Error ? error.message : 'An unexpected error occurred');
+// Request interceptor
+api.interceptors.request.use(
+  (config) => {
+    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-}
+);
+
+// Response interceptor
+api.interceptors.response.use(
+  (response) => {
+    return response.data;
+  },
+  (error: AxiosError) => {
+    console.error('API Error:', error);
+    
+    if (error.response) {
+      // Server responded with error status
+      const responseData = error.response.data as any;
+      const message = responseData?.message || `HTTP error! status: ${error.response.status}`;
+      throw new ApiError(message, error.response.status, responseData);
+    } else if (error.request) {
+      // Request was made but no response received
+      throw new ApiError('Network error: Unable to connect to the server. Please check if the backend is running.');
+    } else {
+      // Something else happened
+      throw new ApiError(error.message || 'An unexpected error occurred');
+    }
+  }
+);
 
 // Employee API functions
 export const employeeApi = {
   /**
-   * Get all employees from the backend
-   * @returns Promise<Employee[]> - Array of employee objects
+   * Get all employees
    */
   async getEmployees(): Promise<Employee[]> {
     try {
-      const employees = await apiRequest<Employee[]>('/employees');
-      return employees;
+      const response = await api.get<Employee[]>('/employees');
+      return response;
     } catch (error) {
       console.error('Failed to fetch employees:', error);
       throw error;
@@ -95,13 +96,11 @@ export const employeeApi = {
 
   /**
    * Get employee by ID
-   * @param id - Employee ID
-   * @returns Promise<Employee> - Single employee object
    */
   async getEmployeeById(id: number): Promise<Employee> {
     try {
-      const employee = await apiRequest<Employee>(`/employees/${id}`);
-      return employee;
+      const response = await api.get<Employee>(`/employees/${id}`);
+      return response;
     } catch (error) {
       console.error(`Failed to fetch employee with ID ${id}:`, error);
       throw error;
@@ -109,17 +108,12 @@ export const employeeApi = {
   },
 
   /**
-   * Create a new employee
-   * @param employee - Employee data to create
-   * @returns Promise<Employee> - Created employee object
+   * Create new employee
    */
   async createEmployee(employee: Omit<Employee, 'id'>): Promise<Employee> {
     try {
-      const newEmployee = await apiRequest<Employee>('/employees', {
-        method: 'POST',
-        body: JSON.stringify(employee),
-      });
-      return newEmployee;
+      const response = await api.post<Employee>('/employees', employee);
+      return response;
     } catch (error) {
       console.error('Failed to create employee:', error);
       throw error;
@@ -127,18 +121,12 @@ export const employeeApi = {
   },
 
   /**
-   * Update an existing employee
-   * @param id - Employee ID
-   * @param employee - Updated employee data
-   * @returns Promise<Employee> - Updated employee object
+   * Update employee
    */
   async updateEmployee(id: number, employee: Partial<Employee>): Promise<Employee> {
     try {
-      const updatedEmployee = await apiRequest<Employee>(`/employees/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(employee),
-      });
-      return updatedEmployee;
+      const response = await api.put<Employee>(`/employees/${id}`, employee);
+      return response;
     } catch (error) {
       console.error(`Failed to update employee with ID ${id}:`, error);
       throw error;
@@ -146,15 +134,11 @@ export const employeeApi = {
   },
 
   /**
-   * Delete an employee
-   * @param id - Employee ID
-   * @returns Promise<void>
+   * Delete employee
    */
   async deleteEmployee(id: number): Promise<void> {
     try {
-      await apiRequest<void>(`/employees/${id}`, {
-        method: 'DELETE',
-      });
+      await api.delete(`/employees/${id}`);
     } catch (error) {
       console.error(`Failed to delete employee with ID ${id}:`, error);
       throw error;
@@ -162,8 +146,5 @@ export const employeeApi = {
   },
 };
 
-// Export the main function for backward compatibility
+// Export default function for backward compatibility
 export const getEmployees = employeeApi.getEmployees;
-
-// Export API error class for error handling
-export { ApiError };

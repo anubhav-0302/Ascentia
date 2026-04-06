@@ -1,5 +1,3 @@
-import React from "react";
-
 const CommandCenter = () => {
   return (
     <div className="text-white">

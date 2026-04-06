@@ -1,5 +1,3 @@
-import React from "react";
-
 const MyTeam = () => {
   return (
     <div className="text-white">

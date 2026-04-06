@@ -1,5 +1,3 @@
-import React from "react";
-
 const PayrollBenefits = () => {
   return (
     <div className="text-white">

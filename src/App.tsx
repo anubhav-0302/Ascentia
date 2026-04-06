@@ -2,7 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
-import Directory from './components/Directory.jsx';
+import Directory from './components/Directory';
 import CommandCenter from './components/CommanCenter'; // Note: filename has typo
 import WorkflowHub from './components/WorkflowHub';
 import MyTeam from './components/MyTeam';

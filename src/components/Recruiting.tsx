@@ -1,5 +1,3 @@
-import React from "react";
-
 const Recruiting = () => {
   return (
     <div className="text-white">
