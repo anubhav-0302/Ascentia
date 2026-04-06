@@ -1,21 +1,36 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Ascentia Backend",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+
+    "db:migrate": "prisma migrate dev --name init --url=postgresql://postgres:postgres@localhost:5433/ascentia",
+
+    "db:generate": "prisma generate",
+
+    "db:studio": "prisma studio --url=postgresql://postgres:postgres@localhost:5433/ascentia",
+
+    "db:reset": "prisma migrate reset --force --url=postgresql://postgres:postgres@localhost:5433/ascentia",
+
+    "db:pull": "prisma db pull --url=postgresql://postgres:postgres@localhost:5433/ascentia",
+
+    "db:push": "prisma db push --url=postgresql://postgres:postgres@localhost:5433/ascentia"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
+    "@prisma/client": "^7.6.0",
     "cors": "^2.8.6",
-    "express": "^5.2.1"
+    "dotenv": "^17.4.1",
+    "express": "^5.2.1",
+    "pg": "^8.20.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.4"
+    "nodemon": "^3.1.4",
+    "prisma": "^7.6.0"
   }
 }

@@ -1,8 +1,8 @@
-const express = require('express');
-const cors = require('cors');
+import express from 'express';
+import cors from 'cors';
 
 const app = express();
-const PORT = process.env.PORT || 5000; // 🔥 changed to 5000 (important)
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
@@ -107,12 +107,12 @@ app.get('/', (req, res) => {
     res.json({ message: 'Ascentia API running' });
 });
 
-// 🔥 NEW STANDARDIZED API ROUTE
+// API routes
 app.get('/api/employees', (req, res) => {
     res.json(employees);
 });
 
-// (Optional - keep old route for safety)
+// Optional - keep old route for compatibility
 app.get('/employees', (req, res) => {
     res.json(employees);
 });
