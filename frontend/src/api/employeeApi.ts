@@ -14,9 +14,10 @@ export interface Employee {
 
 // API response interface
 export interface ApiResponse<T> {
-  data: T[];
   success: boolean;
+  data: T;
   message?: string;
+  error?: string;
 }
 
 // Custom API Error class
@@ -59,6 +60,10 @@ api.interceptors.request.use(
 // Response interceptor
 api.interceptors.response.use(
   (response) => {
+    // Handle the new response format
+    if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+      return response.data;
+    }
     return response.data;
   },
   (error: AxiosError) => {
@@ -86,8 +91,11 @@ export const employeeApi = {
    */
   async getEmployees(): Promise<Employee[]> {
     try {
-      const response = await api.get<Employee[]>('/employees');
-      return response;
+      const response: ApiResponse<Employee[]> = await api.get('/employees');
+      if (response.success) {
+        return response.data;
+      }
+      throw new ApiError(response.message || 'Failed to fetch employees');
     } catch (error) {
       console.error('Failed to fetch employees:', error);
       throw error;
@@ -99,8 +107,11 @@ export const employeeApi = {
    */
   async getEmployeeById(id: number): Promise<Employee> {
     try {
-      const response = await api.get<Employee>(`/employees/${id}`);
-      return response;
+      const response: ApiResponse<Employee> = await api.get(`/employees/${id}`);
+      if (response.success) {
+        return response.data;
+      }
+      throw new ApiError(response.message || 'Failed to fetch employee');
     } catch (error) {
       console.error(`Failed to fetch employee with ID ${id}:`, error);
       throw error;
@@ -112,8 +123,11 @@ export const employeeApi = {
    */
   async createEmployee(employee: Omit<Employee, 'id'>): Promise<Employee> {
     try {
-      const response = await api.post<Employee>('/employees', employee);
-      return response;
+      const response: ApiResponse<Employee> = await api.post('/employees', employee);
+      if (response.success) {
+        return response.data;
+      }
+      throw new ApiError(response.message || 'Failed to create employee');
     } catch (error) {
       console.error('Failed to create employee:', error);
       throw error;
@@ -125,8 +139,11 @@ export const employeeApi = {
    */
   async updateEmployee(id: number, employee: Partial<Employee>): Promise<Employee> {
     try {
-      const response = await api.put<Employee>(`/employees/${id}`, employee);
-      return response;
+      const response: ApiResponse<Employee> = await api.put(`/employees/${id}`, employee);
+      if (response.success) {
+        return response.data;
+      }
+      throw new ApiError(response.message || 'Failed to update employee');
     } catch (error) {
       console.error(`Failed to update employee with ID ${id}:`, error);
       throw error;
@@ -138,7 +155,10 @@ export const employeeApi = {
    */
   async deleteEmployee(id: number): Promise<void> {
     try {
-      await api.delete(`/employees/${id}`);
+      const response: ApiResponse<{ id: number }> = await api.delete(`/employees/${id}`);
+      if (!response.success) {
+        throw new ApiError(response.message || 'Failed to delete employee');
+      }
     } catch (error) {
       console.error(`Failed to delete employee with ID ${id}:`, error);
       throw error;
