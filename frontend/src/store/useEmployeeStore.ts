@@ -35,7 +35,11 @@ export const useEmployeeStore = create<EmployeeStore>((set, get) => ({
     set({ loading: true, error: null });
 
     try {
-      const employees = await employeeApi.getEmployees();
+      const res = await employeeApi.getEmployees();
+      console.log("API RESPONSE:", res);
+      
+      // Handle new API response format: { success: true, data: [...] }
+      const employees = res.data || [];
       console.log('Employees fetched successfully:', employees.length);
       
       set({ 
@@ -43,8 +47,8 @@ export const useEmployeeStore = create<EmployeeStore>((set, get) => ({
         loading: false, 
         error: null 
       });
-    } catch (error) {
-      console.error('Failed to fetch employees:', error);
+    } catch (error: any) {
+      console.error('FETCH ERROR:', error);
       
       let errorMessage = 'Failed to load employees';
       

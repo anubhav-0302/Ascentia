@@ -1,22 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useEmployeeStore } from "../store/useEmployeeStore";
 import { useDebounce } from "../hooks/useDebounce";
-import { employeeApi } from "../api/employeeApi";
-
-/* =========================
-   LOCAL TYPE (FIXED)
-========================= */
-type Employee = {
-  id: number;
-  name: string;
-  email: string;
-  jobTitle: string;
-  department: string;
-  location: string;
-  status: string;
-  avatar?: string;
-  createdAt?: string;
-};
+import { employeeApi, type Employee, type CreateEmployeeRequest, type UpdateEmployeeRequest } from "../api/employeeApi";
 
 function getStatusBadge(status: string) {
   const statusConfig = {
@@ -54,9 +39,9 @@ function EmployeeFormModal({
   employee: Employee | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: Omit<Employee, "id">) => Promise<void>;
+  onSave: (data: CreateEmployeeRequest | UpdateEmployeeRequest) => Promise<void>;
 }) {
-  const [formData, setFormData] = useState<Omit<Employee, "id">>({
+  const [formData, setFormData] = useState<CreateEmployeeRequest>({
     name: "",
     email: "",
     jobTitle: "",
@@ -156,6 +141,9 @@ function EmployeeFormModal({
 function Directory() {
   const { employees = [], loading, error, fetchEmployees } = useEmployeeStore();
 
+  // Debug log to track employees state
+  console.log("employees state:", employees);
+
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
@@ -167,6 +155,7 @@ function Directory() {
   }, [fetchEmployees]);
 
   const filteredEmployees = useMemo(() => {
+    if (!employees || employees.length === 0) return [];
     return employees.filter((emp: Employee) =>
       (emp.name + emp.email + emp.department)
         .toLowerCase()
@@ -194,7 +183,7 @@ function Directory() {
         Add Employee
       </button>
 
-      {filteredEmployees.map((emp: Employee) => (
+      {(filteredEmployees || []).map((emp: Employee) => (
         <div key={emp.id} className="bg-slate-800 p-4 mb-2 rounded flex justify-between">
           <div>
             <p>{emp.name}</p>
