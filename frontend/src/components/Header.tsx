@@ -25,6 +25,11 @@ const Header: React.FC = () => {
     { id: 2, title: 'Task completed', message: 'Michael Chen completed onboarding' }
   ];
 
+  const handleLogout = () => {
+    logout();
+    setShowProfile(false);
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
@@ -77,7 +82,9 @@ const Header: React.FC = () => {
               <div className="absolute right-0 mt-2 w-48 bg-slate-800 rounded-xl border border-slate-700 shadow-xl">
                 <button className="block w-full text-left px-4 py-2 hover:bg-slate-700 text-white">Profile</button>
                 <button className="block w-full text-left px-4 py-2 hover:bg-slate-700 text-white">Settings</button>
-                <button className="block w-full text-left px-4 py-2 hover:bg-red-500/20 text-red-400">Logout</button>
+                <button 
+                  onClick={handleLogout}
+                  className="block w-full text-left px-4 py-2 hover:bg-red-500/20 text-red-400">Logout</button>
               </div>
             )}
           </div>

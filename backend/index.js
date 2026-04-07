@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import prisma from './lib/prisma.js';
+import { register, login, getCurrentUser } from './controllers/authController.js';
+import { authenticate, authorize } from './middleware/auth.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -33,8 +35,13 @@ app.get('/', (req, res) => {
   res.json({ message: 'Ascentia API running' });
 });
 
-// GET /api/employees - Get all employees
-app.get('/api/employees', async (req, res) => {
+// Authentication routes
+app.post('/api/auth/register', register);
+app.post('/api/auth/login', login);
+app.get('/api/auth/me', authenticate, getCurrentUser);
+
+// GET /api/employees - Get all employees (protected)
+app.get('/api/employees', authenticate, async (req, res) => {
   try {
     const employees = await prisma.employee.findMany({
       orderBy: { id: 'asc' }
@@ -45,8 +52,8 @@ app.get('/api/employees', async (req, res) => {
   }
 });
 
-// GET /api/employees/:id - Get employee by ID
-app.get('/api/employees/:id', async (req, res) => {
+// GET /api/employees/:id - Get employee by ID (protected)
+app.get('/api/employees/:id', authenticate, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -73,8 +80,8 @@ app.get('/api/employees/:id', async (req, res) => {
   }
 });
 
-// POST /api/employees - Create new employee
-app.post('/api/employees', async (req, res) => {
+// POST /api/employees - Create new employee (protected)
+app.post('/api/employees', authenticate, async (req, res) => {
   try {
     const { name, email, jobTitle, department, location, status } = req.body;
 
@@ -115,8 +122,8 @@ app.post('/api/employees', async (req, res) => {
   }
 });
 
-// PUT /api/employees/:id - Update employee
-app.put('/api/employees/:id', async (req, res) => {
+// PUT /api/employees/:id - Update employee (protected)
+app.put('/api/employees/:id', authenticate, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -181,8 +188,8 @@ app.put('/api/employees/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/employees/:id - Delete employee
-app.delete('/api/employees/:id', async (req, res) => {
+// DELETE /api/employees/:id - Delete employee (protected)
+app.delete('/api/employees/:id', authenticate, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -214,8 +221,8 @@ app.delete('/api/employees/:id', async (req, res) => {
   }
 });
 
-// GET /api/dashboard/stats - Get dashboard statistics
-app.get('/api/dashboard/stats', async (req, res) => {
+// GET /api/dashboard/stats - Get dashboard statistics (protected)
+app.get('/api/dashboard/stats', authenticate, async (req, res) => {
   try {
     // Get total employees count
     const totalEmployees = await prisma.employee.count();
