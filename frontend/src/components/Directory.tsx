@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useEmployeeStore } from "../store/useEmployeeStore";
 import { useDebounce } from "../hooks/useDebounce";
 import { employeeApi, type Employee, type CreateEmployeeRequest, type UpdateEmployeeRequest } from "../api/employeeApi";
+import { useIsAdmin } from "../store/useAuthStore";
 
 function getStatusBadge(status: string) {
   const statusConfig = {
@@ -73,9 +74,12 @@ function EmployeeFormModal({
     e.preventDefault();
     setLoading(true);
     try {
+      console.log("🔍 Form submitting with data:", formData);
       await onSave(formData);
+      console.log("✅ Form saved successfully, closing modal");
       onClose();
     } catch (err: any) {
+      console.error("❌ Form submission error:", err);
       setError(err.message || "Failed to save employee");
     } finally {
       setLoading(false);
@@ -140,6 +144,7 @@ function EmployeeFormModal({
 ========================= */
 function Directory() {
   const { employees = [], loading, error, fetchEmployees } = useEmployeeStore();
+  const isAdmin = useIsAdmin();
 
   // Debug log to track employees state
   console.log("employees state:", employees);
@@ -167,53 +172,148 @@ function Directory() {
   if (error) return <p className="text-red-400">{error}</p>;
 
   return (
-    <div className="p-6 text-white">
-      <h1 className="text-2xl mb-4">Directory</h1>
-
-      <input
-        className="mb-4 p-2 text-black"
-        placeholder="Search..."
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
-
-      <button
-        onClick={() => setIsModalOpen(true)}
-        className="mb-4 bg-teal-600 px-4 py-2 rounded"
-      >
-        Add Employee
-      </button>
-
-      {(filteredEmployees || []).map((emp: Employee) => (
-        <div key={emp.id} className="bg-slate-800 p-4 mb-2 rounded flex justify-between">
-          <div>
-            <p>{emp.name}</p>
-            <p className="text-gray-400">{emp.email}</p>
-          </div>
-          <div className="flex gap-2">
-            {getStatusBadge(emp.status)}
-            <button onClick={() => { setEditingEmployee(emp); setIsModalOpen(true); }}>
-              Edit
-            </button>
-            <button onClick={() => employeeApi.deleteEmployee(emp.id)}>
-              Delete
-            </button>
-          </div>
-        </div>
-      ))}
-
-      <EmployeeFormModal
-        employee={editingEmployee}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={async (data) => {
-          if (editingEmployee) {
-            await employeeApi.updateEmployee(editingEmployee.id, data);
-          } else {
-            await employeeApi.createEmployee(data);
+    <div className="max-w-6xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white mb-2">
+          Employee Directory
+        </h1>
+        <p className="text-gray-400">
+          {isAdmin 
+            ? "Manage your team members and their information"
+            : "View your team members and their information"
           }
-          fetchEmployees();
-        }}
-      />
+        </p>
+      </div>
+
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search employees..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
+        />
+      </div>
+
+      {/* Admin-only Add Employee Button */}
+      {isAdmin && (
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="mb-4 bg-teal-600 px-4 py-2 rounded hover:bg-teal-700 transition-colors"
+        >
+          Add Employee
+        </button>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {(filteredEmployees || []).map((emp: Employee) => (
+          <div key={emp.id} className="bg-slate-800 p-4 rounded-lg border border-slate-700">
+            <div className="flex items-center mb-3">
+              <img
+                src={`https://picsum.photos/seed/${emp.id}/40/40.jpg`}
+                alt={emp.name}
+                className="w-10 h-10 rounded-full mr-3"
+              />
+              <div>
+                <h3 className="text-white font-medium">{emp.name}</h3>
+                <p className="text-gray-400 text-sm">{emp.jobTitle}</p>
+              </div>
+            </div>
+            
+            <div className="space-y-2 text-sm">
+              <p className="text-gray-300">
+                <i className="fas fa-envelope mr-2 text-gray-500"></i>
+                {emp.email}
+              </p>
+              <p className="text-gray-300">
+                <i className="fas fa-building mr-2 text-gray-500"></i>
+                {emp.department}
+              </p>
+              <p className="text-gray-300">
+                <i className="fas fa-map-marker-alt mr-2 text-gray-500"></i>
+                {emp.location}
+              </p>
+            </div>
+            
+            <div className="flex items-center justify-between mt-4">
+              {getStatusBadge(emp.status)}
+              
+              {/* Admin-only Edit Button */}
+              {isAdmin && (
+                <button 
+                  onClick={() => { 
+                    setEditingEmployee(emp); 
+                    setIsModalOpen(true); 
+                  }}
+                  className="text-blue-400 hover:text-blue-300 text-sm"
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Employee Form Modal - Admin Only */}
+      {isAdmin && isModalOpen && (
+        <EmployeeFormModal
+          employee={editingEmployee}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingEmployee(null);
+          }}
+          onSave={async (data: CreateEmployeeRequest | UpdateEmployeeRequest) => {
+            try {
+              console.log("🔍 Saving employee:", data);
+              console.log("🔍 Editing employee:", editingEmployee);
+
+              let response;
+              if (editingEmployee) {
+                console.log("🔍 Updating employee ID:", editingEmployee.id);
+                response = await employeeApi.updateEmployee(editingEmployee.id, data as UpdateEmployeeRequest);
+                console.log("✅ Employee updated successfully:", response);
+              } else {
+                console.log("🔍 Creating new employee");
+                response = await employeeApi.createEmployee(data as CreateEmployeeRequest);
+                console.log("✅ Employee created successfully:", response);
+              }
+
+              // Refresh the employee list
+              console.log("🔄 Refreshing employee list...");
+              await fetchEmployees();
+              console.log("✅ Employee list refreshed");
+
+              // Close modal and reset form
+              setIsModalOpen(false);
+              setEditingEmployee(null);
+              console.log("✅ Modal closed and form reset");
+
+            } catch (error: any) {
+              console.error("❌ SAVE ERROR:", error);
+              console.error("❌ Error details:", {
+                message: error.message,
+                status: error.status,
+                data: error.data
+              });
+              
+              // You could add a toast notification here
+              alert(`Failed to save employee: ${error.message || 'Unknown error'}`);
+            }
+          }}
+        />
+      )}
+
+      {/* Empty State */}
+      {filteredEmployees.length === 0 && (
+        <div className="text-center py-12">
+          <i className="fas fa-users text-gray-600 text-5xl mb-4"></i>
+          <p className="text-gray-400 text-lg">
+            {searchTerm ? 'No employees found matching your search' : 'No employees found'}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

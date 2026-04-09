@@ -1,24 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/useAuthStore';
 
 const Header: React.FC = () => {
+  const [pageTitle, setPageTitle] = useState("Dashboard");
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
-
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
   const location = useLocation();
 
-  const getTitle = () => {
-    const path = location.pathname.replace('/', '');
-
-    if (!path) return 'Dashboard';
-
-    return path
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
+  useEffect(() => {
+    const path = location.pathname;
+    const titles: { [key: string]: string } = {
+      "/": "Dashboard",
+      "/dashboard": "Dashboard",
+      "/directory": "Employee Directory",
+      "/command-center": "Command Center",
+      "/workflow-hub": "Workflow Hub",
+      "/my-team": "My Team",
+      "/leave-attendance": "Leave & Attendance",
+      "/payroll-benefits": "Payroll & Benefits",
+      "/recruiting": "Recruiting",
+      "/reports": "Reports",
+    };
+    setPageTitle(titles[path] || "Dashboard");
+  }, [location.pathname]);
 
   const notifications = [
     { id: 1, title: 'New leave request', message: 'Sarah Johnson submitted a leave request' },
@@ -28,6 +37,7 @@ const Header: React.FC = () => {
   const handleLogout = () => {
     logout();
     setShowProfile(false);
+    navigate('/login');
   };
 
   useEffect(() => {
@@ -49,7 +59,7 @@ const Header: React.FC = () => {
       <div className="px-6 py-4 flex items-center justify-between">
         
         {/* Dynamic Title */}
-        <h2 className="text-xl font-semibold text-white">{getTitle()}</h2>
+        <h2 className="text-xl font-semibold text-white">{pageTitle}</h2>
 
         <div className="flex items-center space-x-4">
           
@@ -74,8 +84,8 @@ const Header: React.FC = () => {
           {/* Profile */}
           <div ref={profileRef} className="relative">
             <button onClick={() => setShowProfile(!showProfile)} className="flex items-center space-x-2">
-              <img src="https://picsum.photos/40" className="w-8 h-8 rounded-full" />
-              <span className="text-white hidden md:block">John</span>
+              <img src={`https://picsum.photos/seed/${user?.id || 'default'}/40`} className="w-8 h-8 rounded-full" />
+              <span className="text-white hidden md:block">{user?.name || 'User'}</span>
             </button>
 
             {showProfile && (

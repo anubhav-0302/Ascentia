@@ -1,103 +1,130 @@
 const BASE_URL = "http://localhost:5000/api";
 
-// Get token from localStorage
+// Get token from localStorage (Zustand persist format)
 const getToken = (): string | null => {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('auth-storage');
-  }
-  return null;
-};
-
-// Parse token from persisted storage
-const parseToken = (): string | null => {
-  const storage = getToken();
-  if (storage) {
     try {
-      const parsed = JSON.parse(storage);
-      return parsed.state?.token || null;
-    } catch {
+      const storage = localStorage.getItem('auth-storage');
+      if (storage) {
+        const parsed = JSON.parse(storage);
+        return parsed.state?.token || null;
+      }
+    } catch (error) {
+      console.error('Error parsing token from localStorage:', error);
       return null;
     }
   }
   return null;
 };
 
+// Clear token cache (for logout)
+export const clearTokenCache = (): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('auth-storage');
+  }
+};
+
+// Helper to get authorization headers
+const getAuthHeaders = (): Record<string, string> => {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  const token = getToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+    console.log('🔑 Adding Authorization header for protected request');
+  } else {
+    console.log('⚠️ No token found - request may fail for protected endpoints');
+  }
+  
+  return headers;
+};
+
 export const apiClient = {
   get: async (endpoint: string) => {
-    const token = parseToken();
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
+    console.log(`📤 GET ${BASE_URL}${endpoint}`);
     
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
     const res = await fetch(`${BASE_URL}${endpoint}`, {
       method: 'GET',
-      headers,
+      headers: getAuthHeaders(),
     });
     
-    if (!res.ok) throw new Error(`API GET error: ${res.status} ${res.statusText}`);
-    return res.json();
+    console.log(`📥 Response status: ${res.status} ${res.statusText}`);
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`❌ API GET error: ${res.status} ${res.statusText}`, errorText);
+      throw new Error(`API GET error: ${res.status} ${res.statusText}`);
+    }
+    
+    const result = await res.json();
+    console.log(`✅ API GET response:`, result);
+    return result;
   },
 
   post: async (endpoint: string, data: any) => {
-    const token = parseToken();
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
+    console.log(`📤 POST ${BASE_URL}${endpoint}`, data);
     
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
     const res = await fetch(`${BASE_URL}${endpoint}`, {
       method: "POST",
-      headers,
+      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     
-    if (!res.ok) throw new Error(`API POST error: ${res.status} ${res.statusText}`);
-    return res.json();
+    console.log(`📥 Response status: ${res.status} ${res.statusText}`);
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`❌ API POST error: ${res.status} ${res.statusText}`, errorText);
+      throw new Error(`API POST error: ${res.status} ${res.statusText}`);
+    }
+    
+    const result = await res.json();
+    console.log(`✅ API POST response:`, result);
+    return result;
   },
 
   put: async (endpoint: string, data: any) => {
-    const token = parseToken();
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
+    console.log(`📤 PUT ${BASE_URL}${endpoint}`, data);
     
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
     const res = await fetch(`${BASE_URL}${endpoint}`, {
       method: "PUT",
-      headers,
+      headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     
-    if (!res.ok) throw new Error(`API PUT error: ${res.status} ${res.statusText}`);
-    return res.json();
+    console.log(`📥 Response status: ${res.status} ${res.statusText}`);
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`❌ API PUT error: ${res.status} ${res.statusText}`, errorText);
+      throw new Error(`API PUT error: ${res.status} ${res.statusText}`);
+    }
+    
+    const result = await res.json();
+    console.log(`✅ API PUT response:`, result);
+    return result;
   },
 
   delete: async (endpoint: string) => {
-    const token = parseToken();
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
+    console.log(`📤 DELETE ${BASE_URL}${endpoint}`);
     
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
     const res = await fetch(`${BASE_URL}${endpoint}`, {
       method: "DELETE",
-      headers,
+      headers: getAuthHeaders(),
     });
     
-    if (!res.ok) throw new Error(`API DELETE error: ${res.status} ${res.statusText}`);
-    return res.json();
+    console.log(`📥 Response status: ${res.status} ${res.statusText}`);
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`❌ API DELETE error: ${res.status} ${res.statusText}`, errorText);
+      throw new Error(`API DELETE error: ${res.status} ${res.statusText}`);
+    }
+    
+    const result = await res.json();
+    console.log(`✅ API DELETE response:`, result);
+    return result;
   },
 };

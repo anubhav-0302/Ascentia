@@ -47,14 +47,31 @@ export class ApiError extends Error {
 
 // Centralized employee API using apiClient
 export const employeeApi = {
-  getEmployees: () => apiClient.get("/employees"),
+  getEmployees: () => {
+    console.log("🔍 Fetching employees...");
+    return apiClient.get("/employees");
+  },
   
-  createEmployee: (data: CreateEmployeeRequest) => apiClient.post("/employees", data),
+  createEmployee: (data: CreateEmployeeRequest) => {
+    console.log("🔍 Creating employee:", data);
+    const result = apiClient.post("/employees", data);
+    console.log("📤 Create employee request sent");
+    return result;
+  },
   
-  updateEmployee: (id: number, data: UpdateEmployeeRequest) => 
-    apiClient.put(`/employees/${id}`, data),
+  updateEmployee: (id: number, data: UpdateEmployeeRequest) => {
+    console.log("🔍 Updating employee:", id, data);
+    const result = apiClient.put(`/employees/${id}`, data);
+    console.log("📤 Update employee request sent");
+    return result;
+  },
   
-  deleteEmployee: (id: number) => apiClient.delete(`/employees/${id}`),
+  deleteEmployee: (id: number) => {
+    console.log("🔍 Deleting employee:", id);
+    const result = apiClient.delete(`/employees/${id}`);
+    console.log("📤 Delete employee request sent");
+    return result;
+  },
 };
 
 // Legacy exports for backward compatibility

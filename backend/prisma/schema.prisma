@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 model User {
@@ -16,6 +16,8 @@ model User {
   password  String
   role      String   @default("admin")
   createdAt DateTime @default(now())
+
+  leaveRequests LeaveRequest[]
 }
 
 model Employee {
@@ -27,5 +29,18 @@ model Employee {
   location   String
   status     String
   createdAt  DateTime @default(now())
+}
+
+model LeaveRequest {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      String
+  startDate DateTime
+  endDate   DateTime
+  reason    String
+  status    String   @default("Pending")
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
 }
 

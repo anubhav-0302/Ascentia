@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { clearTokenCache } from '../api/apiClient';
 
 // User interface
 interface User {
@@ -17,6 +18,7 @@ interface AuthStore {
   token: string | null;
   isAuthenticated: boolean;
   loading: boolean;
+  authInitialized: boolean;
   error: string | null;
   
   // Actions
@@ -25,10 +27,29 @@ interface AuthStore {
   logout: () => void;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
+  initializeAuth: () => Promise<void>;
 }
 
 // API base URL
 const API_BASE = 'http://localhost:5000/api';
+
+// Decode JWT token (basic implementation)
+const decodeJWT = (token: string): any => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Failed to decode JWT:', error);
+    return null;
+  }
+};
 
 export const useAuthStore = create<AuthStore>()(
   persist(
@@ -38,7 +59,50 @@ export const useAuthStore = create<AuthStore>()(
       token: null,
       isAuthenticated: false,
       loading: false,
+      authInitialized: false,
       error: null,
+
+      // Initialize auth on app load
+      initializeAuth: async () => {
+        const { token } = get();
+        
+        if (!token) {
+          set({ authInitialized: true });
+          return;
+        }
+
+        try {
+          // Verify token by calling /api/auth/me
+          const response = await fetch(`${API_BASE}/auth/me`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              set({
+                user: data.data.user,
+                isAuthenticated: true,
+                authInitialized: true,
+              });
+            } else {
+              // Token invalid, clear auth
+              get().logout();
+            }
+          } else {
+            // Token invalid, clear auth
+            get().logout();
+          }
+        } catch (error) {
+          console.error('Auth initialization failed:', error);
+          // Clear auth on error
+          get().logout();
+        }
+      },
 
       // Login action
       login: async (email: string, password: string) => {
@@ -66,6 +130,7 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: true,
             loading: false,
             error: null,
+            authInitialized: true,
           });
 
           console.log('Login successful:', data.data.user);
@@ -76,6 +141,7 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: false,
             loading: false,
             error: error.message || 'Login failed',
+            authInitialized: true,
           });
           throw error;
         }
@@ -107,6 +173,7 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: true,
             loading: false,
             error: null,
+            authInitialized: true,
           });
 
           console.log('Registration successful:', data.data.user);
@@ -117,6 +184,7 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: false,
             loading: false,
             error: error.message || 'Registration failed',
+            authInitialized: true,
           });
           throw error;
         }
@@ -124,14 +192,20 @@ export const useAuthStore = create<AuthStore>()(
 
       // Logout action
       logout: () => {
+        // Clear localStorage using centralized function
+        clearTokenCache();
+        
+        // Reset all auth state
         set({
           user: null,
           token: null,
           isAuthenticated: false,
           loading: false,
           error: null,
+          authInitialized: true,
         });
-        console.log('User logged out');
+        
+        console.log('User logged out - all auth state cleared');
       },
 
       // Clear error
@@ -160,6 +234,7 @@ export const useUser = () => useAuthStore((state) => state.user);
 export const useToken = () => useAuthStore((state) => state.token);
 export const useIsAuthenticated = () => useAuthStore((state) => state.isAuthenticated);
 export const useAuthLoading = () => useAuthStore((state) => state.loading);
+export const useAuthInitialized = () => useAuthStore((state) => state.authInitialized);
 export const useAuthError = () => useAuthStore((state) => state.error);
 export const useAuthActions = () => useAuthStore((state) => ({
   login: state.login,
@@ -167,4 +242,16 @@ export const useAuthActions = () => useAuthStore((state) => ({
   logout: state.logout,
   clearError: state.clearError,
   setLoading: state.setLoading,
+  initializeAuth: state.initializeAuth,
 }));
+
+// Role-based hooks
+export const useIsAdmin = () => {
+  const user = useUser();
+  return user?.role === 'admin';
+};
+
+export const useIsEmployee = () => {
+  const user = useUser();
+  return user?.role === 'employee';
+};

@@ -4,7 +4,7 @@ import authRoutes from './routes/authRoutes.js';
 import employeeRoutes from './routes/employeeRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import leaveRoutes from './routes/leaveRoutes.js';
-import { requireAuth } from './middleware/auth.js';
+import { authenticate } from './middleware/auth.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -32,31 +32,29 @@ app.get('/', (req, res) => {
   });
 });
 
-// PUBLIC routes (no authentication required)
+// Register routes
 app.use('/api/auth', authRoutes);
-
-// PROTECTED routes (authentication required)
-app.use('/api/employees', requireAuth, employeeRoutes);
-app.use('/api/dashboard', requireAuth, dashboardRoutes);
-app.use('/api/leave', requireAuth, leaveRoutes);
+app.use('/api/employees', employeeRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/leave', leaveRoutes);
 
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Ascentia API running on http://localhost:${PORT}`);
   console.log('🔧 Complete API mode - all routes available');
   console.log('📊 Available endpoints:');
-  console.log('  POST /api/auth/login (PUBLIC)');
-  console.log('  POST /api/auth/register (PUBLIC)');
-  console.log('  GET  /api/auth/me (PROTECTED)');
-  console.log('  GET  /api/employees (PROTECTED)');
-  console.log('  POST /api/employees (PROTECTED)');
-  console.log('  PUT  /api/employees/:id (PROTECTED)');
-  console.log('  DELETE /api/employees/:id (PROTECTED)');
-  console.log('  GET  /api/dashboard/stats (PROTECTED)');
-  console.log('  GET  /api/leave/my (PROTECTED)');
-  console.log('  GET  /api/leave (PROTECTED)');
-  console.log('  POST /api/leave (PROTECTED)');
-  console.log('  PUT  /api/leave/:id (PROTECTED)');
+  console.log('  POST /api/auth/login');
+  console.log('  POST /api/auth/register');
+  console.log('  GET  /api/auth/me');
+  console.log('  GET  /api/employees');
+  console.log('  POST /api/employees');
+  console.log('  PUT  /api/employees/:id');
+  console.log('  DELETE /api/employees/:id');
+  console.log('  GET  /api/dashboard/stats');
+  console.log('  GET  /api/leave/my');
+  console.log('  GET  /api/leave');
+  console.log('  POST /api/leave');
+  console.log('  PUT  /api/leave/:id');
 });
 
 export default app;

@@ -13,10 +13,29 @@ import Recruiting from './components/Recruiting';
 import Reports from './components/Reports';
 import Login from './components/Login';
 import ProtectedRoute from './components/ProtectedRoute';
-import { useAuthStore } from './store/useAuthStore';
+import { useAuthStore, useAuthInitialized, useIsAuthenticated } from './store/useAuthStore';
 
 function App() {
-  const { isAuthenticated, user } = useAuthStore();
+  const { initializeAuth } = useAuthStore();
+  const authInitialized = useAuthInitialized();
+  const isAuthenticated = useIsAuthenticated();
+
+  // Initialize authentication on app load
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
+
+  // Show loading screen while auth is initializing
+  if (!authInitialized) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
+          <p className="text-gray-400">Initializing authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   // If not authenticated, show only login page
   if (!isAuthenticated) {

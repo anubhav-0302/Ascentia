@@ -1,0 +1,143 @@
+import { getMyLeaveRequests as getMyLeaveRequestsFromStore, getAllLeaveRequests as getAllLeaveRequestsFromStore, createLeaveRequest as createLeaveRequestInStore, updateLeaveRequestStatus as updateLeaveRequestStatusInStore } from './leaveStore.js';
+
+// GET /api/leave/my - Get my leave requests
+export const getMyLeaveRequests = async (req, res) => {
+  try {
+    console.log("🔍 Fetching my leave requests for user:", req.user.id);
+    const leaveRequests = getMyLeaveRequestsFromStore(req.user.id);
+    
+    res.json({
+      success: true,
+      data: leaveRequests
+    });
+  } catch (error) {
+    console.error("❌ GET MY LEAVE ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch leave requests",
+      error: error.message
+    });
+  }
+};
+
+// GET /api/leave - Get all leave requests (admin only)
+export const getAllLeaveRequests = async (req, res) => {
+  try {
+    console.log("🔍 Fetching all leave requests (admin)");
+    const leaveRequests = getAllLeaveRequestsFromStore();
+    
+    res.json({
+      success: true,
+      data: leaveRequests
+    });
+  } catch (error) {
+    console.error("❌ GET ALL LEAVE ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch all leave requests",
+      error: error.message
+    });
+  }
+};
+
+// POST /api/leave - Create leave request
+export const createLeaveRequest = async (req, res) => {
+  try {
+    console.log("🔍 Creating leave request:", req.body);
+    const { type, startDate, endDate, reason } = req.body;
+    const userId = req.user.id;
+    
+    // Validation
+    if (!type || !startDate || !endDate || !reason) {
+      return res.status(400).json({
+        success: false,
+        message: 'Type, start date, end date, and reason are required'
+      });
+    }
+    
+    // Date validation
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to start of day for fair comparison
+    
+    // Validate date range (allow same-day leave)
+    if (start > end) {
+      return res.status(400).json({
+        success: false,
+        message: 'End date must be after or same as start date'
+      });
+    }
+    
+    // Validate reason is not empty (optional improvement)
+    if (reason.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reason cannot be empty'
+      });
+    }
+    
+    const newLeaveRequest = createLeaveRequestInStore({
+      userId,
+      type,
+      startDate,
+      endDate,
+      reason
+    });
+    
+    console.log("✅ Leave request created:", { id: newLeaveRequest.id, userId });
+    
+    res.status(201).json({
+      success: true,
+      message: 'Leave request created successfully',
+      data: newLeaveRequest
+    });
+  } catch (error) {
+    console.error("❌ CREATE LEAVE ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create leave request',
+      error: error.message
+    });
+  }
+};
+
+// PUT /api/leave/:id - Update leave request status (admin only)
+export const updateLeaveRequestStatus = async (req, res) => {
+  try {
+    console.log("🔍 Updating leave request status:", req.params.id, req.body);
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    if (!status || !['Approved', 'Rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid status (Approved or Rejected) is required'
+      });
+    }
+    
+    const updatedLeaveRequest = updateLeaveRequestStatusInStore(id, status);
+    
+    if (!updatedLeaveRequest) {
+      return res.status(404).json({
+        success: false,
+        message: 'Leave request not found'
+      });
+    }
+    
+    console.log("✅ Leave request status updated:", { id: updatedLeaveRequest.id, status });
+    
+    res.json({
+      success: true,
+      message: 'Leave request status updated successfully',
+      data: updatedLeaveRequest
+    });
+  } catch (error) {
+    console.error("❌ UPDATE LEAVE STATUS ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update leave request status',
+      error: error.message
+    });
+  }
+};

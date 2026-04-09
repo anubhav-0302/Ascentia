@@ -1,15 +1,14 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
 import 'dotenv/config';
 
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-});
-
 const prisma = new PrismaClient({
-  adapter,
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
 });
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -19,16 +18,19 @@ const generateToken = (userId, role) => {
   return jwt.sign({ userId, role }, JWT_SECRET, { expiresIn: '7d' });
 };
 
-// Register user
+// Clean register implementation
 export const register = async (req, res) => {
   try {
     const { name, email, password, role = 'admin' } = req.body;
 
+    console.log("🔍 REGISTER BODY:", req.body);
+
     // Validate input
     if (!name || !email || !password) {
-      return res.status(400).json({
+      console.log("❌ Missing required fields");
+      return res.status(400).json({ 
         success: false,
-        message: 'Name, email, and password are required'
+        message: "Name, email, and password are required" 
       });
     }
 
@@ -38,14 +40,17 @@ export const register = async (req, res) => {
     });
 
     if (existingUser) {
-      return res.status(400).json({
+      console.log("❌ User already exists");
+      return res.status(400).json({ 
         success: false,
-        message: 'User with this email already exists'
+        message: "User with this email already exists" 
       });
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
+    console.log("🔍 Hashing password...");
+    const hashedPassword = await bcrypt.hash(password, 10);
+    console.log("✅ Password hashed successfully");
 
     // Create user
     const user = await prisma.user.create({
@@ -57,12 +62,17 @@ export const register = async (req, res) => {
       }
     });
 
-    // Generate token
-    const token = generateToken(user.id, user.role);
+    console.log("✅ User created:", { id: user.id, email: user.email });
+
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      "secret123",
+      { expiresIn: "7d" }
+    );
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: "User registered successfully",
       data: {
         user: {
           id: user.id,
@@ -75,71 +85,73 @@ export const register = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error("❌ REGISTRATION ERROR:", error);
+    console.error("❌ ERROR STACK:", error.stack);
     res.status(500).json({
       success: false,
-      message: 'Internal server error during registration'
+      message: "Internal server error during registration",
+      error: error.message
     });
   }
 };
 
-// Login user
+// Clean login implementation
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate input
+    console.log(" LOGIN BODY:", req.body);
+
     if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email and password are required'
-      });
+      console.log("❌ Missing credentials");
+      return res.status(400).json({ message: "Missing credentials" });
     }
 
-    // Find user
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { email },
     });
+
+    console.log("🔍 USER:", user);
 
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
+      console.log("❌ User not found");
+      return res.status(401).json({ message: "User not found" });
     }
 
-    // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    const validPassword = await bcrypt.compare(password, user.password);
 
-    if (!isValidPassword) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
+    console.log("🔍 PASSWORD MATCH:", validPassword);
+
+    if (!validPassword) {
+      console.log("❌ Invalid password");
+      return res.status(401).json({ message: "Invalid password" });
     }
 
-    // Generate token
-    const token = generateToken(user.id, user.role);
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      "secret123",
+      { expiresIn: "7d" }
+    );
 
-    res.json({
+    console.log("✅ Login successful, token generated");
+
+    return res.json({
       success: true,
-      message: 'Login successful',
-      data: {
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          createdAt: user.createdAt
-        },
-        token
-      }
+      message: "Login successful",
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
     });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({
+  } catch (err) {
+    console.error("❌ LOGIN ERROR FULL:", err);
+    console.error("❌ ERROR STACK:", err.stack);
+    return res.status(500).json({ 
       success: false,
-      message: 'Internal server error during login'
+      message: "Internal server error",
+      error: err.message 
     });
   }
 };
