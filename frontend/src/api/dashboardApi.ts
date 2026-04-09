@@ -12,6 +12,22 @@ export interface DashboardStats {
     jobTitle: string;
     status: string;
     createdAt: string;
+    department?: string;
+  }>;
+  // Chart data
+  departmentDistribution: Array<{
+    name: string;
+    count: number;
+  }>;
+  leaveStatus: Array<{
+    status: string;
+    count: number;
+  }>;
+  leaveTrends: Array<{
+    month: string;
+    approved: number;
+    pending: number;
+    rejected: number;
   }>;
 }
 

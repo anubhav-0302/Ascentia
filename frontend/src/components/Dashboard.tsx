@@ -1,5 +1,33 @@
 import { useState, useEffect } from "react";
 import { getDashboardStats, type DashboardStats } from "../api/dashboardApi";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from "recharts";
+
+// Chart color schemes
+const DEPARTMENT_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
+const LEAVE_STATUS_COLORS = {
+  Approved: '#10B981',
+  Pending: '#F59E0B',
+  Rejected: '#EF4444'
+};
+const TREND_COLORS = {
+  approved: '#10B981',
+  pending: '#F59E0B',
+  rejected: '#EF4444'
+};
 
 function getStatusBadge(status: string) {
   const statusConfig = {
@@ -30,12 +58,46 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Mock data for charts (will be replaced with real API data)
+  const mockChartData = {
+    departmentDistribution: [
+      { name: 'Engineering', count: 45 },
+      { name: 'Sales', count: 32 },
+      { name: 'Marketing', count: 28 },
+      { name: 'HR', count: 15 },
+      { name: 'Finance', count: 20 },
+      { name: 'Operations', count: 25 }
+    ],
+    leaveStatus: [
+      { status: 'Approved', count: 68 },
+      { status: 'Pending', count: 23 },
+      { status: 'Rejected', count: 12 }
+    ],
+    leaveTrends: [
+      { month: 'Jan', approved: 45, pending: 12, rejected: 5 },
+      { month: 'Feb', approved: 52, pending: 15, rejected: 8 },
+      { month: 'Mar', approved: 48, pending: 18, rejected: 6 },
+      { month: 'Apr', approved: 61, pending: 14, rejected: 9 },
+      { month: 'May', approved: 55, pending: 20, rejected: 7 },
+      { month: 'Jun', approved: 68, pending: 23, rejected: 12 }
+    ]
+  };
+
   const fetchStats = async () => {
     try {
       setLoading(true);
       setError(null);
       const data = await getDashboardStats();
-      setStats(data);
+      
+      // Merge real data with mock chart data
+      const enrichedData = {
+        ...data,
+        departmentDistribution: data.departmentDistribution || mockChartData.departmentDistribution,
+        leaveStatus: data.leaveStatus || mockChartData.leaveStatus,
+        leaveTrends: data.leaveTrends || mockChartData.leaveTrends
+      };
+      
+      setStats(enrichedData);
     } catch (err: any) {
       setError(err.message || 'Failed to load dashboard data');
     } finally {
@@ -103,9 +165,9 @@ const Dashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-slate-800/40 rounded-xl p-6 border border-slate-700/50">
+        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-500/20 rounded-lg">
+            <div className="p-3 bg-blue-500/20 rounded-xl">
               <i className="fas fa-users text-blue-400 text-xl"></i>
             </div>
             <span className="text-sm text-gray-400">Total</span>
@@ -114,9 +176,9 @@ const Dashboard = () => {
           <p className="text-gray-400 text-sm">Total Employees</p>
         </div>
 
-        <div className="bg-slate-800/40 rounded-xl p-6 border border-slate-700/50">
+        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-green-500/20 rounded-lg">
+            <div className="p-3 bg-green-500/20 rounded-xl">
               <i className="fas fa-user-check text-green-400 text-xl"></i>
             </div>
             <span className="text-sm text-gray-400">Active</span>
@@ -125,9 +187,9 @@ const Dashboard = () => {
           <p className="text-gray-400 text-sm">Active Employees</p>
         </div>
 
-        <div className="bg-slate-800/40 rounded-xl p-6 border border-slate-700/50">
+        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-purple-500/20 rounded-lg">
+            <div className="p-3 bg-purple-500/20 rounded-xl">
               <i className="fas fa-home text-purple-400 text-xl"></i>
             </div>
             <span className="text-sm text-gray-400">Remote</span>
@@ -136,9 +198,9 @@ const Dashboard = () => {
           <p className="text-gray-400 text-sm">Remote Workers</p>
         </div>
 
-        <div className="bg-slate-800/40 rounded-xl p-6 border border-slate-700/50">
+        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-orange-500/20 rounded-lg">
+            <div className="p-3 bg-orange-500/20 rounded-xl">
               <i className="fas fa-building text-orange-400 text-xl"></i>
             </div>
             <span className="text-sm text-gray-400">Departments</span>
@@ -148,8 +210,129 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Department Distribution Pie Chart */}
+        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Department Distribution</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie
+                data={stats?.departmentDistribution || []}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : '0'}%`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="count"
+              >
+                {(stats?.departmentDistribution || []).map((_entry, index) => (
+                  <Cell key={`cell-${index}`} fill={DEPARTMENT_COLORS[index % DEPARTMENT_COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#1e293b', 
+                  border: '1px solid #475569',
+                  borderRadius: '8px'
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Leave Status Bar Chart */}
+        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Leave Status Overview</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={stats?.leaveStatus || []}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
+              <XAxis 
+                dataKey="status" 
+                stroke="#94a3b8"
+                tick={{ fill: '#94a3b8' }}
+              />
+              <YAxis 
+                stroke="#94a3b8"
+                tick={{ fill: '#94a3b8' }}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#1e293b', 
+                  border: '1px solid #475569',
+                  borderRadius: '8px'
+                }}
+              />
+              <Bar 
+                dataKey="count" 
+                fill="#3B82F6"
+                radius={[8, 8, 0, 0]}
+              >
+                {(stats?.leaveStatus || []).map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={LEAVE_STATUS_COLORS[entry.status as keyof typeof LEAVE_STATUS_COLORS] || '#3B82F6'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Leave Trends Line Chart */}
+        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Leave Trends (6 Months)</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={stats?.leaveTrends || []}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
+              <XAxis 
+                dataKey="month" 
+                stroke="#94a3b8"
+                tick={{ fill: '#94a3b8' }}
+              />
+              <YAxis 
+                stroke="#94a3b8"
+                tick={{ fill: '#94a3b8' }}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#1e293b', 
+                  border: '1px solid #475569',
+                  borderRadius: '8px'
+                }}
+              />
+              <Legend 
+                wrapperStyle={{ color: '#94a3b8' }}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="approved" 
+                stroke={TREND_COLORS.approved} 
+                strokeWidth={2}
+                dot={{ fill: TREND_COLORS.approved, r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="pending" 
+                stroke={TREND_COLORS.pending} 
+                strokeWidth={2}
+                dot={{ fill: TREND_COLORS.pending, r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="rejected" 
+                stroke={TREND_COLORS.rejected} 
+                strokeWidth={2}
+                dot={{ fill: TREND_COLORS.rejected, r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
       {/* Recent Employees */}
-      <div className="bg-slate-800/40 rounded-xl p-6 border border-slate-700/50">
+      <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-white">Recent Employees</h2>
           <span className="text-sm text-gray-400">Last 5 added</span>
@@ -159,7 +342,7 @@ const Dashboard = () => {
           {stats?.recentEmployees?.map((employee) => (
             <div
               key={employee.id}
-              className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg border border-slate-600/50"
+              className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg border border-slate-600/50 hover:bg-slate-700/40 transition-all duration-200"
             >
               <div className="flex items-center space-x-4">
                 <img
@@ -170,6 +353,9 @@ const Dashboard = () => {
                 <div>
                   <p className="text-white font-medium">{employee.name}</p>
                   <p className="text-gray-400 text-sm">{employee.jobTitle}</p>
+                  {employee.department && (
+                    <p className="text-gray-500 text-xs">{employee.department}</p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center space-x-3">

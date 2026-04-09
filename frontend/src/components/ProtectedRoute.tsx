@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useIsAuthenticated, useAuthLoading, useAuthInitialized } from '../store/useAuthStore';
 
@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
   requiredRole?: 'admin' | 'employee';
 }
 
-const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, requiredRole: _requiredRole }: ProtectedRouteProps) => {
   const isAuthenticated = useIsAuthenticated();
   const loading = useAuthLoading();
   const authInitialized = useAuthInitialized();
