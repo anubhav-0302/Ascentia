@@ -15,6 +15,7 @@ import {
   Legend,
   ResponsiveContainer
 } from "recharts";
+import SkeletonLoader, { CardSkeleton, ChartSkeleton, TableSkeleton } from "./SkeletonLoader";
 
 // Chart color schemes
 const DEPARTMENT_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
@@ -116,12 +117,35 @@ const Dashboard = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-center py-12">
-          <div className="flex flex-col items-center space-y-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
-            <p className="text-gray-400">Loading dashboard...</p>
+      <div className="max-w-7xl mx-auto page-transition">
+        {/* Header */}
+        <div className="mb-8">
+          <SkeletonLoader height={36} width={200} className="mb-2" />
+          <SkeletonLoader height={20} width={400} />
+        </div>
+
+        {/* Stats Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+
+        {/* Charts Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <ChartSkeleton />
+          <ChartSkeleton />
+          <ChartSkeleton />
+        </div>
+
+        {/* Recent Employees Skeleton */}
+        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-6">
+            <SkeletonLoader height={28} width={200} />
+            <SkeletonLoader height={16} width={120} />
           </div>
+          <TableSkeleton rows={5} />
         </div>
       </div>
     );
@@ -130,17 +154,17 @@ const Dashboard = () => {
   // Error state
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto page-transition">
         <div className="flex items-center justify-center py-12">
-          <div className="text-center max-w-md">
-            <div className="text-red-400 text-4xl mb-4">
+          <div className="text-center max-w-md animate-scaleIn">
+            <div className="text-red-400 text-4xl mb-4 animate-pulse-slow">
               <i className="fas fa-exclamation-triangle"></i>
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">Error Loading Dashboard</h3>
             <p className="text-gray-400 mb-6">{error}</p>
             <button
               onClick={handleRetry}
-              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-200 flex items-center space-x-2 mx-auto"
+              className="px-6 py-3 bg-teal-600 text-white rounded-xl hover:bg-teal-700 button-interactive flex items-center space-x-2 mx-auto"
             >
               <i className="fas fa-sync-alt"></i>
               <span>Retry</span>
@@ -152,9 +176,9 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto page-transition">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-8 animate-fadeIn">
         <h1 className="text-3xl font-bold text-white mb-2">
           Dashboard
         </h1>
@@ -165,7 +189,7 @@ const Dashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6">
+        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn" style={{ animationDelay: '0.1s' }}>
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-blue-500/20 rounded-xl">
               <i className="fas fa-users text-blue-400 text-xl"></i>
@@ -176,7 +200,7 @@ const Dashboard = () => {
           <p className="text-gray-400 text-sm">Total Employees</p>
         </div>
 
-        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6">
+        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-green-500/20 rounded-xl">
               <i className="fas fa-user-check text-green-400 text-xl"></i>
@@ -187,7 +211,7 @@ const Dashboard = () => {
           <p className="text-gray-400 text-sm">Active Employees</p>
         </div>
 
-        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6">
+        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn" style={{ animationDelay: '0.3s' }}>
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-purple-500/20 rounded-xl">
               <i className="fas fa-home text-purple-400 text-xl"></i>
@@ -198,7 +222,7 @@ const Dashboard = () => {
           <p className="text-gray-400 text-sm">Remote Workers</p>
         </div>
 
-        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6">
+        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn" style={{ animationDelay: '0.4s' }}>
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-orange-500/20 rounded-xl">
               <i className="fas fa-building text-orange-400 text-xl"></i>
@@ -213,7 +237,7 @@ const Dashboard = () => {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* Department Distribution Pie Chart */}
-        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6">
+        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn" style={{ animationDelay: '0.5s' }}>
           <h3 className="text-lg font-semibold text-white mb-4">Department Distribution</h3>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
@@ -243,7 +267,7 @@ const Dashboard = () => {
         </div>
 
         {/* Leave Status Bar Chart */}
-        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6">
+        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn" style={{ animationDelay: '0.6s' }}>
           <h3 className="text-lg font-semibold text-white mb-4">Leave Status Overview</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={stats?.leaveStatus || []}>
@@ -278,7 +302,7 @@ const Dashboard = () => {
         </div>
 
         {/* Leave Trends Line Chart */}
-        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6">
+        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn" style={{ animationDelay: '0.7s' }}>
           <h3 className="text-lg font-semibold text-white mb-4">Leave Trends (6 Months)</h3>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={stats?.leaveTrends || []}>
@@ -332,23 +356,24 @@ const Dashboard = () => {
       </div>
 
       {/* Recent Employees */}
-      <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6">
+      <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn" style={{ animationDelay: '0.8s' }}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-white">Recent Employees</h2>
           <span className="text-sm text-gray-400">Last 5 added</span>
         </div>
 
         <div className="space-y-4">
-          {stats?.recentEmployees?.map((employee) => (
+          {stats?.recentEmployees?.map((employee, index) => (
             <div
               key={employee.id}
-              className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg border border-slate-600/50 hover:bg-slate-700/40 transition-all duration-200"
+              className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg border border-slate-600/50 table-row-hover animate-fadeIn"
+              style={{ animationDelay: `${0.9 + index * 0.1}s` }}
             >
               <div className="flex items-center space-x-4">
                 <img
                   src={`https://picsum.photos/seed/${employee.id}/40/40.jpg`}
                   alt={employee.name}
-                  className="w-10 h-10 rounded-full border-2 border-slate-600"
+                  className="w-10 h-10 rounded-full border-2 border-slate-600 transition-transform duration-200 hover:scale-110"
                 />
                 <div>
                   <p className="text-white font-medium">{employee.name}</p>
@@ -359,7 +384,9 @@ const Dashboard = () => {
                 </div>
               </div>
               <div className="flex items-center space-x-3">
-                {getStatusBadge(employee.status)}
+                <span className="badge-hover">
+                  {getStatusBadge(employee.status)}
+                </span>
                 <span className="text-gray-500 text-sm">
                   {new Date(employee.createdAt).toLocaleDateString()}
                 </span>
