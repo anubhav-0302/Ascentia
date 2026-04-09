@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { Toaster } from 'react-hot-toast';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
@@ -45,6 +46,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
+        <Toaster position="top-right" />
       </div>
     );
   }
@@ -56,7 +58,7 @@ function App() {
       <Header />
       
       {/* Main Content Area */}
-      <main className="ml-64 mt-16 p-6">
+      <main className="ml-64 mt-16 px-6 py-6">
         <div className="max-w-7xl mx-auto">
           <ProtectedRoute>
             <Routes>
@@ -76,6 +78,7 @@ function App() {
           </ProtectedRoute>
         </div>
       </main>
+      <Toaster position="top-right" />
     </div>
   );
 }

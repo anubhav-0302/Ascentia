@@ -1,17 +1,18 @@
 import React, { useState, useEffect, useMemo } from "react";
+import toast from "react-hot-toast";
 import { useEmployeeStore } from "../store/useEmployeeStore";
 import { useDebounce } from "../hooks/useDebounce";
 import { employeeApi, type Employee, type CreateEmployeeRequest, type UpdateEmployeeRequest } from "../api/employeeApi";
 import { useIsAdmin } from "../store/useAuthStore";
 
 function getStatusBadge(status: string) {
-  const statusConfig = {
+  const statusConfig: Record<string, string> = {
     Active: "bg-green-400/20 text-green-400 border-green-400/30",
     Onboarding: "bg-yellow-400/20 text-yellow-400 border-yellow-400/30",
     Remote: "bg-blue-400/20 text-blue-400 border-blue-400/30",
   };
 
-  const dotColor = {
+  const dotColor: Record<string, string> = {
     Active: "bg-green-400",
     Onboarding: "bg-yellow-400",
     Remote: "bg-blue-400",
@@ -90,8 +91,8 @@ function EmployeeFormModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-slate-800 rounded-xl p-6 w-full max-w-md">
-        <h2 className="text-xl font-bold text-white mb-4">
+      <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6 w-full max-w-md">
+        <h2 className="text-2xl font-semibold text-white mb-4">
           {employee ? "Edit Employee" : "Add Employee"}
         </h2>
 
@@ -105,7 +106,7 @@ function EmployeeFormModal({
                 setFormData({ ...formData, [field]: e.target.value })
               }
               placeholder={field}
-              className="w-full bg-slate-700 text-white px-3 py-2 rounded"
+              className="w-full bg-slate-700/60 rounded-xl border border-slate-600 text-white px-4 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
               required={field !== "location"}
             />
           ))}
@@ -116,7 +117,7 @@ function EmployeeFormModal({
             onChange={(e) =>
               setFormData({ ...formData, status: e.target.value })
             }
-            className="w-full bg-slate-700 text-white px-3 py-2 rounded"
+            className="w-full bg-slate-700/60 rounded-xl border border-slate-600 text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
           >
             <option>Active</option>
             <option>Onboarding</option>
@@ -126,10 +127,10 @@ function EmployeeFormModal({
           {error && <p className="text-red-400">{error}</p>}
 
           <div className="flex gap-2">
-            <button type="button" onClick={onClose} className="flex-1 bg-gray-600 p-2 rounded">
+            <button type="button" onClick={onClose} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white rounded-xl px-4 py-2 font-medium transition-all duration-200 hover:scale-[1.02]">
               Cancel
             </button>
-            <button type="submit" className="flex-1 bg-teal-600 p-2 rounded">
+            <button type="submit" className="flex-1 bg-teal-600 hover:bg-teal-500 text-white rounded-xl px-4 py-2 font-medium transition-all duration-200 hover:scale-[1.02]">
               {loading ? "Saving..." : "Save"}
             </button>
           </div>
@@ -172,12 +173,12 @@ function Directory() {
   if (error) return <p className="text-red-400">{error}</p>;
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">
+        <h1 className="text-4xl font-bold text-white mb-2">
           Employee Directory
         </h1>
-        <p className="text-gray-400">
+        <p className="text-gray-400 text-sm">
           {isAdmin 
             ? "Manage your team members and their information"
             : "View your team members and their information"
@@ -191,7 +192,7 @@ function Directory() {
           placeholder="Search employees..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
+          className="w-full px-4 py-3 bg-slate-700/60 rounded-xl border border-slate-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
         />
       </div>
 
@@ -199,15 +200,15 @@ function Directory() {
       {isAdmin && (
         <button
           onClick={() => setIsModalOpen(true)}
-          className="mb-4 bg-teal-600 px-4 py-2 rounded hover:bg-teal-700 transition-colors"
+          className="mb-4 bg-teal-600 hover:bg-teal-500 rounded-xl px-4 py-2 font-medium transition-all duration-200 hover:scale-[1.02]"
         >
           Add Employee
         </button>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {(filteredEmployees || []).map((emp: Employee) => (
-          <div key={emp.id} className="bg-slate-800 p-4 rounded-lg border border-slate-700">
+          <div key={emp.id} className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02] p-6">
             <div className="flex items-center mb-3">
               <img
                 src={`https://picsum.photos/seed/${emp.id}/40/40.jpg`}
@@ -274,10 +275,12 @@ function Directory() {
                 console.log("🔍 Updating employee ID:", editingEmployee.id);
                 response = await employeeApi.updateEmployee(editingEmployee.id, data as UpdateEmployeeRequest);
                 console.log("✅ Employee updated successfully:", response);
+                toast.success('Employee updated successfully!');
               } else {
                 console.log("🔍 Creating new employee");
                 response = await employeeApi.createEmployee(data as CreateEmployeeRequest);
                 console.log("✅ Employee created successfully:", response);
+                toast.success('Employee added successfully!');
               }
 
               // Refresh the employee list
@@ -297,9 +300,7 @@ function Directory() {
                 status: error.status,
                 data: error.data
               });
-              
-              // You could add a toast notification here
-              alert(`Failed to save employee: ${error.message || 'Unknown error'}`);
+              toast.error(error.message || 'Failed to save employee');
             }
           }}
         />

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { createLeave, getMyLeaves, getAllLeaves, updateLeaveStatus, type LeaveRequest, type CreateLeaveRequest } from '../api/leaveApi';
-import { useIsAdmin, useUser } from '../store/useAuthStore';
+import { useIsAdmin } from '../store/useAuthStore';
 
 const LeaveAttendance = () => {
   const isAdmin = useIsAdmin();
@@ -50,11 +51,13 @@ const LeaveAttendance = () => {
       
       if (start > end) {
         setError('End date must be after or same as start date');
+        toast.error('End date must be after or same as start date');
         return;
       }
 
       await createLeave(formData);
       setSuccess('Leave request submitted successfully!');
+      toast.success('Leave request submitted successfully!');
       
       // Reset form and refresh list
       setFormData({ type: '', startDate: '', endDate: '', reason: '' });
@@ -62,6 +65,7 @@ const LeaveAttendance = () => {
       fetchMyLeaves();
     } catch (err: any) {
       setError(err.message || 'Failed to submit leave request');
+      toast.error(err.message || 'Failed to submit leave request');
     } finally {
       setLoading(false);
     }
@@ -118,11 +122,13 @@ const LeaveAttendance = () => {
 
       await updateLeaveStatus(leaveId, status);
       setSuccess(`Leave request ${status.toLowerCase()} successfully!`);
+      toast.success(`Leave request ${status.toLowerCase()} successfully!`);
       
       // Refresh the list
       fetchAllLeaves();
     } catch (err: any) {
       setError(err.message || `Failed to ${status.toLowerCase()} leave request`);
+      toast.error(err.message || `Failed to ${status.toLowerCase()} leave request`);
     } finally {
       setLoading(false);
     }
@@ -143,8 +149,8 @@ const LeaveAttendance = () => {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Leave Management</h1>
-            <p className="text-gray-400">
+            <h1 className="text-4xl font-bold text-white mb-2">Leave Management</h1>
+            <p className="text-gray-400 text-sm">
               Review and manage all employee leave requests.
             </p>
           </div>
@@ -169,9 +175,9 @@ const LeaveAttendance = () => {
           )}
 
           {/* Leave Requests Table */}
-          <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg overflow-hidden">
+          <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-700/50">
-              <h2 className="text-xl font-semibold">All Leave Requests</h2>
+              <h2 className="text-2xl font-semibold text-white">All Leave Requests</h2>
             </div>
             
             {loading ? (
@@ -214,7 +220,7 @@ const LeaveAttendance = () => {
                   </thead>
                   <tbody className="divide-y divide-slate-700/50">
                     {leaves.map((leave) => (
-                      <tr key={leave.id} className="hover:bg-slate-700/30 transition-colors">
+                      <tr key={leave.id} className="hover:bg-slate-700/40 transition-all duration-200 hover:scale-[1.01]">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
                             <div className="text-sm font-medium text-white">
@@ -248,7 +254,7 @@ const LeaveAttendance = () => {
                                 <button
                                   onClick={() => handleApproveReject(leave.id, 'Approved')}
                                   disabled={loading}
-                                  className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                                 >
                                   <i className="fas fa-check mr-1"></i>
                                   Approve
@@ -256,7 +262,7 @@ const LeaveAttendance = () => {
                                 <button
                                   onClick={() => handleApproveReject(leave.id, 'Rejected')}
                                   disabled={loading}
-                                  className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="px-3 py-1 bg-red-600 hover:bg-red-500 text-white text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                                 >
                                   <i className="fas fa-times mr-1"></i>
                                   Reject
@@ -282,13 +288,14 @@ const LeaveAttendance = () => {
     );
   }
 
+  // Employee view
   return (
     <div className="text-white">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Leave & Attendance</h1>
-          <p className="text-gray-400">
+          <h1 className="text-4xl font-bold text-white mb-2">Leave & Attendance</h1>
+          <p className="text-gray-400 text-sm">
             Manage your leave requests and track your attendance history.
           </p>
         </div>
@@ -315,17 +322,17 @@ const LeaveAttendance = () => {
         {/* Leave Request Form */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Request Leave</h2>
+            <h2 className="text-2xl font-semibold text-white">Request Leave</h2>
             <button
               onClick={() => setShowForm(!showForm)}
-              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+              className="px-4 py-2 bg-teal-600 hover:bg-teal-500 rounded-xl font-medium transition-all duration-200 hover:scale-[1.02]"
             >
               {showForm ? 'Hide Form' : 'New Request'}
             </button>
           </div>
 
           {showForm && (
-            <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-6">
+            <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -337,7 +344,7 @@ const LeaveAttendance = () => {
                       name="type"
                       value={formData.type}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="w-full px-4 py-2 bg-slate-700/60 rounded-xl border border-slate-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
                       required
                     >
                       <option value="">Select leave type</option>
@@ -359,7 +366,7 @@ const LeaveAttendance = () => {
                       name="reason"
                       value={formData.reason}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="w-full px-4 py-2 bg-slate-700/60 rounded-xl border border-slate-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
                       placeholder="Brief reason for leave"
                       required
                     />
@@ -376,7 +383,7 @@ const LeaveAttendance = () => {
                       name="startDate"
                       value={formData.startDate}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                      className="w-full px-4 py-2 bg-slate-700/60 rounded-xl border border-slate-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
                       required
                     />
                   </div>
@@ -393,7 +400,7 @@ const LeaveAttendance = () => {
                       value={formData.endDate}
                       onChange={handleInputChange}
                       min={formData.startDate}
-                      className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                      className="w-full px-4 py-2 bg-slate-700/60 rounded-xl border border-slate-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
                       required
                     />
                   </div>
@@ -403,14 +410,14 @@ const LeaveAttendance = () => {
                   <button
                     type="button"
                     onClick={() => setShowForm(false)}
-                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                    className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-all duration-200 hover:scale-[1.02]"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={loading}
-                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-medium transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   >
                     {loading ? 'Submitting...' : 'Submit Request'}
                   </button>
@@ -422,7 +429,7 @@ const LeaveAttendance = () => {
 
         {/* Leave History */}
         <div>
-          <h2 className="text-xl font-semibold mb-4">Leave History</h2>
+          <h2 className="text-2xl font-semibold text-white mb-4">Leave History</h2>
           
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -430,7 +437,7 @@ const LeaveAttendance = () => {
               <span className="ml-3 text-gray-400">Loading leave requests...</span>
             </div>
           ) : leaves.length === 0 ? (
-            <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-12 text-center">
+            <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-12 text-center">
               <i className="fas fa-calendar-times text-4xl text-gray-500 mb-4"></i>
               <p className="text-gray-400 text-lg">No leave requests yet</p>
               <p className="text-gray-500 text-sm mt-2">
@@ -438,7 +445,7 @@ const LeaveAttendance = () => {
               </p>
             </div>
           ) : (
-            <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg overflow-hidden">
+            <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-slate-700/50">
@@ -462,7 +469,7 @@ const LeaveAttendance = () => {
                   </thead>
                   <tbody className="divide-y divide-slate-700/50">
                     {leaves.map((leave) => (
-                      <tr key={leave.id} className="hover:bg-slate-700/30 transition-colors">
+                      <tr key={leave.id} className="hover:bg-slate-700/40 transition-all duration-200 hover:scale-[1.01]">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-white">{leave.type}</div>
                         </td>

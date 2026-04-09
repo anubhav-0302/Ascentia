@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/useAuthStore';
 
 const Login = () => {
@@ -18,12 +19,15 @@ const Login = () => {
     try {
       if (isLogin) {
         await login(formData.email, formData.password);
+        toast.success('Login successful!');
       } else {
         await register(formData.name, formData.email, formData.password);
+        toast.success('Registration successful!');
       }
       // Navigation will be handled by the auth state change
     } catch (err) {
       // Error is already handled in the store
+      toast.error(error || 'Authentication failed');
     }
   };
 
