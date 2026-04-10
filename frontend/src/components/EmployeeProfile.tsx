@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import LayoutWrapper from './LayoutWrapper';
 import SkeletonLoader from './SkeletonLoader';
 
 interface Employee {
@@ -257,7 +258,7 @@ const EmployeeProfile: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto page-transition">
+    <LayoutWrapper className="page-transition">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -596,7 +597,7 @@ const EmployeeProfile: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </LayoutWrapper>
   );
 };
 

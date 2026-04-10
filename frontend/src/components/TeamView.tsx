@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import LayoutWrapper from './LayoutWrapper';
 import SkeletonLoader from './SkeletonLoader';
 
 interface TeamMember {
@@ -394,7 +395,7 @@ const TeamView: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto page-transition">
+    <LayoutWrapper className="page-transition">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -561,7 +562,7 @@ const TeamView: React.FC = () => {
           )}
         </div>
       )}
-    </div>
+    </LayoutWrapper>
   );
 };
 

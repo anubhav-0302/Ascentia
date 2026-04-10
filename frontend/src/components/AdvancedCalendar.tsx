@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
+import LayoutWrapper from './LayoutWrapper';
 
 interface LeaveEvent {
   id: string;
@@ -184,7 +185,7 @@ const AdvancedCalendar: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto page-transition">
+    <LayoutWrapper className="page-transition">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -456,7 +457,7 @@ const AdvancedCalendar: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </LayoutWrapper>
   );
 };
 

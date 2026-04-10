@@ -217,7 +217,7 @@ const ActivityFeed: React.FC = () => {
   }
 
   return (
-    <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-6 animate-fadeIn">
+    <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-6 shadow-md animate-fadeIn">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-white">Activity Feed</h2>
@@ -226,30 +226,30 @@ const ActivityFeed: React.FC = () => {
           <div className="flex bg-slate-700/50 rounded-lg p-1">
             <button
               onClick={() => setFilter('all')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
+              className={`px-3 py-1 text-xs font-medium rounded-lg transition-all duration-200 ${
                 filter === 'all'
                   ? 'bg-teal-600 text-white'
-                  : 'text-gray-400 hover:text-white hover:bg-slate-600'
+                  : 'bg-slate-700/50 text-slate-400 hover:text-white hover:bg-slate-700'
               }`}
             >
               All
             </button>
             <button
               onClick={() => setFilter('my_team')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
+              className={`px-3 py-1 text-xs font-medium rounded-lg transition-all duration-200 ${
                 filter === 'my_team'
                   ? 'bg-teal-600 text-white'
-                  : 'text-gray-400 hover:text-white hover:bg-slate-600'
+                  : 'bg-slate-700/50 text-slate-400 hover:text-white hover:bg-slate-700'
               }`}
             >
               My Team
             </button>
             <button
               onClick={() => setFilter('company')}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
+              className={`px-3 py-1 text-xs font-medium rounded-lg transition-all duration-200 ${
                 filter === 'company'
                   ? 'bg-teal-600 text-white'
-                  : 'text-gray-400 hover:text-white hover:bg-slate-600'
+                  : 'bg-slate-700/50 text-slate-400 hover:text-white hover:bg-slate-700'
               }`}
             >
               Company

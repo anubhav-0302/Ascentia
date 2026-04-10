@@ -19,6 +19,7 @@ import {
 } from "recharts";
 import SkeletonLoader, { CardSkeleton, ChartSkeleton, TableSkeleton } from "./SkeletonLoader";
 import ActivityFeed from "./ActivityFeed";
+import LayoutWrapper from "./LayoutWrapper";
 
 // Chart color schemes
 const DEPARTMENT_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
@@ -179,7 +180,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto page-transition">
+    <LayoutWrapper className="page-transition">
       {/* Header */}
       <div className="mb-8 animate-fadeIn">
         <h1 className="text-3xl font-bold text-white mb-2">
@@ -600,7 +601,7 @@ const Dashboard = () => {
 
       {/* Activity Feed */}
       <ActivityFeed />
-    </div>
+    </LayoutWrapper>
   );
 };
 
