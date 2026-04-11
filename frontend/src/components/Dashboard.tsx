@@ -20,6 +20,8 @@ import {
 import SkeletonLoader, { CardSkeleton, ChartSkeleton, TableSkeleton } from "./SkeletonLoader";
 import ActivityFeed from "./ActivityFeed";
 import LayoutWrapper from "./LayoutWrapper";
+import Button from "./Button";
+import StatusBadge from "./StatusBadge";
 
 // Chart color schemes
 const DEPARTMENT_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
@@ -33,30 +35,6 @@ const TREND_COLORS = {
   pending: '#F59E0B',
   rejected: '#EF4444'
 };
-
-function getStatusBadge(status: string) {
-  const statusConfig = {
-    Active: "bg-green-400/20 text-green-400 border-green-400/30",
-    Onboarding: "bg-yellow-400/20 text-yellow-400 border-yellow-400/30",
-    Remote: "bg-blue-400/20 text-blue-400 border-blue-400/30",
-  };
-
-  const dotColor = {
-    Active: "bg-green-400",
-    Onboarding: "bg-yellow-400",
-    Remote: "bg-blue-400",
-  };
-
-  const configClass = statusConfig[status as keyof typeof statusConfig] || statusConfig["Active"];
-  const dotClass = dotColor[status as keyof typeof dotColor] || dotColor["Active"];
-
-  return (
-    <span className={"inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border " + configClass}>
-      <span className={"w-2 h-2 rounded-full " + dotClass + " mr-2"}></span>
-      {status}
-    </span>
-  );
-}
 
 const Dashboard = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -166,13 +144,13 @@ const Dashboard = () => {
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">Error Loading Dashboard</h3>
             <p className="text-gray-400 mb-6">{error}</p>
-            <button
+            <Button
               onClick={handleRetry}
-              className="px-6 py-3 bg-teal-600 text-white rounded-xl hover:bg-teal-700 button-interactive flex items-center space-x-2 mx-auto"
+              className="mx-auto"
             >
-              <i className="fas fa-sync-alt"></i>
-              <span>Retry</span>
-            </button>
+              <i className="fas fa-sync-alt mr-2"></i>
+              Retry
+            </Button>
           </div>
         </div>
       </div>
@@ -588,7 +566,7 @@ const Dashboard = () => {
               </div>
               <div className="flex items-center space-x-3">
                 <span className="badge-hover">
-                  {getStatusBadge(employee.status)}
+                  <StatusBadge status={employee.status} />
                 </span>
                 <span className="text-gray-500 text-sm">
                   {new Date(employee.createdAt).toLocaleDateString()}

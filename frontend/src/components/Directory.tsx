@@ -4,30 +4,15 @@ import { useEmployeeStore } from "../store/useEmployeeStore";
 import { useDebounce } from "../hooks/useDebounce";
 import { employeeApi, type Employee, type CreateEmployeeRequest, type UpdateEmployeeRequest } from "../api/employeeApi";
 import { useIsAdmin } from "../store/useAuthStore";
-
-function getStatusBadge(status: string) {
-  const statusConfig: Record<string, string> = {
-    Active: "bg-green-400/20 text-green-400 border-green-400/30",
-    Onboarding: "bg-yellow-400/20 text-yellow-400 border-yellow-400/30",
-    Remote: "bg-blue-400/20 text-blue-400 border-blue-400/30",
-  };
-
-  const dotColor: Record<string, string> = {
-    Active: "bg-green-400",
-    Onboarding: "bg-yellow-400",
-    Remote: "bg-blue-400",
-  };
-
-  const configClass = statusConfig[status] || statusConfig["Active"];
-  const dotClass = dotColor[status] || dotColor["Active"];
-
-  return (
-    <span className={"inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border " + configClass}>
-      <span className={"w-2 h-2 rounded-full " + dotClass + " mr-2"}></span>
-      {status}
-    </span>
-  );
-}
+import Button from "./Button";
+import Input from "./Input";
+import StatusBadge from "./StatusBadge";
+import Card from "./Card";
+import { PageTransition, StaggerContainer, FadeIn } from "./PageTransition";
+import { EnhancedModal } from "./EnhancedModal";
+import { CardSkeleton } from "./EnhancedSkeletonLoader";
+import { EmployeesEmptyState, SearchEmptyState } from "./EmptyState";
+import { Search, Plus, Edit } from 'lucide-react';
 
 /* =========================
    MODAL
@@ -90,26 +75,54 @@ function EmployeeFormModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6 w-full max-w-md">
-        <h2 className="text-2xl font-semibold text-white mb-4">
-          {employee ? "Edit Employee" : "Add Employee"}
-        </h2>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {["name", "email", "jobTitle", "department", "location"].map((field) => (
-            <input
-              key={field}
-              name={field}
-              value={(formData as any)[field]}
-              onChange={(e) =>
-                setFormData({ ...formData, [field]: e.target.value })
-              }
-              placeholder={field}
-              className="w-full bg-slate-700/60 rounded-xl border border-slate-600 text-white px-4 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
-              required={field !== "location"}
-            />
-          ))}
+    <EnhancedModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={employee ? "Edit Employee" : "Add Employee"}
+      size="md"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm">
+            {error}
+          </div>
+        )}
+        
+        <Input
+          name="name"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          placeholder="Name"
+          required
+        />
+        <Input
+          name="email"
+          value={formData.email}
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          placeholder="Email"
+          type="email"
+          required
+        />
+          <Input
+            name="jobTitle"
+            value={formData.jobTitle}
+            onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
+            placeholder="Job Title"
+            required
+          />
+          <Input
+            name="department"
+            value={formData.department}
+            onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+            placeholder="Department"
+            required
+          />
+          <Input
+            name="location"
+            value={formData.location || ''}
+            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+            placeholder="Location"
+          />
 
           <select
             name="status"
@@ -124,20 +137,27 @@ function EmployeeFormModal({
             <option>Remote</option>
           </select>
 
-          {error && <p className="text-red-400">{error}</p>}
-
           <div className="flex gap-2">
-            <button type="button" onClick={onClose} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white rounded-xl px-4 py-2 font-medium transition-all duration-200 hover:scale-[1.02]">
+            <Button 
+              type="button" 
+              onClick={onClose}
+              variant="secondary"
+              className="flex-1"
+            >
               Cancel
-            </button>
-            <button type="submit" className="flex-1 bg-teal-600 hover:bg-teal-500 text-white rounded-xl px-4 py-2 font-medium transition-all duration-200 hover:scale-[1.02]">
-              {loading ? "Saving..." : "Save"}
-            </button>
+            </Button>
+            <Button 
+              type="submit" 
+              loading={loading}
+              className="flex-1"
+              loadingText="Saving..."
+            >
+              {employee ? "Update" : "Save"}
+            </Button>
           </div>
         </form>
-      </div>
-    </div>
-  );
+      </EnhancedModal>
+    ); 
 }
 
 /* =========================
@@ -169,153 +189,174 @@ function Directory() {
     );
   }, [employees, debouncedSearchTerm]);
 
-  if (loading) return <p className="text-white">Loading...</p>;
-  if (error) return <p className="text-red-400">{error}</p>;
+  const handleAddEmployee = () => {
+    setEditingEmployee(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditEmployee = (emp: Employee) => {
+    setEditingEmployee(emp);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveEmployee = async (data: CreateEmployeeRequest | UpdateEmployeeRequest) => {
+    try {
+      if (editingEmployee) {
+        await employeeApi.updateEmployee(editingEmployee.id, data as UpdateEmployeeRequest);
+        toast.success("Employee updated successfully!");
+      } else {
+        await employeeApi.createEmployee(data as CreateEmployeeRequest);
+        toast.success("Employee added successfully!");
+      }
+      await fetchEmployees();
+      setIsModalOpen(false);
+    } catch (err: any) {
+      console.error("Failed to save employee:", err);
+      throw err;
+    }
+  };
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">
-          Employee Directory
-        </h1>
-        <p className="text-gray-400 text-sm">
-          {isAdmin 
-            ? "Manage your team members and their information"
-            : "View your team members and their information"
-          }
-        </p>
-      </div>
+    <PageTransition>
+      <div className="text-white">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <FadeIn delay={100}>
+            <div className="mb-8">
+              <h1 className="text-4xl font-bold text-white mb-2">
+                {isAdmin ? "Employee Directory" : "Team Directory"}
+              </h1>
+              <p className="text-gray-400 text-sm">
+                {isAdmin 
+                  ? "Manage your team members and their information"
+                  : "View your team members and their information"
+                }
+              </p>
+            </div>
+          </FadeIn>
 
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search employees..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-3 bg-slate-700/60 rounded-xl border border-slate-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
-        />
-      </div>
-
-      {/* Admin-only Add Employee Button */}
-      {isAdmin && (
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="mb-4 bg-teal-600 hover:bg-teal-500 rounded-xl px-4 py-2 font-medium transition-all duration-200 hover:scale-[1.02]"
-        >
-          Add Employee
-        </button>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {(filteredEmployees || []).map((emp: Employee) => (
-          <div key={emp.id} className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02] p-6">
-            <div className="flex items-center mb-3">
-              <img
-                src={`https://picsum.photos/seed/${emp.id}/40/40.jpg`}
-                alt={emp.name}
-                className="w-10 h-10 rounded-full mr-3"
+          {/* Search and Actions */}
+          <FadeIn delay={200}>
+            <div className="mb-6">
+              <Input
+                type="text"
+                placeholder="Search employees..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                icon={<Search className="w-5 h-5" />}
               />
-              <div>
-                <h3 className="text-white font-medium">{emp.name}</h3>
-                <p className="text-gray-400 text-sm">{emp.jobTitle}</p>
-              </div>
             </div>
-            
-            <div className="space-y-2 text-sm">
-              <p className="text-gray-300">
-                <i className="fas fa-envelope mr-2 text-gray-500"></i>
-                {emp.email}
-              </p>
-              <p className="text-gray-300">
-                <i className="fas fa-building mr-2 text-gray-500"></i>
-                {emp.department}
-              </p>
-              <p className="text-gray-300">
-                <i className="fas fa-map-marker-alt mr-2 text-gray-500"></i>
-                {emp.location}
-              </p>
-            </div>
-            
-            <div className="flex items-center justify-between mt-4">
-              {getStatusBadge(emp.status)}
-              
-              {/* Admin-only Edit Button */}
-              {isAdmin && (
-                <button 
-                  onClick={() => { 
-                    setEditingEmployee(emp); 
-                    setIsModalOpen(true); 
-                  }}
-                  className="text-blue-400 hover:text-blue-300 text-sm"
-                >
-                  Edit
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
 
-      {/* Employee Form Modal - Admin Only */}
-      {isAdmin && isModalOpen && (
+            {/* Admin-only Add Employee Button */}
+            {isAdmin && (
+              <Button
+                onClick={handleAddEmployee}
+                icon={<Plus className="w-4 h-4" />}
+                className="mb-6"
+              >
+                Add Employee
+              </Button>
+            )}
+          </FadeIn>
+
+          {/* Content */}
+          <div className="min-h-[400px]">
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <CardSkeleton />
+                <CardSkeleton />
+                <CardSkeleton />
+              </div>
+            ) : error ? (
+              <div className="text-center py-12">
+                <p className="text-red-400 mb-4">{error}</p>
+                <Button onClick={fetchEmployees} icon={<Search className="w-4 h-4" />}>
+                  Try Again
+                </Button>
+              </div>
+            ) : filteredEmployees?.length === 0 ? (
+              debouncedSearchTerm ? (
+                <SearchEmptyState 
+                  searchTerm={debouncedSearchTerm}
+                  onClearSearch={() => setSearchTerm("")}
+                />
+              ) : (
+                <EmployeesEmptyState 
+                  onAddEmployee={isAdmin ? handleAddEmployee : undefined}
+                />
+              )
+            ) : (
+              <StaggerContainer staggerDelay={100} initialDelay={300}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredEmployees.map((emp: Employee) => (
+                    <Card key={emp.id} hover className="group">
+                      <div className="flex items-center mb-3">
+                        <img
+                          src={`https://picsum.photos/seed/${emp.id}/40/40.jpg`}
+                          alt={emp.name}
+                          className="w-10 h-10 rounded-full mr-3 group-hover:scale-110 transition-transform duration-300"
+                        />
+                        <div className="flex-1">
+                          <h3 className="text-white font-medium group-hover:text-teal-400 transition-colors duration-200">
+                            {emp.name}
+                          </h3>
+                          <p className="text-gray-400 text-sm">{emp.jobTitle}</p>
+                        </div>
+                        {isAdmin && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => handleEditEmployee(emp)}
+                            icon={<Edit className="w-3 h-3" />}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                          >
+                            Edit
+                          </Button>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-2 text-sm">
+                        <p className="text-gray-300 flex items-center">
+                          <svg className="w-4 h-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                          {emp.email}
+                        </p>
+                        <p className="text-gray-300 flex items-center">
+                          <svg className="w-4 h-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                          </svg>
+                          {emp.department}
+                        </p>
+                        <p className="text-gray-300 flex items-center">
+                          <svg className="w-4 h-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          {emp.location || "Remote"}
+                        </p>
+                      </div>
+
+                      <div className="mt-4 pt-4 border-t border-slate-700">
+                        <StatusBadge status={emp.status} />
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </StaggerContainer>
+            )}
+          </div>
+        </div>
+
+        {/* Modal */}
         <EmployeeFormModal
           employee={editingEmployee}
           isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setEditingEmployee(null);
-          }}
-          onSave={async (data: CreateEmployeeRequest | UpdateEmployeeRequest) => {
-            try {
-              console.log("🔍 Saving employee:", data);
-              console.log("🔍 Editing employee:", editingEmployee);
-
-              let response;
-              if (editingEmployee) {
-                console.log("🔍 Updating employee ID:", editingEmployee.id);
-                response = await employeeApi.updateEmployee(editingEmployee.id, data as UpdateEmployeeRequest);
-                console.log("✅ Employee updated successfully:", response);
-                toast.success('Employee updated successfully!');
-              } else {
-                console.log("🔍 Creating new employee");
-                response = await employeeApi.createEmployee(data as CreateEmployeeRequest);
-                console.log("✅ Employee created successfully:", response);
-                toast.success('Employee added successfully!');
-              }
-
-              // Refresh the employee list
-              console.log("🔄 Refreshing employee list...");
-              await fetchEmployees();
-              console.log("✅ Employee list refreshed");
-
-              // Close modal and reset form
-              setIsModalOpen(false);
-              setEditingEmployee(null);
-              console.log("✅ Modal closed and form reset");
-
-            } catch (error: any) {
-              console.error("❌ SAVE ERROR:", error);
-              console.error("❌ Error details:", {
-                message: error.message,
-                status: error.status,
-                data: error.data
-              });
-              toast.error(error.message || 'Failed to save employee');
-            }
-          }}
+          onClose={() => setIsModalOpen(false)}
+          onSave={handleSaveEmployee}
         />
-      )}
-
-      {/* Empty State */}
-      {filteredEmployees.length === 0 && (
-        <div className="text-center py-12">
-          <i className="fas fa-users text-gray-600 text-5xl mb-4"></i>
-          <p className="text-gray-400 text-lg">
-            {searchTerm ? 'No employees found matching your search' : 'No employees found'}
-          </p>
-        </div>
-      )}
-    </div>
+      </div>
+    </PageTransition>
   );
 }
 

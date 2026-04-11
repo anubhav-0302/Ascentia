@@ -2,6 +2,11 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { createLeave, getMyLeaves, getAllLeaves, updateLeaveStatus, type LeaveRequest, type CreateLeaveRequest } from '../api/leaveApi';
 import { useIsAdmin } from '../store/useAuthStore';
+import Button from './Button';
+import Input from './Input';
+import StatusBadge from './StatusBadge';
+import Card from './Card';
+import { Calendar, CheckCircle, XCircle, Plus } from 'lucide-react';
 
 const LeaveAttendance = () => {
   const isAdmin = useIsAdmin();
@@ -74,22 +79,6 @@ const LeaveAttendance = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      Pending: 'bg-yellow-400/20 text-yellow-400 border-yellow-400/30',
-      Approved: 'bg-green-400/20 text-green-400 border-green-400/30',
-      Rejected: 'bg-red-400/20 text-red-400 border-red-400/30'
-    };
-
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.Pending;
-    
-    return (
-      <span className={`px-3 py-1 rounded-full text-sm border ${config}`}>
-        {status}
-      </span>
-    );
   };
 
   const formatDate = (dateString: string) => {
@@ -245,28 +234,29 @@ const LeaveAttendance = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {getStatusBadge(leave.status)}
+                          <StatusBadge status={leave.status} />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex space-x-2">
                             {leave.status === 'Pending' && (
                               <>
-                                <button
+                                <Button
                                   onClick={() => handleApproveReject(leave.id, 'Approved')}
                                   disabled={loading}
-                                  className="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                                  size="sm"
+                                  icon={<CheckCircle className="w-3 h-3" />}
                                 >
-                                  <i className="fas fa-check mr-1"></i>
                                   Approve
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                   onClick={() => handleApproveReject(leave.id, 'Rejected')}
                                   disabled={loading}
-                                  className="px-3 py-1 bg-red-600 hover:bg-red-500 text-white text-sm rounded-xl font-medium transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                                  variant="danger"
+                                  size="sm"
+                                  icon={<XCircle className="w-3 h-3" />}
                                 >
-                                  <i className="fas fa-times mr-1"></i>
                                   Reject
-                                </button>
+                                </Button>
                               </>
                             )}
                             {leave.status !== 'Pending' && (
@@ -323,16 +313,16 @@ const LeaveAttendance = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-semibold text-white">Request Leave</h2>
-            <button
+            <Button
               onClick={() => setShowForm(!showForm)}
-              className="px-4 py-2 bg-teal-600 hover:bg-teal-500 rounded-xl font-medium transition-all duration-200 hover:scale-[1.02]"
+              icon={<Plus className="w-4 h-4" />}
             >
               {showForm ? 'Hide Form' : 'New Request'}
-            </button>
+            </Button>
           </div>
 
           {showForm && (
-            <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-6">
+            <Card>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -360,13 +350,12 @@ const LeaveAttendance = () => {
                     <label htmlFor="reason" className="block text-sm font-medium text-gray-300 mb-2">
                       Reason *
                     </label>
-                    <input
+                    <Input
                       type="text"
                       id="reason"
                       name="reason"
                       value={formData.reason}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 bg-slate-700/60 rounded-xl border border-slate-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
                       placeholder="Brief reason for leave"
                       required
                     />
@@ -374,56 +363,53 @@ const LeaveAttendance = () => {
 
                   <div>
                     <label htmlFor="startDate" className="block text-sm font-medium text-gray-300 mb-2">
-                      <i className="fas fa-calendar-alt mr-2"></i>
                       Start Date *
                     </label>
-                    <input
+                    <Input
                       type="date"
                       id="startDate"
                       name="startDate"
                       value={formData.startDate}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 bg-slate-700/60 rounded-xl border border-slate-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+                      icon={<Calendar className="w-4 h-4" />}
                       required
                     />
                   </div>
 
                   <div>
                     <label htmlFor="endDate" className="block text-sm font-medium text-gray-300 mb-2">
-                      <i className="fas fa-calendar-alt mr-2"></i>
                       End Date *
                     </label>
-                    <input
+                    <Input
                       type="date"
                       id="endDate"
                       name="endDate"
                       value={formData.endDate}
                       onChange={handleInputChange}
                       min={formData.startDate}
-                      className="w-full px-4 py-2 bg-slate-700/60 rounded-xl border border-slate-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+                      icon={<Calendar className="w-4 h-4" />}
                       required
                     />
                   </div>
                 </div>
 
                 <div className="flex justify-end space-x-4">
-                  <button
+                  <Button
                     type="button"
                     onClick={() => setShowForm(false)}
-                    className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-all duration-200 hover:scale-[1.02]"
+                    variant="secondary"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
-                    disabled={loading}
-                    className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-medium transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    loading={loading}
                   >
-                    {loading ? 'Submitting...' : 'Submit Request'}
-                  </button>
+                    Submit Request
+                  </Button>
                 </div>
               </form>
-            </div>
+            </Card>
           )}
         </div>
 
@@ -437,15 +423,15 @@ const LeaveAttendance = () => {
               <span className="ml-3 text-gray-400">Loading leave requests...</span>
             </div>
           ) : leaves.length === 0 ? (
-            <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-12 text-center">
+            <Card className="p-12 text-center">
               <i className="fas fa-calendar-times text-4xl text-gray-500 mb-4"></i>
               <p className="text-gray-400 text-lg">No leave requests yet</p>
               <p className="text-gray-500 text-sm mt-2">
                 Submit your first leave request using the form above.
               </p>
-            </div>
+            </Card>
           ) : (
-            <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden">
+            <Card className="overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-slate-700/50">
@@ -484,7 +470,7 @@ const LeaveAttendance = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {getStatusBadge(leave.status)}
+                          <StatusBadge status={leave.status} />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-400">
@@ -496,7 +482,7 @@ const LeaveAttendance = () => {
                   </tbody>
                 </table>
               </div>
-            </div>
+            </Card>
           )}
         </div>
       </div>
