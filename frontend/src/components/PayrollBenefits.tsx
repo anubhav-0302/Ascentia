@@ -1,11 +1,21 @@
-const PayrollBenefits = () => {
+import React from 'react';
+import { StandardLayout } from './StandardLayout';
+import { ComingSoon } from './ComingSoon';
+import { DollarSign } from 'lucide-react';
+
+const PayrollBenefits: React.FC = () => {
   return (
-    <div className="text-white">
-      <h1 className="text-3xl font-bold mb-2">Payroll & Benefits</h1>
-      <p className="text-gray-400">
-        Manage payroll, salaries, and employee benefits.
-      </p>
-    </div>
+    <StandardLayout 
+      title="Payroll & Benefits"
+      description="Manage payroll, salaries, and employee benefits."
+    >
+      <ComingSoon
+        title="Payroll & Benefits"
+        description="We're developing a comprehensive payroll and benefits management system to handle salary calculations, benefits administration, and compliance."
+        feature="Payroll processing, benefits enrollment, tax calculations, and compliance reporting"
+        icon={<DollarSign className="w-12 h-12" />}
+      />
+    </StandardLayout>
   );
 };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDebounce } from '../hooks/useDebounce';
+import { useNavigate } from 'react-router-dom';
 
 interface SearchResult {
   id: string;
@@ -11,6 +12,9 @@ interface SearchResult {
     status?: string;
     date?: string;
     priority?: 'high' | 'medium' | 'low';
+    email?: string;
+    type?: string;
+    assignee?: string;
   };
   url: string;
   avatar?: string;
@@ -23,39 +27,94 @@ const GlobalSearch: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const searchRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const debouncedQuery = useDebounce(query, 300);
 
-  // Mock search data
+  // Enhanced mock search data with more realistic content
   const mockData: SearchResult[] = [
     {
       id: '1',
       type: 'employee',
       title: 'Sarah Chen',
-      description: 'Senior Frontend Developer • Engineering',
+      description: 'Senior Frontend Developer • Engineering Department',
       metadata: {
         department: 'Engineering',
-        status: 'Active'
+        status: 'Active',
+        email: 'sarah.chen@ascentia.com'
       },
-      url: '/profile/1',
+      url: '/directory',
       avatar: 'https://picsum.photos/seed/sarah/32/32.jpg'
     },
     {
       id: '2',
       type: 'employee',
       title: 'Michael Brown',
-      description: 'Engineering Manager • Engineering',
+      description: 'Engineering Manager • Engineering Department',
       metadata: {
         department: 'Engineering',
-        status: 'Active'
+        status: 'Active',
+        email: 'michael.brown@ascentia.com'
       },
-      url: '/profile/2',
+      url: '/directory',
       avatar: 'https://picsum.photos/seed/michael/32/32.jpg'
     },
     {
       id: '3',
+      type: 'employee',
+      title: 'Emma Wilson',
+      description: 'Frontend Developer • Engineering Department',
+      metadata: {
+        department: 'Engineering',
+        status: 'Active',
+        email: 'emma.wilson@ascentia.com'
+      },
+      url: '/directory',
+      avatar: 'https://picsum.photos/seed/emma/32/32.jpg'
+    },
+    {
+      id: '4',
+      type: 'employee',
+      title: 'David Lee',
+      description: 'UX Designer • Design Department',
+      metadata: {
+        department: 'Design',
+        status: 'On Leave',
+        email: 'david.lee@ascentia.com'
+      },
+      url: '/directory',
+      avatar: 'https://picsum.photos/seed/david/32/32.jpg'
+    },
+    {
+      id: '5',
+      type: 'employee',
+      title: 'Maria Garcia',
+      description: 'Product Manager • Product Department',
+      metadata: {
+        department: 'Product',
+        status: 'Active',
+        email: 'maria.garcia@ascentia.com'
+      },
+      url: '/directory',
+      avatar: 'https://picsum.photos/seed/maria/32/32.jpg'
+    },
+    {
+      id: '6',
+      type: 'employee',
+      title: 'James Chen',
+      description: 'DevOps Engineer • Engineering Department',
+      metadata: {
+        department: 'Engineering',
+        status: 'Active',
+        email: 'james.chen@ascentia.com'
+      },
+      url: '/directory',
+      avatar: 'https://picsum.photos/seed/james/32/32.jpg'
+    },
+    {
+      id: '7',
       type: 'leave',
-      title: 'Vacation Request',
-      description: 'Sarah Chen • Dec 25-30, 2024',
+      title: 'Vacation Request - Sarah Chen',
+      description: '3 days vacation request • Dec 25-30, 2024',
       metadata: {
         status: 'Pending',
         date: '2024-12-20',
@@ -64,37 +123,62 @@ const GlobalSearch: React.FC = () => {
       url: '/leave-attendance'
     },
     {
-      id: '4',
-      type: 'document',
-      title: 'Employment Contract',
-      description: 'John Davis • Uploaded Jan 15, 2024',
+      id: '8',
+      type: 'leave',
+      title: 'Sick Leave - Michael Brown',
+      description: '2 days sick leave • Jan 15-16, 2024',
       metadata: {
-        date: '2024-01-15'
+        status: 'Approved',
+        date: '2024-01-14',
+        priority: 'high'
       },
-      url: '/profile/john'
+      url: '/leave-attendance'
     },
     {
-      id: '5',
+      id: '9',
+      type: 'document',
+      title: 'Employment Contract - John Davis',
+      description: 'Employee contract • Uploaded Jan 15, 2024',
+      metadata: {
+        date: '2024-01-15',
+        type: 'Contract'
+      },
+      url: '/profile'
+    },
+    {
+      id: '10',
+      type: 'document',
+      title: 'Performance Review Template',
+      description: 'Q4 2024 performance review template • Standard template',
+      metadata: {
+        date: '2024-01-10',
+        type: 'Template'
+      },
+      url: '/reports'
+    },
+    {
+      id: '11',
       type: 'action',
-      title: 'Performance Review',
-      description: 'Complete Q4 reviews for Engineering team',
+      title: 'Complete Performance Reviews',
+      description: 'Q4 reviews for Engineering team • Due by Dec 31',
       metadata: {
         priority: 'high',
-        date: '2024-12-15'
+        date: '2024-12-15',
+        assignee: 'Michael Brown'
       },
-      url: '/performance'
+      url: '/my-team'
     },
     {
-      id: '6',
-      type: 'employee',
-      title: 'Emma Wilson',
-      description: 'Frontend Developer • Engineering',
+      id: '12',
+      type: 'action',
+      title: 'Review Job Applications',
+      description: 'Frontend Developer position • 24 applications to review',
       metadata: {
-        department: 'Engineering',
-        status: 'Active'
+        priority: 'medium',
+        date: '2024-12-18',
+        assignee: 'Maria Garcia'
       },
-      url: '/profile/3',
-      avatar: 'https://picsum.photos/seed/emma/32/32.jpg'
+      url: '/recruiting'
     }
   ];
 
@@ -129,13 +213,61 @@ const GlobalSearch: React.FC = () => {
   const performSearch = async (searchQuery: string) => {
     setLoading(true);
     
-    // Simulate API call
+    // Simulate API call with improved filtering
     setTimeout(() => {
-      const filtered = mockData.filter(item =>
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.metadata?.department?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      const filtered = mockData.filter(item => {
+        const query = searchQuery.toLowerCase();
+        
+        // Search in title
+        if (item.title.toLowerCase().includes(query)) {
+          return true;
+        }
+        
+        // Search in description
+        if (item.description.toLowerCase().includes(query)) {
+          return true;
+        }
+        
+        // Search in metadata
+        if (item.metadata) {
+          // Search in department
+          if (item.metadata.department?.toLowerCase().includes(query)) {
+            return true;
+          }
+          
+          // Search in status
+          if (item.metadata.status?.toLowerCase().includes(query)) {
+            return true;
+          }
+          
+          // Search in email
+          if (item.metadata.email?.toLowerCase().includes(query)) {
+            return true;
+          }
+          
+          // Search in type
+          if (item.metadata.type?.toLowerCase().includes(query)) {
+            return true;
+          }
+          
+          // Search in assignee
+          if (item.metadata.assignee?.toLowerCase().includes(query)) {
+            return true;
+          }
+          
+          // Search in priority
+          if (item.metadata.priority?.toLowerCase().includes(query)) {
+            return true;
+          }
+        }
+        
+        // Search by type
+        if (item.type.toLowerCase().includes(query)) {
+          return true;
+        }
+        
+        return false;
+      });
       
       setResults(filtered);
       setLoading(false);
@@ -155,8 +287,8 @@ const GlobalSearch: React.FC = () => {
   const handleResultClick = (result: SearchResult) => {
     setIsOpen(false);
     setQuery('');
-    // In a real app, you'd navigate to the result URL
-    console.log('Navigate to:', result.url);
+    // Navigate to the result URL
+    navigate(result.url);
   };
 
   const getSearchIcon = (type: SearchResult['type']) => {

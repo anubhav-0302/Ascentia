@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Users, 
@@ -10,15 +10,37 @@ import {
   Settings, 
   Command,
   GitBranch,
-  Building
+  Building,
+  User
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isActive = (path: string) => location.pathname === path;
 
-  const navSections = [
+  const handleProfileClick = () => {
+    navigate('/profile');
+  };
+
+  const handleSettingsClick = () => {
+    navigate('/settings');
+  };
+
+  interface NavItem {
+    name: string;
+    path: string;
+    icon: any;
+    onClick?: () => void;
+  }
+
+  interface NavSection {
+    title: string;
+    items: NavItem[];
+  }
+
+  const navSections: NavSection[] = [
     {
       title: 'MAIN',
       items: [
@@ -78,9 +100,16 @@ const Sidebar: React.FC = () => {
       title: 'SETTINGS',
       items: [
         { 
+          name: 'Profile', 
+          path: '/profile',
+          icon: User,
+          onClick: handleProfileClick
+        },
+        { 
           name: 'Settings', 
           path: '/settings',
-          icon: Settings
+          icon: Settings,
+          onClick: handleSettingsClick
         }
       ]
     }
@@ -99,9 +128,9 @@ const Sidebar: React.FC = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 overflow-y-auto">
-        {navSections.map((section, sectionIndex) => (
-          <div key={section.title} className={sectionIndex > 0 ? 'mt-8' : ''}>
+      <nav className="flex-1 py-4 overflow-y-auto scrollbar-hide">
+        {navSections.map((section, index) => (
+          <div key={index} className="mb-8">
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-3">
               {section.title}
             </h3>
@@ -112,21 +141,39 @@ const Sidebar: React.FC = () => {
                 
                 return (
                   <li key={item.path}>
-                    <Link
-                      to={item.path}
-                      className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
-                        active
-                          ? 'bg-teal-500/10 text-teal-400 border-l-4 border-teal-500'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-                      }`}
-                    >
-                      <Icon 
-                        className={`w-5 h-5 mr-3 transition-colors duration-200 ${
-                          active ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-400'
-                        }`} 
-                      />
-                      <span>{item.name}</span>
-                    </Link>
+                    {item.onClick ? (
+                      <button
+                        onClick={item.onClick}
+                        className={`w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                          active
+                            ? 'bg-teal-500/10 text-teal-400 border-l-4 border-teal-500'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                        }`}
+                      >
+                        <Icon 
+                          className={`w-5 h-5 mr-3 transition-colors duration-200 ${
+                            active ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-400'
+                          }`} 
+                        />
+                        <span>{item.name}</span>
+                      </button>
+                    ) : (
+                      <Link
+                        to={item.path}
+                        className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                          active
+                            ? 'bg-teal-500/10 text-teal-400 border-l-4 border-teal-500'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                        }`}
+                      >
+                        <Icon 
+                          className={`w-5 h-5 mr-3 transition-colors duration-200 ${
+                            active ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-400'
+                          }`} 
+                        />
+                        <span>{item.name}</span>
+                      </Link>
+                    )}
                   </li>
                 );
               })}

@@ -50,6 +50,16 @@ const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
     setPageSubtitle(info.subtitle);
   }, [location.pathname, title, subtitle]);
 
+  const handleProfileClick = () => {
+    setShowProfile(false);
+    navigate('/profile');
+  };
+
+  const handleSettingsClick = () => {
+    setShowProfile(false);
+    navigate('/settings');
+  };
+
   const handleLogout = () => {
     logout();
     setShowProfile(false);
@@ -122,11 +132,17 @@ const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
                 </div>
 
                 <div className="py-2">
-                  <button className="w-full px-4 py-2 text-left text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition-colors duration-200 flex items-center space-x-3">
+                  <button 
+                    onClick={handleProfileClick}
+                    className="w-full px-4 py-2 text-left text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition-colors duration-200 flex items-center space-x-3"
+                  >
                     <User className="w-4 h-4" />
                     <span>Profile</span>
                   </button>
-                  <button className="w-full px-4 py-2 text-left text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition-colors duration-200 flex items-center space-x-3">
+                  <button 
+                    onClick={handleSettingsClick}
+                    className="w-full px-4 py-2 text-left text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition-colors duration-200 flex items-center space-x-3"
+                  >
                     <Settings className="w-4 h-4" />
                     <span>Settings</span>
                   </button>

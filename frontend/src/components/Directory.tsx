@@ -60,12 +60,9 @@ function EmployeeFormModal({
     e.preventDefault();
     setLoading(true);
     try {
-      console.log("🔍 Form submitting with data:", formData);
       await onSave(formData);
-      console.log("✅ Form saved successfully, closing modal");
       onClose();
     } catch (err: any) {
-      console.error("❌ Form submission error:", err);
       setError(err.message || "Failed to save employee");
     } finally {
       setLoading(false);
@@ -79,7 +76,6 @@ function EmployeeFormModal({
       isOpen={isOpen}
       onClose={onClose}
       title={employee ? "Edit Employee" : "Add Employee"}
-      size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
@@ -167,14 +163,11 @@ function Directory() {
   const { employees = [], loading, error, fetchEmployees } = useEmployeeStore();
   const isAdmin = useIsAdmin();
 
-  // Debug log to track employees state
-  console.log("employees state:", employees);
-
   const [searchTerm, setSearchTerm] = useState("");
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   useEffect(() => {
     fetchEmployees();
@@ -211,7 +204,6 @@ function Directory() {
       await fetchEmployees();
       setIsModalOpen(false);
     } catch (err: any) {
-      console.error("Failed to save employee:", err);
       throw err;
     }
   };

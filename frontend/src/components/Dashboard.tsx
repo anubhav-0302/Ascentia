@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { getDashboardStats, type DashboardStats } from "../api/dashboardApi";
 import {
   PieChart,
@@ -22,6 +23,7 @@ import ActivityFeed from "./ActivityFeed";
 import LayoutWrapper from "./LayoutWrapper";
 import Button from "./Button";
 import StatusBadge from "./StatusBadge";
+import { ComingSoonButton } from "./DisabledButton";
 
 // Chart color schemes
 const DEPARTMENT_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
@@ -259,7 +261,7 @@ const Dashboard = () => {
                   </p>
                   <div className="flex items-center space-x-4 text-xs">
                     <span className="text-yellow-400"><i className="fas fa-exclamation-triangle mr-1"></i>Medium priority</span>
-                    <button className="text-teal-400 hover:text-teal-300">Take Action →</button>
+                    <ComingSoonButton className="text-teal-400 hover:text-teal-300">Take Action →</ComingSoonButton>
                   </div>
                 </div>
               </div>
@@ -277,7 +279,7 @@ const Dashboard = () => {
                   </p>
                   <div className="flex items-center space-x-4 text-xs">
                     <span className="text-blue-400"><i className="fas fa-graduation-cap mr-1"></i>Training opportunity</span>
-                    <button className="text-teal-400 hover:text-teal-300">View Details →</button>
+                    <ComingSoonButton className="text-teal-400 hover:text-teal-300">View Details →</ComingSoonButton>
                   </div>
                 </div>
               </div>
@@ -293,7 +295,10 @@ const Dashboard = () => {
           </h3>
           
           <div className="space-y-3">
-            <button className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group">
+            <Link 
+              to="/directory"
+              className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group block"
+            >
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-teal-500/20 rounded-lg flex items-center justify-center group-hover:bg-teal-500/30 transition-colors duration-200">
                   <i className="fas fa-user-plus text-teal-400 text-sm"></i>
@@ -303,9 +308,12 @@ const Dashboard = () => {
                   <p className="text-gray-500 text-xs">Onboard new team member</p>
                 </div>
               </div>
-            </button>
+            </Link>
 
-            <button className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group">
+            <ComingSoonButton 
+              className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group"
+              title="Leave approval feature coming soon"
+            >
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center group-hover:bg-blue-500/30 transition-colors duration-200">
                   <i className="fas fa-calendar-plus text-blue-400 text-sm"></i>
@@ -315,9 +323,12 @@ const Dashboard = () => {
                   <p className="text-gray-500 text-xs">3 pending requests</p>
                 </div>
               </div>
-            </button>
+            </ComingSoonButton>
 
-            <button className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group">
+            <ComingSoonButton 
+              className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group"
+              title="Report generation feature coming soon"
+            >
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center group-hover:bg-purple-500/30 transition-colors duration-200">
                   <i className="fas fa-chart-bar text-purple-400 text-sm"></i>
@@ -327,9 +338,12 @@ const Dashboard = () => {
                   <p className="text-gray-500 text-xs">Monthly analytics</p>
                 </div>
               </div>
-            </button>
+            </ComingSoonButton>
 
-            <button className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group">
+            <ComingSoonButton 
+              className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group"
+              title="Announcement system coming soon"
+            >
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center group-hover:bg-green-500/30 transition-colors duration-200">
                   <i className="fas fa-bullhorn text-green-400 text-sm"></i>
@@ -339,7 +353,7 @@ const Dashboard = () => {
                   <p className="text-gray-500 text-xs">Company-wide notice</p>
                 </div>
               </div>
-            </button>
+            </ComingSoonButton>
           </div>
         </div>
       </div>

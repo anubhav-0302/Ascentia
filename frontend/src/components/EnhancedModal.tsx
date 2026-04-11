@@ -6,7 +6,6 @@ interface EnhancedModalProps {
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   showCloseButton?: boolean;
   closeOnBackdropClick?: boolean;
   className?: string;
@@ -17,7 +16,6 @@ export const EnhancedModal: React.FC<EnhancedModalProps> = ({
   onClose,
   title,
   children,
-  size = 'md',
   showCloseButton = true,
   closeOnBackdropClick = true,
   className = ''
@@ -44,33 +42,17 @@ export const EnhancedModal: React.FC<EnhancedModalProps> = ({
     }
   };
 
-  const getSizeClasses = () => {
-    switch (size) {
-      case 'sm':
-        return 'max-w-md';
-      case 'lg':
-        return 'max-w-4xl';
-      case 'xl':
-        return 'max-w-6xl';
-      case 'full':
-        return 'max-w-full mx-4';
-      case 'md':
-      default:
-        return 'max-w-2xl';
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
     >
       {/* Backdrop */}
       <div
         className={`
-          absolute inset-0 bg-black/60 backdrop-blur-sm
+          absolute inset-0 bg-black/50 backdrop-blur-sm
           transition-opacity duration-300 ease-out
           ${isAnimating ? 'opacity-100' : 'opacity-0'}
         `}
@@ -79,8 +61,9 @@ export const EnhancedModal: React.FC<EnhancedModalProps> = ({
       {/* Modal Content */}
       <div
         className={`
-          relative w-full ${getSizeClasses()}
-          bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl
+          relative bg-slate-800 rounded-2xl p-6
+          w-full max-w-lg
+          max-h-[90vh] overflow-y-auto
           transition-all duration-300 ease-out
           ${isAnimating 
             ? 'opacity-100 scale-100 translate-y-0' 
@@ -259,7 +242,7 @@ export const ConfirmModal: React.FC<{
   };
 
   return (
-    <EnhancedModal isOpen={isOpen} onClose={onClose} size="sm">
+    <EnhancedModal isOpen={isOpen} onClose={onClose}>
       <div className="text-center">
         <div className={`mx-auto flex items-center justify-center h-12 w-12 rounded-full border mb-4 ${getVariantClasses()}`}>
           <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
