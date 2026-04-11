@@ -13,10 +13,12 @@ import {
   Building,
   User
 } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -26,6 +28,17 @@ const Sidebar: React.FC = () => {
 
   const handleSettingsClick = () => {
     navigate('/settings');
+  };
+
+  // Get user initials for avatar
+  const getUserInitials = (name: string) => {
+    if (!name) return 'U';
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   interface NavItem {
@@ -186,11 +199,17 @@ const Sidebar: React.FC = () => {
       <div className="p-4 border-t border-slate-800/50">
         <div className="flex items-center space-x-3 px-3 py-2">
           <div className="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center">
-            <span className="text-slate-300 text-sm font-medium">JD</span>
+            <span className="text-slate-300 text-sm font-medium">
+              {getUserInitials(user?.name || '')}
+            </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">John Davis</p>
-            <p className="text-xs text-slate-400 truncate">john@ascentia.com</p>
+            <p className="text-sm font-medium text-white truncate">
+              {user?.name || 'Unknown User'}
+            </p>
+            <p className="text-xs text-slate-400 truncate">
+              {user?.email || 'unknown@ascentia.com'}
+            </p>
           </div>
         </div>
       </div>

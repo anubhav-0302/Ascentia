@@ -1,4 +1,5 @@
 import { getMyLeaveRequests as getMyLeaveRequestsFromStore, getAllLeaveRequests as getAllLeaveRequestsFromStore, createLeaveRequest as createLeaveRequestInStore, updateLeaveRequestStatus as updateLeaveRequestStatusInStore } from './leaveStore.js';
+import { createLeaveRequestNotifications, createLeaveStatusUpdateNotifications } from './notificationStoreDB.js';
 
 // GET /api/leave/my - Get my leave requests
 export const getMyLeaveRequests = async (req, res) => {
@@ -87,6 +88,9 @@ export const createLeaveRequest = async (req, res) => {
     
     console.log("✅ Leave request created:", { id: newLeaveRequest.id, userId });
     
+    // Create notifications for admins only (not the requesting employee)
+    await createLeaveRequestNotifications(newLeaveRequest);
+    
     res.status(201).json({
       success: true,
       message: 'Leave request created successfully',
@@ -108,6 +112,7 @@ export const updateLeaveRequestStatus = async (req, res) => {
     console.log("🔍 Updating leave request status:", req.params.id, req.body);
     const { id } = req.params;
     const { status } = req.body;
+    const adminUserId = req.user.id;
     
     if (!status || !['Approved', 'Rejected'].includes(status)) {
       return res.status(400).json({
@@ -126,6 +131,9 @@ export const updateLeaveRequestStatus = async (req, res) => {
     }
     
     console.log("✅ Leave request status updated:", { id: updatedLeaveRequest.id, status });
+    
+    // Create notifications for the employee and other admins
+    await createLeaveStatusUpdateNotifications(updatedLeaveRequest, status);
     
     res.json({
       success: true,

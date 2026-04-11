@@ -5,6 +5,7 @@ import { useDebounce } from "../hooks/useDebounce";
 import { employeeApi, type Employee, type CreateEmployeeRequest, type UpdateEmployeeRequest } from "../api/employeeApi";
 import { useIsAdmin } from "../store/useAuthStore";
 import { useFilters } from "../contexts/FilterContext";
+import { useNotificationStore, createEmployeeNotification } from "../store/notificationStore";
 import Button from "./Button";
 import Input from "./Input";
 import StatusBadge from "./StatusBadge";
@@ -14,7 +15,7 @@ import { PageTransition, StaggerContainer, FadeIn } from "./PageTransition";
 import { EnhancedModal } from "./EnhancedModal";
 import { CardSkeleton } from "./EnhancedSkeletonLoader";
 import { EmployeesEmptyState, SearchEmptyState } from "./EmptyState";
-import { Search, Plus, Edit } from 'lucide-react';
+import { Search, Plus, Edit, Trash2 } from 'lucide-react';
 
 /* =========================
    MODAL
@@ -171,6 +172,7 @@ function Directory() {
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const { addNotification } = useNotificationStore();
 
   useEffect(() => {
     fetchEmployees();
@@ -245,14 +247,42 @@ function Directory() {
       if (editingEmployee) {
         await employeeApi.updateEmployee(editingEmployee.id, data as UpdateEmployeeRequest);
         toast.success("Employee updated successfully!");
+        
+        // Trigger notification for employee update
+        const notification = createEmployeeNotification('updated', data.name || 'Unknown Employee');
+        addNotification(notification);
       } else {
         await employeeApi.createEmployee(data as CreateEmployeeRequest);
         toast.success("Employee added successfully!");
+        
+        // Trigger notification for new employee
+        const notification = createEmployeeNotification('added', data.name || 'Unknown Employee');
+        addNotification({
+          ...notification,
+          actionUrl: '/directory'
+        });
       }
       await fetchEmployees();
       setIsModalOpen(false);
     } catch (err: any) {
       throw err;
+    }
+  };
+
+  const handleDeleteEmployee = async (employee: Employee) => {
+    if (window.confirm(`Are you sure you want to delete ${employee.name}?`)) {
+      try {
+        await employeeApi.deleteEmployee(employee.id);
+        toast.success("Employee deleted successfully!");
+        
+        // Trigger notification for employee deletion
+        const notification = createEmployeeNotification('deleted', employee.name);
+        addNotification(notification);
+        
+        await fetchEmployees();
+      } catch (err: any) {
+        toast.error(err.message || "Failed to delete employee");
+      }
     }
   };
 
@@ -341,15 +371,24 @@ function Directory() {
                           <p className="text-gray-400 text-sm">{emp.jobTitle}</p>
                         </div>
                         {isAdmin && (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => handleEditEmployee(emp)}
-                            icon={<Edit className="w-3 h-3" />}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                          >
-                            Edit
-                          </Button>
+                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleEditEmployee(emp)}
+                              icon={<Edit className="w-3 h-3" />}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              onClick={() => handleDeleteEmployee(emp)}
+                              icon={<Trash2 className="w-3 h-3" />}
+                            >
+                              Delete
+                            </Button>
+                          </div>
                         )}
                       </div>
                       

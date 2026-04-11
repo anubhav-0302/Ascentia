@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { createLeave, getMyLeaves, getAllLeaves, updateLeaveStatus, type LeaveRequest, type CreateLeaveRequest } from '../api/leaveApi';
 import { useIsAdmin } from '../store/useAuthStore';
+import { useNotificationStore, createLeaveNotification } from '../store/notificationStore';
 import Button from './Button';
 import Input from './Input';
 import StatusBadge from './StatusBadge';
@@ -10,6 +11,7 @@ import { Calendar, CheckCircle, XCircle, Plus } from 'lucide-react';
 
 const LeaveAttendance = () => {
   const isAdmin = useIsAdmin();
+  const { addNotification } = useNotificationStore();
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +66,13 @@ const LeaveAttendance = () => {
       setSuccess('Leave request submitted successfully!');
       toast.success('Leave request submitted successfully!');
       
+      // Trigger notification for leave request
+      const notification = createLeaveNotification('requested', 'You', formData.type);
+      addNotification({
+        ...notification,
+        actionUrl: '/leave-attendance'
+      });
+      
       // Reset form and refresh list
       setFormData({ type: '', startDate: '', endDate: '', reason: '' });
       setShowForm(false);
@@ -112,6 +121,20 @@ const LeaveAttendance = () => {
       await updateLeaveStatus(leaveId, status);
       setSuccess(`Leave request ${status.toLowerCase()} successfully!`);
       toast.success(`Leave request ${status.toLowerCase()} successfully!`);
+      
+      // Find the leave request to get employee name and type
+      const leaveRequest = leaves.find(leave => leave.id === leaveId);
+      if (leaveRequest) {
+        const notification = createLeaveNotification(
+          status.toLowerCase() as 'approved' | 'rejected', 
+          leaveRequest.user?.name || 'Employee',
+          leaveRequest.type
+        );
+        addNotification({
+          ...notification,
+          actionUrl: '/leave-attendance'
+        });
+      }
       
       // Refresh the list
       fetchAllLeaves();

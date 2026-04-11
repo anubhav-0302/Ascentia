@@ -4,6 +4,7 @@ import authRoutes from './routes/authRoutes.js';
 import employeeRoutes from './routes/employeeRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import leaveRoutes from './routes/leaveRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 import { requireAuth } from './middleware/auth.js';
 
 const app = express();
@@ -22,12 +23,13 @@ app.use((req, res, next) => {
 // Root route
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'Ascentia API running - Complete API Mode',
+    message: 'Ascentia API running - Complete API Mode with Notification System',
     routes: {
       auth: '/api/auth',
       employees: '/api/employees',
       dashboard: '/api/dashboard',
-      leave: '/api/leave'
+      leave: '/api/leave',
+      notifications: '/api/notifications'
     }
   });
 });
@@ -39,11 +41,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/employees', requireAuth, employeeRoutes);
 app.use('/api/dashboard', requireAuth, dashboardRoutes);
 app.use('/api/leave', requireAuth, leaveRoutes);
+app.use('/api/notifications', requireAuth, notificationRoutes);
 
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Ascentia API running on http://localhost:${PORT}`);
-  console.log('🔧 Complete API mode - all routes available');
+  console.log('🔧 Complete API mode with notification system - all routes available');
   console.log('📊 Available endpoints:');
   console.log('  POST /api/auth/login (PUBLIC)');
   console.log('  POST /api/auth/register (PUBLIC)');
@@ -57,6 +60,11 @@ app.listen(PORT, () => {
   console.log('  GET  /api/leave (PROTECTED)');
   console.log('  POST /api/leave (PROTECTED)');
   console.log('  PUT  /api/leave/:id (PROTECTED)');
+  console.log('  GET  /api/notifications (PROTECTED)');
+  console.log('  GET  /api/notifications/unread-count (PROTECTED)');
+  console.log('  PUT  /api/notifications/:id/read (PROTECTED)');
+  console.log('  PUT  /api/notifications/read-all (PROTECTED)');
+  console.log('  DELETE /api/notifications (PROTECTED)');
 });
 
 export default app;
