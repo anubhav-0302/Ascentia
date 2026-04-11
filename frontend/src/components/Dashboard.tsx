@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getDashboardStats, type DashboardStats } from "../api/dashboardApi";
+import { useFilters } from "../contexts/FilterContext";
 import {
   PieChart,
   Pie,
@@ -23,7 +24,6 @@ import ActivityFeed from "./ActivityFeed";
 import LayoutWrapper from "./LayoutWrapper";
 import Button from "./Button";
 import StatusBadge from "./StatusBadge";
-import { ComingSoonButton } from "./DisabledButton";
 
 // Chart color schemes
 const DEPARTMENT_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
@@ -42,6 +42,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { updateFilters } = useFilters();
 
   // Mock data for charts (will be replaced with real API data)
   const mockChartData = {
@@ -96,6 +97,44 @@ const Dashboard = () => {
 
   const handleRetry = () => {
     fetchStats();
+  };
+
+  // Navigation handlers with filter propagation
+  const handleNavigateToDirectory = (filterType?: string) => {
+    switch (filterType) {
+      case 'total-employees':
+        updateFilters({ search: '', department: 'all', status: 'all' });
+        break;
+      case 'departments':
+        updateFilters({ search: '', department: 'all', status: 'all', sortBy: 'department' });
+        break;
+      case 'remote-workers':
+        updateFilters({ search: '', employmentType: 'remote', department: 'all', status: 'all' });
+        break;
+      default:
+        updateFilters({ search: '', department: 'all', status: 'all' });
+    }
+  };
+
+  const handleNavigateToMyTeam = () => {
+    updateFilters({ search: '', department: 'all', status: 'active' });
+  };
+
+  const handleNavigateToLeaveAttendance = (filterType?: string) => {
+    switch (filterType) {
+      case 'leave-status':
+        updateFilters({ search: '', status: 'all', dateRange: 'last-30-days' });
+        break;
+      case 'leave-trends':
+        updateFilters({ search: '', reportType: 'attendance', dateRange: 'last-3-months' });
+        break;
+      default:
+        updateFilters({ search: '', status: 'all' });
+    }
+  };
+
+  const handleNavigateToReports = () => {
+    updateFilters({ search: '', reportType: 'all', status: 'all', dateRange: 'last-30-days' });
   };
 
   // Loading state
@@ -173,7 +212,12 @@ const Dashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn" style={{ animationDelay: '0.1s' }}>
+        <Link 
+          to="/directory"
+          onClick={() => handleNavigateToDirectory('total-employees')}
+          className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
+          style={{ animationDelay: '0.1s' }}
+        >
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-blue-500/20 rounded-xl">
               <i className="fas fa-users text-blue-400 text-xl"></i>
@@ -182,9 +226,14 @@ const Dashboard = () => {
           </div>
           <h3 className="text-2xl font-bold text-white mb-1">{stats?.totalEmployees || 0}</h3>
           <p className="text-gray-400 text-sm">Total Employees</p>
-        </div>
+        </Link>
 
-        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
+        <Link 
+          to="/my-team"
+          onClick={() => handleNavigateToMyTeam()}
+          className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
+          style={{ animationDelay: '0.2s' }}
+        >
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-green-500/20 rounded-xl">
               <i className="fas fa-user-check text-green-400 text-xl"></i>
@@ -193,9 +242,14 @@ const Dashboard = () => {
           </div>
           <h3 className="text-2xl font-bold text-white mb-1">{stats?.activeEmployees || 0}</h3>
           <p className="text-gray-400 text-sm">Active Employees</p>
-        </div>
+        </Link>
 
-        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn" style={{ animationDelay: '0.3s' }}>
+        <Link 
+          to="/directory"
+          onClick={() => handleNavigateToDirectory('remote-workers')}
+          className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
+          style={{ animationDelay: '0.3s' }}
+        >
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-purple-500/20 rounded-xl">
               <i className="fas fa-home text-purple-400 text-xl"></i>
@@ -204,9 +258,14 @@ const Dashboard = () => {
           </div>
           <h3 className="text-2xl font-bold text-white mb-1">{stats?.remoteEmployees || 0}</h3>
           <p className="text-gray-400 text-sm">Remote Workers</p>
-        </div>
+        </Link>
 
-        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn" style={{ animationDelay: '0.4s' }}>
+        <Link 
+          to="/directory"
+          onClick={() => handleNavigateToDirectory('departments')}
+          className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
+          style={{ animationDelay: '0.4s' }}
+        >
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-orange-500/20 rounded-xl">
               <i className="fas fa-building text-orange-400 text-xl"></i>
@@ -215,7 +274,7 @@ const Dashboard = () => {
           </div>
           <h3 className="text-2xl font-bold text-white mb-1">{stats?.departments || 0}</h3>
           <p className="text-gray-400 text-sm">Total Departments</p>
-        </div>
+        </Link>
       </div>
 
       {/* Insights & Alerts Section */}
@@ -261,7 +320,14 @@ const Dashboard = () => {
                   </p>
                   <div className="flex items-center space-x-4 text-xs">
                     <span className="text-yellow-400"><i className="fas fa-exclamation-triangle mr-1"></i>Medium priority</span>
-                    <ComingSoonButton className="text-teal-400 hover:text-teal-300">Take Action →</ComingSoonButton>
+                    <button 
+                      onClick={() => {
+                        alert('Opening retention management tools...\n\nThis would navigate to a detailed retention dashboard with employee engagement metrics, turnover risk analysis, and intervention strategies.');
+                      }}
+                      className="text-teal-400 hover:text-teal-300 transition-colors"
+                    >
+                      Take Action →
+                    </button>
                   </div>
                 </div>
               </div>
@@ -279,7 +345,14 @@ const Dashboard = () => {
                   </p>
                   <div className="flex items-center space-x-4 text-xs">
                     <span className="text-blue-400"><i className="fas fa-graduation-cap mr-1"></i>Training opportunity</span>
-                    <ComingSoonButton className="text-teal-400 hover:text-teal-300">View Details →</ComingSoonButton>
+                    <button 
+                      onClick={() => {
+                        alert('Opening training management system...\n\nThis would navigate to a training dashboard with skills gap analysis, course recommendations, and employee development plans.');
+                      }}
+                      className="text-teal-400 hover:text-teal-300 transition-colors"
+                    >
+                      View Details →
+                    </button>
                   </div>
                 </div>
               </div>
@@ -310,9 +383,9 @@ const Dashboard = () => {
               </div>
             </Link>
 
-            <ComingSoonButton 
-              className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group"
-              title="Leave approval feature coming soon"
+            <Link 
+              to="/leave-attendance"
+              className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group block"
             >
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center group-hover:bg-blue-500/30 transition-colors duration-200">
@@ -323,11 +396,13 @@ const Dashboard = () => {
                   <p className="text-gray-500 text-xs">3 pending requests</p>
                 </div>
               </div>
-            </ComingSoonButton>
+            </Link>
 
-            <ComingSoonButton 
+            <button 
+              onClick={() => {
+                alert('Opening report generator...\n\nThis would navigate to a comprehensive report generation tool with customizable templates, data filters, and export options.');
+              }}
               className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group"
-              title="Report generation feature coming soon"
             >
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center group-hover:bg-purple-500/30 transition-colors duration-200">
@@ -338,11 +413,13 @@ const Dashboard = () => {
                   <p className="text-gray-500 text-xs">Monthly analytics</p>
                 </div>
               </div>
-            </ComingSoonButton>
+            </button>
 
-            <ComingSoonButton 
+            <button 
+              onClick={() => {
+                alert('Opening announcement composer...\n\nThis would open a rich text editor for creating company-wide announcements with scheduling and targeting options.');
+              }}
               className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group"
-              title="Announcement system coming soon"
             >
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center group-hover:bg-green-500/30 transition-colors duration-200">
@@ -353,7 +430,7 @@ const Dashboard = () => {
                   <p className="text-gray-500 text-xs">Company-wide notice</p>
                 </div>
               </div>
-            </ComingSoonButton>
+            </button>
           </div>
         </div>
       </div>
@@ -432,7 +509,12 @@ const Dashboard = () => {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* Department Distribution Pie Chart */}
-        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn" style={{ animationDelay: '0.5s' }}>
+        <Link 
+          to="/directory"
+          onClick={() => handleNavigateToDirectory('departments')}
+          className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
+          style={{ animationDelay: '0.5s' }}
+        >
           <h3 className="text-lg font-semibold text-white mb-4">Department Distribution</h3>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
@@ -459,10 +541,15 @@ const Dashboard = () => {
               />
             </PieChart>
           </ResponsiveContainer>
-        </div>
+        </Link>
 
         {/* Leave Status Bar Chart */}
-        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn" style={{ animationDelay: '0.6s' }}>
+        <Link 
+          to="/leave-attendance"
+          onClick={() => handleNavigateToLeaveAttendance('leave-status')}
+          className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
+          style={{ animationDelay: '0.6s' }}
+        >
           <h3 className="text-lg font-semibold text-white mb-4">Leave Status Overview</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={stats?.leaveStatus || []}>
@@ -494,10 +581,15 @@ const Dashboard = () => {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-        </div>
+        </Link>
 
         {/* Leave Trends Line Chart */}
-        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn" style={{ animationDelay: '0.7s' }}>
+        <Link 
+          to="/reports"
+          onClick={() => handleNavigateToReports()}
+          className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
+          style={{ animationDelay: '0.7s' }}
+        >
           <h3 className="text-lg font-semibold text-white mb-4">Leave Trends (6 Months)</h3>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={stats?.leaveTrends || []}>
@@ -547,11 +639,16 @@ const Dashboard = () => {
               />
             </LineChart>
           </ResponsiveContainer>
-        </div>
+        </Link>
       </div>
 
       {/* Recent Employees */}
-      <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn" style={{ animationDelay: '0.8s' }}>
+      <Link 
+        to="/directory"
+        onClick={() => handleNavigateToDirectory()}
+        className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
+        style={{ animationDelay: '0.8s' }}
+      >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-white">Recent Employees</h2>
           <span className="text-sm text-gray-400">Last 5 added</span>
@@ -589,7 +686,7 @@ const Dashboard = () => {
             </div>
           ))}
         </div>
-      </div>
+      </Link>
 
       {/* Activity Feed */}
       <ActivityFeed />

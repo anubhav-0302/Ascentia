@@ -4,10 +4,12 @@ import { useEmployeeStore } from "../store/useEmployeeStore";
 import { useDebounce } from "../hooks/useDebounce";
 import { employeeApi, type Employee, type CreateEmployeeRequest, type UpdateEmployeeRequest } from "../api/employeeApi";
 import { useIsAdmin } from "../store/useAuthStore";
+import { useFilters } from "../contexts/FilterContext";
 import Button from "./Button";
 import Input from "./Input";
 import StatusBadge from "./StatusBadge";
 import Card from "./Card";
+import Filter from "./Filter";
 import { PageTransition, StaggerContainer, FadeIn } from "./PageTransition";
 import { EnhancedModal } from "./EnhancedModal";
 import { CardSkeleton } from "./EnhancedSkeletonLoader";
@@ -162,6 +164,7 @@ function EmployeeFormModal({
 function Directory() {
   const { employees = [], loading, error, fetchEmployees } = useEmployeeStore();
   const isAdmin = useIsAdmin();
+  const { filters } = useFilters();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -175,12 +178,57 @@ function Directory() {
 
   const filteredEmployees = useMemo(() => {
     if (!employees || employees.length === 0) return [];
-    return employees.filter((emp: Employee) =>
-      (emp.name + emp.email + emp.department)
-        .toLowerCase()
-        .includes(debouncedSearchTerm.toLowerCase())
-    );
-  }, [employees, debouncedSearchTerm]);
+    
+    return employees.filter((emp: Employee) => {
+      // Search filter (combine with global filter search)
+      const searchQuery = (filters.search || debouncedSearchTerm || "").toLowerCase();
+      const matchesSearch = !searchQuery || 
+        (emp.name + emp.email + emp.department + emp.jobTitle + emp.location)
+          .toLowerCase()
+          .includes(searchQuery);
+
+      // Department filter
+      const matchesDepartment = !filters.department || filters.department === 'all' || 
+        emp.department.toLowerCase() === filters.department.toLowerCase();
+
+      // Status filter
+      const matchesStatus = !filters.status || filters.status === 'all' || 
+        emp.status.toLowerCase() === filters.status.toLowerCase();
+
+      // Employment type filter (if available)
+      const matchesEmploymentType = !filters.employmentType || filters.employmentType === 'all' ||
+        (emp as any).employmentType && (emp as any).employmentType.toLowerCase() === filters.employmentType.toLowerCase();
+
+      // Location filter
+      const matchesLocation = !filters.location || filters.location === 'all' ||
+        emp.location.toLowerCase() === filters.location.toLowerCase();
+
+      return matchesSearch && matchesDepartment && matchesStatus && matchesEmploymentType && matchesLocation;
+    }).sort((a, b) => {
+      // Sort logic
+      const { sortBy, sortOrder } = filters;
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'department':
+          comparison = a.department.localeCompare(b.department);
+          break;
+        case 'status':
+          comparison = a.status.localeCompare(b.status);
+          break;
+        case 'date':
+          comparison = new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime();
+          break;
+        default:
+          comparison = a.name.localeCompare(b.name);
+      }
+      
+      return sortOrder === 'desc' ? -comparison : comparison;
+    });
+  }, [employees, debouncedSearchTerm, filters]);
 
   const handleAddEmployee = () => {
     setEditingEmployee(null);
@@ -227,17 +275,15 @@ function Directory() {
             </div>
           </FadeIn>
 
-          {/* Search and Actions */}
+          {/* Filters and Actions */}
           <FadeIn delay={200}>
-            <div className="mb-6">
-              <Input
-                type="text"
-                placeholder="Search employees..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                icon={<Search className="w-5 h-5" />}
-              />
-            </div>
+            <Filter
+              showDepartment={true}
+              showStatus={true}
+              showEmploymentType={true}
+              showLocation={true}
+              showSortOptions={true}
+            />
 
             {/* Admin-only Add Employee Button */}
             {isAdmin && (
@@ -267,9 +313,9 @@ function Directory() {
                 </Button>
               </div>
             ) : filteredEmployees?.length === 0 ? (
-              debouncedSearchTerm ? (
+              (filters.search || debouncedSearchTerm) ? (
                 <SearchEmptyState 
-                  searchTerm={debouncedSearchTerm}
+                  searchTerm={filters.search || debouncedSearchTerm}
                   onClearSearch={() => setSearchTerm("")}
                 />
               ) : (

@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StandardLayout } from './StandardLayout';
+import { useFilters } from '../contexts/FilterContext';
+import Filter from './Filter';
 import { Users, UserPlus, TrendingUp, Award, Calendar, Target, Star } from 'lucide-react';
 import Card from './Card';
 import { PageTransition, FadeIn } from './PageTransition';
 
 const MyTeam: React.FC = () => {
+  const { filters } = useFilters();
+
   const teamStats = [
     {
       title: 'Team Members',
@@ -116,6 +120,40 @@ const MyTeam: React.FC = () => {
     }
   };
 
+  // Filter team members based on filter context
+  const filteredTeamMembers = useMemo(() => {
+    return teamMembers.filter(member => {
+      const matchesSearch = !filters.search || 
+        member.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+        member.role.toLowerCase().includes(filters.search.toLowerCase());
+
+      const matchesStatus = !filters.status || filters.status === 'all' ||
+        member.status.toLowerCase() === filters.status.toLowerCase();
+
+      const matchesDepartment = !filters.department || filters.department === 'all'; // No department data in team members
+
+      const matchesLocation = !filters.location || filters.location === 'all'; // No location data in team members
+
+      const matchesEmploymentType = !filters.employmentType || filters.employmentType === 'all'; // No employment type data in team members
+
+      return matchesSearch && matchesStatus && matchesDepartment && matchesLocation && matchesEmploymentType;
+    }).sort((a, b) => {
+      const { sortBy } = filters;
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'status':
+          return a.status.localeCompare(b.status);
+        case 'department':
+          return 0; // No department data
+        case 'date':
+          return 0; // No date data
+        default:
+          return a.name.localeCompare(b.name);
+      }
+    });
+  }, [teamMembers, filters]);
+
   return (
     <PageTransition>
       <StandardLayout 
@@ -123,6 +161,17 @@ const MyTeam: React.FC = () => {
         description="Manage your team members and performance"
       >
         <FadeIn delay={100}>
+          {/* Filter Component */}
+          <Filter
+            showDepartment={false}
+            showStatus={true}
+            showEmploymentType={false}
+            showLocation={false}
+            showSortOptions={true}
+            showDateRange={false}
+            showReportType={false}
+          />
+
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {teamStats.map((stat, index) => (
@@ -144,7 +193,7 @@ const MyTeam: React.FC = () => {
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold text-white flex items-center">
                     <Users className="w-5 h-5 mr-2 text-blue-400" />
-                    Team Members
+                    Team Members {filteredTeamMembers.length !== teamMembers.length && `(${filteredTeamMembers.length}/${teamMembers.length})`}
                   </h3>
                   <button className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg text-sm font-medium transition-colors flex items-center">
                     <UserPlus className="w-4 h-4 mr-2" />
@@ -152,35 +201,41 @@ const MyTeam: React.FC = () => {
                   </button>
                 </div>
                 <div className="space-y-4">
-                  {teamMembers.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-teal-500/20 rounded-full flex items-center justify-center">
-                          <span className="text-lg font-bold text-teal-400">{member.avatar}</span>
-                        </div>
-                        <div>
-                          <h4 className="text-white font-medium">{member.name}</h4>
-                          <p className="text-gray-400 text-sm">{member.role}</p>
-                          <p className="text-gray-500 text-xs">Joined {member.joinDate}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="text-right">
-                          <p className="text-xs text-gray-400">Performance</p>
-                          <p className={`text-sm font-medium ${getPerformanceColor(member.performance).split(' ')[0]}`}>
-                            {member.performance}/10
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs text-gray-400">Projects</p>
-                          <p className="text-sm font-medium text-white">{member.projects}</p>
-                        </div>
-                        <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(member.status)}`}>
-                          {member.status}
-                        </span>
-                      </div>
+                  {filteredTeamMembers.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-400">No team members found matching your filters.</p>
                     </div>
-                  ))}
+                  ) : (
+                    filteredTeamMembers.map((member) => (
+                      <div key={member.id} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-teal-500/20 rounded-full flex items-center justify-center">
+                            <span className="text-lg font-bold text-teal-400">{member.avatar}</span>
+                          </div>
+                          <div>
+                            <h4 className="text-white font-medium">{member.name}</h4>
+                            <p className="text-gray-400 text-sm">{member.role}</p>
+                            <p className="text-gray-500 text-xs">Joined {member.joinDate}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <div className="text-right">
+                            <p className="text-xs text-gray-400">Performance</p>
+                            <p className={`text-sm font-medium ${getPerformanceColor(member.performance).split(' ')[0]}`}>
+                              {member.performance}/10
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-gray-400">Projects</p>
+                            <p className="text-sm font-medium text-white">{member.projects}</p>
+                          </div>
+                          <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(member.status)}`}>
+                            {member.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </Card>
             </div>

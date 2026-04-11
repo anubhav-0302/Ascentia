@@ -17,6 +17,7 @@ import Settings from './components/Settings';
 import Login from './components/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import { FilterProvider } from './contexts/FilterContext';
 import { useAuthStore, useAuthInitialized, useIsAuthenticated } from './store/useAuthStore';
 import './styles/globals.css';
 
@@ -57,37 +58,39 @@ function App() {
 
   // If authenticated, show main app with protected routes
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
-      <Sidebar />
-      <Header />
-      
-      {/* Main Content Area */}
-      <main className="ml-64 mt-16 px-6 py-6 h-[calc(100vh-4rem)] overflow-y-auto scrollbar-hide">
-        <div className="max-w-7xl mx-auto">
-          <ErrorBoundary>
-            <ProtectedRoute>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/directory" element={<Directory />} />
-                <Route path="/command-center" element={<CommandCenter />} />
-                <Route path="/workflow-hub" element={<WorkflowHub />} />
-                <Route path="/my-team" element={<MyTeam />} />
-                <Route path="/leave-attendance" element={<LeaveAttendance />} />
-                <Route path="/payroll-benefits" element={<PayrollBenefits />} />
-                <Route path="/recruiting" element={<Recruiting />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
-              </Routes>
-            </ProtectedRoute>
-          </ErrorBoundary>
-        </div>
-      </main>
-      <Toaster position="top-right" />
-    </div>
+    <FilterProvider>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
+        <Sidebar />
+        <Header />
+        
+        {/* Main Content Area */}
+        <main className="ml-64 mt-16 px-6 py-6 h-[calc(100vh-4rem)] overflow-y-auto scrollbar-hide">
+          <div className="max-w-7xl mx-auto">
+            <ErrorBoundary>
+              <ProtectedRoute>
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/directory" element={<Directory />} />
+                  <Route path="/command-center" element={<CommandCenter />} />
+                  <Route path="/workflow-hub" element={<WorkflowHub />} />
+                  <Route path="/my-team" element={<MyTeam />} />
+                  <Route path="/leave-attendance" element={<LeaveAttendance />} />
+                  <Route path="/payroll-benefits" element={<PayrollBenefits />} />
+                  <Route path="/recruiting" element={<Recruiting />} />
+                  <Route path="/reports" element={<Reports />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                </Routes>
+              </ProtectedRoute>
+            </ErrorBoundary>
+          </div>
+        </main>
+        <Toaster position="top-right" />
+      </div>
+    </FilterProvider>
   );
 }
 

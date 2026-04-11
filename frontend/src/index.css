@@ -22,3 +22,60 @@ body {
 #root {
   min-height: 100vh;
 }
+
+/* Hide scrollbars throughout the entire application */
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+* {
+  -ms-overflow-style: none !important;  /* Internet Explorer 10+ */
+  scrollbar-width: none !important;  /* Firefox */
+}
+
+/* Ensure scrollable elements still function without visible scrollbars */
+.scrollable-content {
+  overflow: auto !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.scrollable-content::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Apply to common scrollable containers */
+main, 
+section, 
+div[class*="overflow"], 
+.nav-content, 
+.sidebar-content,
+.content-area,
+.dashboard-content,
+.card-content,
+.modal-content,
+.table-container,
+.list-container {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+main::-webkit-scrollbar,
+section::-webkit-scrollbar,
+div[class*="overflow"]::-webkit-scrollbar,
+.nav-content::-webkit-scrollbar,
+.sidebar-content::-webkit-scrollbar,
+.content-area::-webkit-scrollbar,
+.dashboard-content::-webkit-scrollbar,
+.card-content::-webkit-scrollbar,
+.modal-content::-webkit-scrollbar,
+.table-container::-webkit-scrollbar,
+.list-container::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}

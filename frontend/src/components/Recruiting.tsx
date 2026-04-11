@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StandardLayout } from './StandardLayout';
-import { Users, UserPlus, Briefcase, TrendingUp, Calendar, Filter, Search, Star } from 'lucide-react';
+import { useFilters } from '../contexts/FilterContext';
+import Filter from './Filter';
+import { Users, UserPlus, Briefcase, TrendingUp, Calendar, Filter as FilterIcon, Search, Star } from 'lucide-react';
 import Card from './Card';
 import { PageTransition, FadeIn } from './PageTransition';
 
 const Recruiting: React.FC = () => {
+  const { filters } = useFilters();
+
   const recruitingStats = [
     {
       title: 'Active Job Postings',
@@ -141,6 +145,43 @@ const Recruiting: React.FC = () => {
     }
   };
 
+  // Filter open positions based on filter context
+  const filteredPositions = useMemo(() => {
+    return openPositions.filter(position => {
+      const matchesSearch = !filters.search || 
+        position.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+        position.department.toLowerCase().includes(filters.search.toLowerCase());
+
+      const matchesDepartment = !filters.department || filters.department === 'all' ||
+        position.department.toLowerCase() === filters.department.toLowerCase();
+
+      const matchesStatus = !filters.status || filters.status === 'all' ||
+        position.status.toLowerCase() === filters.status.toLowerCase();
+
+      const matchesLocation = !filters.location || filters.location === 'all' ||
+        position.location.toLowerCase() === filters.location.toLowerCase();
+
+      const matchesEmploymentType = !filters.employmentType || filters.employmentType === 'all' ||
+        position.type.toLowerCase().replace('-', '') === filters.employmentType.toLowerCase();
+
+      return matchesSearch && matchesDepartment && matchesStatus && matchesLocation && matchesEmploymentType;
+    }).sort((a, b) => {
+      const { sortBy } = filters;
+      switch (sortBy) {
+        case 'department':
+          return a.department.localeCompare(b.department);
+        case 'status':
+          return a.status.localeCompare(b.status);
+        case 'date':
+          // Sort by posted date (newest first)
+          const dateOrder = ['3 days ago', '5 days ago', '1 week ago', '2 weeks ago'];
+          return dateOrder.indexOf(a.posted) - dateOrder.indexOf(b.posted);
+        default:
+          return a.title.localeCompare(b.title);
+      }
+    });
+  }, [openPositions, filters]);
+
   return (
     <PageTransition>
       <StandardLayout 
@@ -148,6 +189,17 @@ const Recruiting: React.FC = () => {
         description="Manage job postings and candidate pipeline"
       >
         <FadeIn delay={100}>
+          {/* Filter Component */}
+          <Filter
+            showDepartment={true}
+            showStatus={true}
+            showEmploymentType={true}
+            showLocation={true}
+            showSortOptions={true}
+            showDateRange={false}
+            showReportType={false}
+          />
+
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {recruitingStats.map((stat, index) => (
@@ -169,11 +221,11 @@ const Recruiting: React.FC = () => {
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold text-white flex items-center">
                     <Briefcase className="w-5 h-5 mr-2 text-blue-400" />
-                    Open Positions
+                    Open Positions {filteredPositions.length !== openPositions.length && `(${filteredPositions.length}/${openPositions.length})`}
                   </h3>
                   <div className="flex space-x-2">
                     <button className="px-3 py-1 text-sm bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors flex items-center">
-                      <Filter className="w-3 h-3 mr-1" />
+                      <FilterIcon className="w-3 h-3 mr-1" />
                       Filter
                     </button>
                     <button className="px-3 py-1 text-sm bg-teal-600 hover:bg-teal-500 text-white rounded-lg transition-colors flex items-center">
@@ -183,39 +235,45 @@ const Recruiting: React.FC = () => {
                   </div>
                 </div>
                 <div className="space-y-4">
-                  {openPositions.map((position) => (
-                    <div key={position.id} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h4 className="text-white font-medium">{position.title}</h4>
-                          <span className={`px-2 py-1 text-xs rounded-full ${getPriorityColor(position.priority)}`}>
-                            {position.priority}
-                          </span>
-                          <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(position.status)}`}>
-                            {position.status}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-4 text-sm text-gray-400">
-                          <span>{position.department}</span>
-                          <span>•</span>
-                          <span>{position.location}</span>
-                          <span>•</span>
-                          <span>{position.type}</span>
-                          <span>•</span>
-                          <span>{position.posted}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="text-right">
-                          <p className="text-xs text-gray-400">Applicants</p>
-                          <p className="text-lg font-bold text-white">{position.applicants}</p>
-                        </div>
-                        <button className="p-2 text-gray-400 hover:text-white hover:bg-slate-600 rounded-lg transition-colors">
-                          <Search className="w-4 h-4" />
-                        </button>
-                      </div>
+                  {filteredPositions.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-400">No positions found matching your filters.</p>
                     </div>
-                  ))}
+                  ) : (
+                    filteredPositions.map((position) => (
+                      <div key={position.id} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h4 className="text-white font-medium">{position.title}</h4>
+                            <span className={`px-2 py-1 text-xs rounded-full ${getPriorityColor(position.priority)}`}>
+                              {position.priority}
+                            </span>
+                            <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(position.status)}`}>
+                              {position.status}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-4 text-sm text-gray-400">
+                            <span>{position.department}</span>
+                            <span>•</span>
+                            <span>{position.location}</span>
+                            <span>•</span>
+                            <span>{position.type}</span>
+                            <span>•</span>
+                            <span>{position.posted}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <div className="text-right">
+                            <p className="text-xs text-gray-400">Applicants</p>
+                            <p className="text-lg font-bold text-white">{position.applicants}</p>
+                          </div>
+                          <button className="p-2 text-gray-400 hover:text-white hover:bg-slate-600 rounded-lg transition-colors">
+                            <Search className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </Card>
             </div>
