@@ -6,9 +6,22 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 import leaveRoutes from './routes/leaveRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import { requireAuth } from './middleware/auth.js';
+import { initializeLeaveData } from './leaveStoreDB.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Initialize database on startup
+const initializeDatabase = async () => {
+  try {
+    console.log("🔧 Initializing database...");
+    await initializeLeaveData();
+    console.log("✅ Database initialized successfully");
+  } catch (error) {
+    console.error("❌ Database initialization failed:", error);
+    // Continue running server even if database fails
+  }
+};
 
 // Middleware
 app.use(cors());
@@ -23,7 +36,7 @@ app.use((req, res, next) => {
 // Root route
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'Ascentia API running - Complete API Mode with Notification System',
+    message: 'Ascentia API running - Complete API Mode with Database Persistence',
     routes: {
       auth: '/api/auth',
       employees: '/api/employees',
@@ -44,9 +57,10 @@ app.use('/api/leave', requireAuth, leaveRoutes);
 app.use('/api/notifications', requireAuth, notificationRoutes);
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  await initializeDatabase();
   console.log(`🚀 Ascentia API running on http://localhost:${PORT}`);
-  console.log('🔧 Complete API mode with notification system - all routes available');
+  console.log('🔧 Complete API mode with database persistence - all routes available');
   console.log('📊 Available endpoints:');
   console.log('  POST /api/auth/login (PUBLIC)');
   console.log('  POST /api/auth/register (PUBLIC)');

@@ -1,0 +1,360 @@
+[
+  {
+    "id": "17759233516615df1b0o3w",
+    "timestamp": "2026-04-11T16:02:31.661Z",
+    "operation": "CREATE",
+    "entity": "leave_request",
+    "details": {
+      "leaveRequestId": 1775923351656,
+      "userId": 2,
+      "type": "Sick Leave",
+      "startDate": "2024-12-25",
+      "endDate": "2024-12-26",
+      "status": "Pending"
+    },
+    "userId": 2,
+    "ipAddress": null,
+    "userAgent": null
+  },
+  {
+    "id": "17759233516801h2z1q6dc",
+    "timestamp": "2026-04-11T16:02:31.680Z",
+    "operation": "CREATE",
+    "entity": "notification",
+    "details": {
+      "notificationIds": [
+        "1775923351677f473wtqmb"
+      ],
+      "targetUserIds": [
+        1
+      ],
+      "title": "Leave Request Submitted",
+      "type": "info"
+    },
+    "userId": null,
+    "ipAddress": null,
+    "userAgent": null
+  },
+  {
+    "id": "1775923352273g9abjly4g",
+    "timestamp": "2026-04-11T16:02:32.273Z",
+    "operation": "UPDATE",
+    "entity": "leave_request",
+    "details": {
+      "leaveRequestId": 1775923351656,
+      "previousStatus": "Pending",
+      "newStatus": "Rejected",
+      "userId": 2
+    },
+    "userId": null,
+    "ipAddress": null,
+    "userAgent": null
+  },
+  {
+    "id": "1775923352282eufzl1wp5",
+    "timestamp": "2026-04-11T16:02:32.282Z",
+    "operation": "CREATE",
+    "entity": "notification",
+    "details": {
+      "notificationIds": [
+        "1775923352281rz5u5a8mb"
+      ],
+      "targetUserIds": [
+        2
+      ],
+      "title": "Leave Request Rejected",
+      "type": "error"
+    },
+    "userId": null,
+    "ipAddress": null,
+    "userAgent": null
+  },
+  {
+    "id": "17759233753664p018ij7y",
+    "timestamp": "2026-04-11T16:02:55.366Z",
+    "operation": "CREATE",
+    "entity": "leave_request",
+    "details": {
+      "leaveRequestId": 1775923375363,
+      "userId": 2,
+      "type": "Sick Leave",
+      "startDate": "2024-12-25",
+      "endDate": "2024-12-26",
+      "status": "Pending"
+    },
+    "userId": 2,
+    "ipAddress": null,
+    "userAgent": null
+  },
+  {
+    "id": "1775923375375wlu8nzlct",
+    "timestamp": "2026-04-11T16:02:55.375Z",
+    "operation": "CREATE",
+    "entity": "notification",
+    "details": {
+      "notificationIds": [
+        "1775923375374vpk47rg4w"
+      ],
+      "targetUserIds": [
+        1
+      ],
+      "title": "Leave Request Submitted",
+      "type": "info"
+    },
+    "userId": null,
+    "ipAddress": null,
+    "userAgent": null
+  },
+  {
+    "id": "1775923407999oavwhmw8u",
+    "timestamp": "2026-04-11T16:03:27.999Z",
+    "operation": "CREATE",
+    "entity": "notification",
+    "details": {
+      "notificationIds": [
+        "1775923407988qgh2lxdqv"
+      ],
+      "targetUserIds": [
+        2
+      ],
+      "title": "Leave Request Rejected",
+      "type": "error"
+    },
+    "userId": null,
+    "ipAddress": null,
+    "userAgent": null
+  },
+  {
+    "id": "1775923408387z48bh7gnr",
+    "timestamp": "2026-04-11T16:03:28.387Z",
+    "operation": "CREATE",
+    "entity": "notification",
+    "details": {
+      "notificationIds": [
+        "1775923408385rxx9crynl"
+      ],
+      "targetUserIds": [
+        2
+      ],
+      "title": "Leave Request Approved",
+      "type": "success"
+    },
+    "userId": null,
+    "ipAddress": null,
+    "userAgent": null
+  },
+  {
+    "id": "1775923428659qbzgsl2kn",
+    "timestamp": "2026-04-11T16:03:48.659Z",
+    "operation": "CREATE",
+    "entity": "leave_request",
+    "details": {
+      "leaveRequestId": 1775923428657,
+      "userId": 2,
+      "type": "Sick Leave",
+      "startDate": "2024-12-25",
+      "endDate": "2024-12-26",
+      "status": "Pending"
+    },
+    "userId": 2,
+    "ipAddress": null,
+    "userAgent": null
+  },
+  {
+    "id": "1775923428667m5acad55s",
+    "timestamp": "2026-04-11T16:03:48.667Z",
+    "operation": "CREATE",
+    "entity": "notification",
+    "details": {
+      "notificationIds": [
+        "1775923428666hfwe9y84p"
+      ],
+      "targetUserIds": [
+        1
+      ],
+      "title": "Leave Request Submitted",
+      "type": "info"
+    },
+    "userId": null,
+    "ipAddress": null,
+    "userAgent": null
+  },
+  {
+    "id": "1775923473060rs5vciot2",
+    "timestamp": "2026-04-11T16:04:33.063Z",
+    "operation": "CREATE",
+    "entity": "leave_request",
+    "details": {
+      "leaveRequestId": 1775923473024,
+      "userId": 2,
+      "type": "Sick Leave",
+      "startDate": "2024-12-25",
+      "endDate": "2024-12-26",
+      "status": "Pending"
+    },
+    "userId": 2,
+    "ipAddress": null,
+    "userAgent": null
+  },
+  {
+    "id": "177592347316242xh7ramo",
+    "timestamp": "2026-04-11T16:04:33.162Z",
+    "operation": "CREATE",
+    "entity": "notification",
+    "details": {
+      "notificationIds": [
+        "1775923473143vksonyc6i"
+      ],
+      "targetUserIds": [
+        1
+      ],
+      "title": "Leave Request Submitted",
+      "type": "info"
+    },
+    "userId": null,
+    "ipAddress": null,
+    "userAgent": null
+  },
+  {
+    "id": "17759234744556n9niclfk",
+    "timestamp": "2026-04-11T16:04:34.492Z",
+    "operation": "UPDATE",
+    "entity": "leave_request",
+    "details": {
+      "leaveRequestId": 1775923473024,
+      "previousStatus": "Pending",
+      "newStatus": "Rejected",
+      "userId": 2
+    },
+    "userId": null,
+    "ipAddress": null,
+    "userAgent": null
+  },
+  {
+    "id": "1775923474701ky3j8p70r",
+    "timestamp": "2026-04-11T16:04:34.701Z",
+    "operation": "CREATE",
+    "entity": "notification",
+    "details": {
+      "notificationIds": [
+        "1775923474641hpc92wkic"
+      ],
+      "targetUserIds": [
+        2
+      ],
+      "title": "Leave Request Rejected",
+      "type": "error"
+    },
+    "userId": null,
+    "ipAddress": null,
+    "userAgent": null
+  },
+  {
+    "id": "1775923495454upsub1ssc",
+    "timestamp": "2026-04-11T16:04:55.454Z",
+    "operation": "CREATE",
+    "entity": "notification",
+    "details": {
+      "notificationIds": [
+        "1775923495450uvowvtq4e"
+      ],
+      "targetUserIds": [
+        2
+      ],
+      "title": "Leave Request Rejected",
+      "type": "error"
+    },
+    "userId": null,
+    "ipAddress": null,
+    "userAgent": null
+  },
+  {
+    "id": "17759234958217aia50vgs",
+    "timestamp": "2026-04-11T16:04:55.821Z",
+    "operation": "CREATE",
+    "entity": "notification",
+    "details": {
+      "notificationIds": [
+        "1775923495820yq9ocgxl4"
+      ],
+      "targetUserIds": [
+        2
+      ],
+      "title": "Leave Request Approved",
+      "type": "success"
+    },
+    "userId": null,
+    "ipAddress": null,
+    "userAgent": null
+  },
+  {
+    "id": "1775927119864qpa089qle",
+    "timestamp": "2026-04-11T17:05:19.865Z",
+    "operation": "UPDATE",
+    "entity": "leave_request",
+    "details": {
+      "leaveRequestId": 1775922626940,
+      "previousStatus": "Pending",
+      "newStatus": "Approved",
+      "userId": 2
+    },
+    "userId": null,
+    "ipAddress": null,
+    "userAgent": null
+  },
+  {
+    "id": "1775927119887emo4zkck8",
+    "timestamp": "2026-04-11T17:05:19.887Z",
+    "operation": "CREATE",
+    "entity": "notification",
+    "details": {
+      "notificationIds": [
+        "1775927119883e4b7vkkt8"
+      ],
+      "targetUserIds": [
+        2
+      ],
+      "title": "Leave Request Approved",
+      "type": "success"
+    },
+    "userId": null,
+    "ipAddress": null,
+    "userAgent": null
+  },
+  {
+    "id": "1775927165617gqeir4ck9",
+    "timestamp": "2026-04-11T17:06:05.618Z",
+    "operation": "CREATE",
+    "entity": "leave_request",
+    "details": {
+      "leaveRequestId": 1775927165612,
+      "userId": 2,
+      "type": "Paternity Leave",
+      "startDate": "2026-04-24",
+      "endDate": "2026-04-25",
+      "status": "Pending"
+    },
+    "userId": 2,
+    "ipAddress": null,
+    "userAgent": null
+  },
+  {
+    "id": "1775927165632pr4n6n2ih",
+    "timestamp": "2026-04-11T17:06:05.632Z",
+    "operation": "CREATE",
+    "entity": "notification",
+    "details": {
+      "notificationIds": [
+        "17759271656284fps54fb9"
+      ],
+      "targetUserIds": [
+        1
+      ],
+      "title": "Leave Request Submitted",
+      "type": "info"
+    },
+    "userId": null,
+    "ipAddress": null,
+    "userAgent": null
+  }
+]

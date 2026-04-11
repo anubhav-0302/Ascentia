@@ -1,0 +1,142 @@
+[
+  {
+    "id": 1,
+    "userId": 2,
+    "type": "Sick Leave",
+    "startDate": "2024-01-15",
+    "endDate": "2024-01-16",
+    "reason": "Medical appointment and recovery",
+    "status": "Pending",
+    "createdAt": "2024-01-10T10:00:00.000Z"
+  },
+  {
+    "id": 2,
+    "userId": 2,
+    "type": "Annual Leave",
+    "startDate": "2024-02-10",
+    "endDate": "2024-02-12",
+    "reason": "Family vacation",
+    "status": "Approved",
+    "createdAt": "2024-01-20T14:30:00.000Z"
+  },
+  {
+    "id": 1775922626900,
+    "userId": 2,
+    "type": "Sick Leave",
+    "startDate": "2024-12-01",
+    "endDate": "2024-12-02",
+    "reason": "Test persistence",
+    "status": "Rejected",
+    "createdAt": "2026-04-11T15:50:26.900Z"
+  },
+  {
+    "id": 1775922626940,
+    "userId": 2,
+    "type": "Annual Leave",
+    "startDate": "2024-12-10",
+    "endDate": "2024-12-11",
+    "reason": "Test notification routing",
+    "status": "Approved",
+    "createdAt": "2026-04-11T15:50:26.940Z"
+  },
+  {
+    "id": 1775922654849,
+    "userId": 2,
+    "type": "Sick Leave",
+    "startDate": "2024-12-20",
+    "endDate": "2024-12-21",
+    "reason": "Debug test notification routing",
+    "status": "Rejected",
+    "createdAt": "2026-04-11T15:50:54.849Z"
+  },
+  {
+    "id": 1775922724433,
+    "userId": 2,
+    "type": "Sick Leave",
+    "startDate": "2024-12-01",
+    "endDate": "2024-12-02",
+    "reason": "Test persistence",
+    "status": "Pending",
+    "createdAt": "2026-04-11T15:52:04.433Z"
+  },
+  {
+    "id": 1775922724478,
+    "userId": 2,
+    "type": "Annual Leave",
+    "startDate": "2024-12-10",
+    "endDate": "2024-12-11",
+    "reason": "Test notification routing",
+    "status": "Rejected",
+    "createdAt": "2026-04-11T15:52:04.478Z"
+  },
+  {
+    "id": 1775922739948,
+    "userId": 2,
+    "type": "Sick Leave",
+    "startDate": "2024-12-01",
+    "endDate": "2024-12-02",
+    "reason": "Test persistence",
+    "status": "Pending",
+    "createdAt": "2026-04-11T15:52:19.948Z"
+  },
+  {
+    "id": 1775922740215,
+    "userId": 2,
+    "type": "Annual Leave",
+    "startDate": "2024-12-10",
+    "endDate": "2024-12-11",
+    "reason": "Test notification routing",
+    "status": "Pending",
+    "createdAt": "2026-04-11T15:52:20.215Z"
+  },
+  {
+    "id": 1775923351656,
+    "userId": 2,
+    "type": "Sick Leave",
+    "startDate": "2024-12-25",
+    "endDate": "2024-12-26",
+    "reason": "Test rejection notification routing",
+    "status": "Rejected",
+    "createdAt": "2026-04-11T16:02:31.656Z"
+  },
+  {
+    "id": 1775923375363,
+    "userId": 2,
+    "type": "Sick Leave",
+    "startDate": "2024-12-25",
+    "endDate": "2024-12-26",
+    "reason": "Debug rejection notifications",
+    "status": "Pending",
+    "createdAt": "2026-04-11T16:02:55.363Z"
+  },
+  {
+    "id": 1775923428657,
+    "userId": 2,
+    "type": "Sick Leave",
+    "startDate": "2024-12-25",
+    "endDate": "2024-12-26",
+    "reason": "API notification test",
+    "status": "Pending",
+    "createdAt": "2026-04-11T16:03:48.657Z"
+  },
+  {
+    "id": 1775923473024,
+    "userId": 2,
+    "type": "Sick Leave",
+    "startDate": "2024-12-25",
+    "endDate": "2024-12-26",
+    "reason": "Test rejection notification routing",
+    "status": "Rejected",
+    "createdAt": "2026-04-11T16:04:33.024Z"
+  },
+  {
+    "id": 1775927165612,
+    "userId": 2,
+    "type": "Paternity Leave",
+    "startDate": "2026-04-24",
+    "endDate": "2026-04-25",
+    "reason": "segwergesg",
+    "status": "Pending",
+    "createdAt": "2026-04-11T17:06:05.613Z"
+  }
+]

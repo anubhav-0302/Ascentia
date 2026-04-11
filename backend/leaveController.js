@@ -1,11 +1,14 @@
-import { getMyLeaveRequests as getMyLeaveRequestsFromStore, getAllLeaveRequests as getAllLeaveRequestsFromStore, createLeaveRequest as createLeaveRequestInStore, updateLeaveRequestStatus as updateLeaveRequestStatusInStore } from './leaveStore.js';
+import { getMyLeaveRequests as getMyLeaveRequestsFromDB, getAllLeaveRequests as getAllLeaveRequestsFromDB, createLeaveRequest as createLeaveRequestInDB, updateLeaveRequestStatus as updateLeaveRequestStatusInDB, initializeLeaveData } from './leaveStoreDB.js';
 import { createLeaveRequestNotifications, createLeaveStatusUpdateNotifications } from './notificationStoreDB.js';
+
+// Initialize database on module load
+initializeLeaveData().catch(console.error);
 
 // GET /api/leave/my - Get my leave requests
 export const getMyLeaveRequests = async (req, res) => {
   try {
     console.log("🔍 Fetching my leave requests for user:", req.user.id);
-    const leaveRequests = getMyLeaveRequestsFromStore(req.user.id);
+    const leaveRequests = await getMyLeaveRequestsFromDB(req.user.id);
     
     res.json({
       success: true,
@@ -25,7 +28,7 @@ export const getMyLeaveRequests = async (req, res) => {
 export const getAllLeaveRequests = async (req, res) => {
   try {
     console.log("🔍 Fetching all leave requests (admin)");
-    const leaveRequests = getAllLeaveRequestsFromStore();
+    const leaveRequests = await getAllLeaveRequestsFromDB();
     
     res.json({
       success: true,
@@ -78,7 +81,7 @@ export const createLeaveRequest = async (req, res) => {
       });
     }
     
-    const newLeaveRequest = createLeaveRequestInStore({
+    const newLeaveRequest = await createLeaveRequestInDB({
       userId,
       type,
       startDate,
@@ -121,7 +124,7 @@ export const updateLeaveRequestStatus = async (req, res) => {
       });
     }
     
-    const updatedLeaveRequest = updateLeaveRequestStatusInStore(id, status);
+    const updatedLeaveRequest = await updateLeaveRequestStatusInDB(id, status);
     
     if (!updatedLeaveRequest) {
       return res.status(404).json({
@@ -133,7 +136,7 @@ export const updateLeaveRequestStatus = async (req, res) => {
     console.log("✅ Leave request status updated:", { id: updatedLeaveRequest.id, status });
     
     // Create notifications for the employee and other admins
-    await createLeaveStatusUpdateNotifications(updatedLeaveRequest, status);
+    await createLeaveStatusUpdateNotifications(updatedLeaveRequest, status, adminUserId);
     
     res.json({
       success: true,

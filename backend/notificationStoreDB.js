@@ -1,4 +1,45 @@
-// In-memory notification store for testing notification functionality
+// Persistent notification store with file-based storage
+import fs from 'fs';
+import path from 'path';
+import { logDatabaseOperation } from './databaseLogger.js';
+
+const NOTIFICATIONS_FILE = path.join(process.cwd(), 'data', 'notifications.json');
+
+// Ensure data directory exists
+const ensureDataDir = () => {
+  const dataDir = path.dirname(NOTIFICATIONS_FILE);
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+};
+
+// Read notifications from file
+const readNotifications = () => {
+  try {
+    ensureDataDir();
+    if (!fs.existsSync(NOTIFICATIONS_FILE)) {
+      return [];
+    }
+    const data = fs.readFileSync(NOTIFICATIONS_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error reading notifications:', error);
+    return [];
+  }
+};
+
+// Write notifications to file
+const writeNotifications = (notifications) => {
+  try {
+    ensureDataDir();
+    fs.writeFileSync(NOTIFICATIONS_FILE, JSON.stringify(notifications, null, 2));
+    return true;
+  } catch (error) {
+    console.error('Error writing notifications:', error);
+    return false;
+  }
+};
+
 // Helper function to get all users for notification routing
 export const getAllUsers = async () => {
   try {
@@ -34,14 +75,12 @@ export const getUserById = async (userId) => {
   }
 };
 
-// Initialize notification model if it doesn't exist in schema
-// For now, we'll use a simple in-memory store for notifications with database persistence
-let notifications = [];
-
 // Create notification for specific users
 export const createNotification = async (notificationData) => {
   try {
     const { targetUserIds, title, description, type, actionUrl } = notificationData;
+    
+    const notifications = readNotifications();
     
     const newNotifications = targetUserIds.map(userId => ({
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
@@ -55,11 +94,21 @@ export const createNotification = async (notificationData) => {
     }));
     
     notifications.push(...newNotifications);
+    writeNotifications(notifications);
+    
+    // Log the database operation
+    logDatabaseOperation('CREATE', 'notification', {
+      notificationIds: newNotifications.map(n => n.id),
+      targetUserIds,
+      title,
+      type: type || 'info'
+    });
     
     console.log("✅ Notifications created:", {
       count: newNotifications.length,
       title,
-      targetUserIds
+      targetUserIds,
+      targetUserDetails: targetUserIds.map(id => ({ id, role: 'unknown' }))
     });
     
     return newNotifications;
@@ -72,6 +121,7 @@ export const createNotification = async (notificationData) => {
 // Get notifications for a specific user
 export const getUserNotifications = async (userId) => {
   try {
+    const notifications = readNotifications();
     const userNotifications = notifications.filter(n => n.userId === parseInt(userId));
     return userNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   } catch (error) {
@@ -83,12 +133,14 @@ export const getUserNotifications = async (userId) => {
 // Mark notification as read
 export const markNotificationAsRead = async (notificationId, userId) => {
   try {
+    const notifications = readNotifications();
     const notification = notifications.find(n => 
       n.id === notificationId && n.userId === parseInt(userId)
     );
     
     if (notification) {
       notification.read = true;
+      writeNotifications(notifications);
       console.log("✅ Notification marked as read:", notificationId);
       return notification;
     }
@@ -103,11 +155,13 @@ export const markNotificationAsRead = async (notificationId, userId) => {
 // Mark all notifications as read for a user
 export const markAllNotificationsAsRead = async (userId) => {
   try {
+    const notifications = readNotifications();
     const userNotifications = notifications.filter(n => n.userId === parseInt(userId));
     userNotifications.forEach(notification => {
       notification.read = true;
     });
     
+    writeNotifications(notifications);
     console.log("✅ All notifications marked as read for user:", userId);
     return userNotifications.length;
   } catch (error) {
@@ -119,9 +173,11 @@ export const markAllNotificationsAsRead = async (userId) => {
 // Clear all notifications for a user
 export const clearUserNotifications = async (userId) => {
   try {
+    const notifications = readNotifications();
     const beforeCount = notifications.length;
-    notifications = notifications.filter(n => n.userId !== parseInt(userId));
-    const clearedCount = beforeCount - notifications.length;
+    const filteredNotifications = notifications.filter(n => n.userId !== parseInt(userId));
+    writeNotifications(filteredNotifications);
+    const clearedCount = beforeCount - filteredNotifications.length;
     
     console.log("✅ Cleared notifications for user:", { userId, count: clearedCount });
     return clearedCount;
@@ -134,6 +190,7 @@ export const clearUserNotifications = async (userId) => {
 // Get unread count for a user
 export const getUnreadNotificationCount = async (userId) => {
   try {
+    const notifications = readNotifications();
     const unreadCount = notifications.filter(n => 
       n.userId === parseInt(userId) && !n.read
     ).length;
@@ -148,7 +205,7 @@ export const getUnreadNotificationCount = async (userId) => {
 // Leave-specific notification functions
 export const createLeaveRequestNotifications = async (leaveRequest) => {
   try {
-    // When an employee requests leave, notify only admins
+    // When an employee requests leave, notify ONLY admins (not the requesting employee)
     const adminUsers = await getAdminUsers();
     
     if (adminUsers.length === 0) {
@@ -156,26 +213,47 @@ export const createLeaveRequestNotifications = async (leaveRequest) => {
       return [];
     }
     
-    const adminUserIds = adminUsers.map(admin => admin.id);
+    // Exclude the requesting user if they are an admin
+    const adminUserIds = adminUsers
+      .filter(admin => admin.id !== leaveRequest.userId)
+      .map(admin => admin.id);
     
-    return await createNotification({
+    if (adminUserIds.length === 0) {
+      console.log("⚠️ No other admin users to notify (requester is the only admin)");
+      return [];
+    }
+    
+    // Get requesting user details
+    const requestingUser = await getUserById(leaveRequest.userId);
+    const userName = requestingUser ? requestingUser.name : 'Unknown User';
+    
+    const notifications = await createNotification({
       targetUserIds: adminUserIds,
       title: 'Leave Request Submitted',
-      description: `${leaveRequest.user.name} has requested ${leaveRequest.type} leave from ${leaveRequest.startDate} to ${leaveRequest.endDate}`,
+      description: `${userName} has requested ${leaveRequest.type} leave from ${leaveRequest.startDate} to ${leaveRequest.endDate}`,
       type: 'info',
       actionUrl: '/leave-attendance'
     });
+    
+    console.log("✅ Leave request notifications sent to admins only:", {
+      requestingUserId: leaveRequest.userId,
+      requestingUserName: userName,
+      notifiedAdminIds: adminUserIds,
+      notificationCount: notifications.length
+    });
+    
+    return notifications;
   } catch (error) {
     console.error("❌ Error creating leave request notifications:", error);
     return [];
   }
 };
 
-export const createLeaveStatusUpdateNotifications = async (leaveRequest, newStatus) => {
+export const createLeaveStatusUpdateNotifications = async (leaveRequest, newStatus, currentAdminId = null) => {
   try {
     const notifications = [];
     
-    // Always notify the employee who requested the leave
+    // ALWAYS notify the employee who requested the leave
     notifications.push(await createNotification({
       targetUserIds: [leaveRequest.userId],
       title: `Leave Request ${newStatus}`,
@@ -184,21 +262,36 @@ export const createLeaveStatusUpdateNotifications = async (leaveRequest, newStat
       actionUrl: '/leave-attendance'
     }));
     
-    // Also notify other admins about the action taken (but not the admin who took it)
+    // Also notify other admins about the action taken (but not the admin who took the action)
     const adminUsers = await getAdminUsers();
-    const otherAdmins = adminUsers.filter(admin => admin.id !== leaveRequest.userId); // Exclude the requesting user if they're admin
+    const otherAdmins = currentAdminId 
+      ? adminUsers.filter(admin => admin.id !== currentAdminId)
+      : adminUsers.filter(admin => admin.id !== leaveRequest.userId); // Fallback for backward compatibility
     
     if (otherAdmins.length > 0) {
       const otherAdminIds = otherAdmins.map(admin => admin.id);
       
+      // Get requesting user details
+      const requestingUser = await getUserById(leaveRequest.userId);
+      const userName = requestingUser ? requestingUser.name : 'Unknown User';
+      
       notifications.push(await createNotification({
         targetUserIds: otherAdminIds,
         title: `Leave Request ${newStatus}`,
-        description: `${leaveRequest.user.name}'s ${leaveRequest.type} leave request has been ${newStatus.toLowerCase()}`,
+        description: `${userName}'s ${leaveRequest.type} leave request has been ${newStatus.toLowerCase()}`,
         type: 'info',
         actionUrl: '/leave-attendance'
       }));
     }
+    
+    console.log("✅ Leave status update notifications sent:", {
+      leaveRequestId: leaveRequest.id,
+      status: newStatus,
+      employeeNotified: true,
+      otherAdminsNotified: otherAdmins.length > 0,
+      currentAdminId: currentAdminId,
+      totalNotifications: notifications.flat().length
+    });
     
     return notifications.flat();
   } catch (error) {
@@ -212,7 +305,7 @@ export const createEmployeeActionNotifications = async (employee, action, curren
   try {
     const notifications = [];
     
-    // For employee actions, notify all admins
+    // For employee actions, notify all admins except the one who performed the action
     const adminUsers = await getAdminUsers();
     const otherAdmins = adminUsers.filter(admin => admin.id !== currentUserId);
     

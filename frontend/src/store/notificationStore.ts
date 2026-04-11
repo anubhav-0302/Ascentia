@@ -23,6 +23,7 @@ interface NotificationStore {
   fetchNotifications: () => Promise<void>;
   fetchUnreadCount: () => Promise<void>;
   syncWithBackend: () => Promise<void>;
+  initializeFromStorage: () => void;
 }
 
 // API functions
@@ -233,10 +234,22 @@ export const useNotificationStore = create<NotificationStore>()(
         await get().fetchNotifications();
         await get().fetchUnreadCount();
       },
+
+      initializeFromStorage: () => {
+        // This function is called when the store is hydrated from localStorage
+        const state = get();
+        const unreadCount = state.notifications.filter((n) => !n.read).length;
+        if (state.unreadCount !== unreadCount) {
+          set({ unreadCount });
+        }
+      },
     }),
     {
       name: 'notification-storage',
-      partialize: (state) => ({ notifications: state.notifications }),
+      partialize: (state) => ({ 
+        notifications: state.notifications,
+        unreadCount: state.unreadCount 
+      }),
       storage: {
         getItem: (name) => {
           const item = localStorage.getItem(name);
@@ -271,6 +284,12 @@ export const useNotificationStore = create<NotificationStore>()(
             console.error('Error removing notification storage:', error);
           }
         },
+      },
+      onRehydrateStorage: () => (state) => {
+        console.log('🔔 Notification store rehydrated from storage');
+        if (state) {
+          state.initializeFromStorage();
+        }
       },
     }
   )

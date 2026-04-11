@@ -1,0 +1,62 @@
+[
+  {
+    "id": "1775923473143vksonyc6i",
+    "userId": 1,
+    "title": "Leave Request Submitted",
+    "description": "Employee User has requested Sick Leave leave from 2024-12-25 to 2024-12-26",
+    "type": "info",
+    "actionUrl": "/leave-attendance",
+    "read": false,
+    "createdAt": "2026-04-11T16:04:33.144Z"
+  },
+  {
+    "id": "1775923474641hpc92wkic",
+    "userId": 2,
+    "title": "Leave Request Rejected",
+    "description": "Your Sick Leave leave request from 2024-12-25 to 2024-12-26 has been rejected",
+    "type": "error",
+    "actionUrl": "/leave-attendance",
+    "read": false,
+    "createdAt": "2026-04-11T16:04:34.641Z"
+  },
+  {
+    "id": "1775923495450uvowvtq4e",
+    "userId": 2,
+    "title": "Leave Request Rejected",
+    "description": "Your Sick Leave leave request from 2024-12-25 to 2024-12-26 has been rejected",
+    "type": "error",
+    "actionUrl": "/leave-attendance",
+    "read": false,
+    "createdAt": "2026-04-11T16:04:55.450Z"
+  },
+  {
+    "id": "1775923495820yq9ocgxl4",
+    "userId": 2,
+    "title": "Leave Request Approved",
+    "description": "Your Sick Leave leave request from 2024-12-25 to 2024-12-26 has been approved",
+    "type": "success",
+    "actionUrl": "/leave-attendance",
+    "read": false,
+    "createdAt": "2026-04-11T16:04:55.820Z"
+  },
+  {
+    "id": "1775927119883e4b7vkkt8",
+    "userId": 2,
+    "title": "Leave Request Approved",
+    "description": "Your Annual Leave leave request from 2024-12-10 to 2024-12-11 has been approved",
+    "type": "success",
+    "actionUrl": "/leave-attendance",
+    "read": false,
+    "createdAt": "2026-04-11T17:05:19.884Z"
+  },
+  {
+    "id": "17759271656284fps54fb9",
+    "userId": 1,
+    "title": "Leave Request Submitted",
+    "description": "Employee User has requested Paternity Leave leave from 2026-04-24 to 2026-04-25",
+    "type": "info",
+    "actionUrl": "/leave-attendance",
+    "read": false,
+    "createdAt": "2026-04-11T17:06:05.628Z"
+  }
+]

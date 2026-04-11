@@ -1,160 +1,192 @@
-import { PrismaClient } from '@prisma/client';
+import fs from 'fs';
+import path from 'path';
+import { logDatabaseOperation } from './databaseLogger.js';
 
-const prisma = new PrismaClient();
+// Simple file-based database for leave requests
+const DB_FILE = path.join(process.cwd(), 'data', 'leaveRequests.json');
+
+// Ensure data directory exists
+const ensureDataDir = () => {
+  const dataDir = path.dirname(DB_FILE);
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+};
+
+// Read leave requests from file
+const readLeaveRequests = () => {
+  try {
+    ensureDataDir();
+    if (!fs.existsSync(DB_FILE)) {
+      return [];
+    }
+    const data = fs.readFileSync(DB_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error reading leave requests:', error);
+    return [];
+  }
+};
+
+// Write leave requests to file
+const writeLeaveRequests = (leaveRequests) => {
+  try {
+    ensureDataDir();
+    fs.writeFileSync(DB_FILE, JSON.stringify(leaveRequests, null, 2));
+    return true;
+  } catch (error) {
+    console.error('Error writing leave requests:', error);
+    return false;
+  }
+};
 
 // Initialize database with sample data if needed
 export const initializeLeaveData = async () => {
   try {
-    const existingRequests = await prisma.leaveRequest.count();
+    const existingRequests = readLeaveRequests();
     
-    if (existingRequests === 0) {
+    if (existingRequests.length === 0) {
       console.log("🌱 Initializing leave requests database...");
       
       // Get existing users
-      const users = await prisma.user.findMany();
+      const { getUsers } = await import('./userStore.js');
+      const users = getUsers();
       
-      if (users.length >= 2) {
-        // Create sample leave requests
-        await prisma.leaveRequest.createMany({
-          data: [
-            {
-              userId: users[0].id, // Admin user
-              type: 'Annual',
-              startDate: new Date('2024-03-15'),
-              endDate: new Date('2024-03-17'),
-              reason: 'Family vacation',
-              status: 'Approved'
-            },
-            {
-              userId: users[1].id, // Employee user
-              type: 'Sick',
-              startDate: new Date('2024-03-20'),
-              endDate: new Date('2024-03-20'),
-              reason: 'Medical appointment',
-              status: 'Pending'
-            }
-          ]
-        });
-        
-        console.log("✅ Sample leave requests created in database");
-      }
+      // Create sample leave requests
+      const sampleLeaveRequests = [
+        {
+          id: 1,
+          userId: 2, // Employee user
+          type: 'Sick Leave',
+          startDate: '2024-01-15',
+          endDate: '2024-01-16',
+          reason: 'Medical appointment and recovery',
+          status: 'Pending',
+          createdAt: new Date('2024-01-10T10:00:00Z').toISOString()
+        },
+        {
+          id: 2,
+          userId: 2, // Employee user
+          type: 'Annual Leave',
+          startDate: '2024-02-10',
+          endDate: '2024-02-12',
+          reason: 'Family vacation',
+          status: 'Approved',
+          createdAt: new Date('2024-01-20T14:30:00Z').toISOString()
+        }
+      ];
+      
+      writeLeaveRequests(sampleLeaveRequests);
+      console.log("✅ Sample leave requests created in database");
     }
-    
-    const totalRequests = await prisma.leaveRequest.count();
-    console.log("📊 TOTAL LEAVE REQUESTS IN DB:", totalRequests);
   } catch (error) {
     console.error("❌ Error initializing leave data:", error);
   }
 };
 
+// Get leave requests for a specific user
 export const getMyLeaveRequests = async (userId) => {
   try {
-    const requests = await prisma.leaveRequest.findMany({
-      where: { userId: parseInt(userId) },
-      include: { user: true },
-      orderBy: { createdAt: 'desc' }
-    });
-    
-    // Convert dates to strings for consistency
-    return requests.map(request => ({
-      ...request,
-      startDate: request.startDate.toISOString().split('T')[0],
-      endDate: request.endDate.toISOString().split('T')[0],
-      createdAt: request.createdAt
-    }));
+    const leaveRequests = readLeaveRequests();
+    return leaveRequests.filter(request => request.userId === parseInt(userId));
   } catch (error) {
     console.error("❌ Error getting my leave requests:", error);
     return [];
   }
 };
 
+// Get all leave requests (admin only)
 export const getAllLeaveRequests = async () => {
   try {
-    const requests = await prisma.leaveRequest.findMany({
-      include: { user: true },
-      orderBy: { createdAt: 'desc' }
-    });
-    
-    // Convert dates to strings for consistency
-    return requests.map(request => ({
-      ...request,
-      startDate: request.startDate.toISOString().split('T')[0],
-      endDate: request.endDate.toISOString().split('T')[0],
-      createdAt: request.createdAt
-    }));
+    const leaveRequests = readLeaveRequests();
+    return leaveRequests;
   } catch (error) {
     console.error("❌ Error getting all leave requests:", error);
     return [];
   }
 };
 
+// Create a new leave request
 export const createLeaveRequest = async (leaveData) => {
   try {
-    const newRequest = await prisma.leaveRequest.create({
-      data: {
-        userId: parseInt(leaveData.userId),
-        type: leaveData.type,
-        startDate: new Date(leaveData.startDate),
-        endDate: new Date(leaveData.endDate),
-        reason: leaveData.reason,
-        status: 'Pending'
-      },
-      include: { user: true }
-    });
+    const leaveRequests = readLeaveRequests();
     
-    // Convert dates to strings for consistency
-    const result = {
-      ...newRequest,
-      startDate: newRequest.startDate.toISOString().split('T')[0],
-      endDate: newRequest.endDate.toISOString().split('T')[0],
-      createdAt: newRequest.createdAt
+    const newLeaveRequest = {
+      id: Date.now(), // Simple ID generation
+      ...leaveData,
+      status: 'Pending',
+      createdAt: new Date().toISOString()
     };
     
-    console.log("✅ Leave request created in DB:", { id: result.id, userId: result.userId });
-    return result;
+    leaveRequests.push(newLeaveRequest);
+    const success = writeLeaveRequests(leaveRequests);
+    
+    if (!success) {
+      throw new Error('Failed to save leave request');
+    }
+    
+    // Log the database operation
+    logDatabaseOperation('CREATE', 'leave_request', {
+      leaveRequestId: newLeaveRequest.id,
+      userId: leaveData.userId,
+      type: leaveData.type,
+      startDate: leaveData.startDate,
+      endDate: leaveData.endDate,
+      status: 'Pending'
+    }, leaveData.userId);
+    
+    // Add user information for notifications
+    const { getUsers } = await import('./userStore.js');
+    const users = getUsers();
+    const user = users.find(u => u.id === parseInt(leaveData.userId));
+    
+    return {
+      ...newLeaveRequest,
+      user: user || { id: leaveData.userId, name: 'Unknown User' }
+    };
   } catch (error) {
     console.error("❌ Error creating leave request:", error);
     throw error;
   }
 };
 
+// Update leave request status
 export const updateLeaveRequestStatus = async (id, status) => {
   try {
-    const updatedRequest = await prisma.leaveRequest.update({
-      where: { id: parseInt(id) },
-      data: { status },
-      include: { user: true }
+    const leaveRequests = readLeaveRequests();
+    const requestIndex = leaveRequests.findIndex(req => req.id === parseInt(id));
+    
+    if (requestIndex === -1) {
+      return null;
+    }
+    
+    const previousStatus = leaveRequests[requestIndex].status;
+    leaveRequests[requestIndex].status = status;
+    const success = writeLeaveRequests(leaveRequests);
+    
+    if (!success) {
+      throw new Error('Failed to update leave request');
+    }
+    
+    // Log the database operation
+    logDatabaseOperation('UPDATE', 'leave_request', {
+      leaveRequestId: parseInt(id),
+      previousStatus,
+      newStatus: status,
+      userId: leaveRequests[requestIndex].userId
     });
     
-    // Convert dates to strings for consistency
-    const result = {
-      ...updatedRequest,
-      startDate: updatedRequest.startDate.toISOString().split('T')[0],
-      endDate: updatedRequest.endDate.toISOString().split('T')[0],
-      createdAt: updatedRequest.createdAt
-    };
+    // Add user information for notifications
+    const { getUsers } = await import('./userStore.js');
+    const users = getUsers();
+    const user = users.find(u => u.id === leaveRequests[requestIndex].userId);
     
-    console.log("✅ Leave request status updated in DB:", { id: result.id, status });
-    return result;
+    return {
+      ...leaveRequests[requestIndex],
+      user: user || { id: leaveRequests[requestIndex].userId, name: 'Unknown User' }
+    };
   } catch (error) {
     console.error("❌ Error updating leave request status:", error);
     throw error;
-  }
-};
-
-// Helper function to get users for leave requests
-export const getUsers = async () => {
-  try {
-    return await prisma.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true
-      }
-    });
-  } catch (error) {
-    console.error("❌ Error getting users:", error);
-    return [];
   }
 };
