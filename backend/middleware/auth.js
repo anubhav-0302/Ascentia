@@ -1,55 +1,25 @@
 import jwt from 'jsonwebtoken';
-import { getUsers } from '../userStore.js';
+import prisma from '../lib/prisma.js';
 
-// Selective authentication middleware (applied only to protected routes)
-export const requireAuth = (req, res, next) => {
+// Authentication middleware - database only
+export const requireAuth = async (req, res, next) => {
   try {
-    console.log("🔍 REQUIRE AUTH:", req.method, req.url);
-    
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log("❌ No auth header or invalid format");
-      return res.status(401).json({
-        success: false,
-        message: "Access token required",
-      });
-    }
+    if (!authHeader || !authHeader.startsWith('Bearer '))
+      return res.status(401).json({ success: false, message: "Access token required" });
 
     const token = authHeader.split(" ")[1];
-
-    // Verify token with hardcoded secret
     const decoded = jwt.verify(token, "secret123");
 
-    // Find user in memory store
-    const users = getUsers();
-    const user = users.find(u => u.id === decoded.id);
+    const dbUser = await prisma.user.findUnique({ where: { id: decoded.id } });
+    if (!dbUser)
+      return res.status(401).json({ success: false, message: 'Invalid token - user not found' });
 
-    if (!user) {
-      console.log("❌ User not found for token");
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token - user not found'
-      });
-    }
-
-    // Attach user to request (without password)
-    req.user = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      createdAt: user.createdAt
-    };
-    
-    console.log("✅ Authenticated user:", req.user.email);
+    req.user = { id: dbUser.id, name: dbUser.name, email: dbUser.email, role: dbUser.role, createdAt: dbUser.createdAt };
     next();
   } catch (err) {
-    console.error("❌ Authentication error:", err);
-    return res.status(401).json({
-      success: false,
-      message: "Invalid token",
-    });
+    return res.status(401).json({ success: false, message: "Invalid token" });
   }
 };
 

@@ -1,77 +1,72 @@
-import { getEmployees } from './employeeStore.js';
+import prisma from './lib/prisma.js';
+import { getAllLeaveRequests } from './leaveStoreDB.js';
 
 // Dashboard statistics API
 export const getDashboardStats = async (req, res) => {
   try {
-    console.log("🔍 Fetching dashboard statistics...");
-    
-    const employees = getEmployees();
-    
-    // Calculate statistics
+    // Pull real employee data from database
+    const employees = await prisma.employee.findMany({ orderBy: { createdAt: 'desc' } });
+
     const totalEmployees = employees.length;
-    
-    const activeEmployees = employees.filter(emp => emp.status === 'Active').length;
-    
-    const remoteEmployees = employees.filter(emp => emp.status === 'Remote').length;
-    
-    // Get unique departments
-    const departments = [...new Set(employees.map(emp => emp.department))];
-    
-    // Get recent employees (last 5)
-    const recentEmployees = employees
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 5)
-      .map(emp => ({
-        id: emp.id,
-        name: emp.name,
-        email: emp.email,
-        jobTitle: emp.jobTitle,
-        department: emp.department,
-        status: emp.status,
-        createdAt: emp.createdAt
-      }));
-    
-    // Get department distribution
-    const departmentDistribution = departments.map(dept => ({
-      name: dept,
-      count: employees.filter(emp => emp.department === dept).length
+    const activeEmployees = employees.filter(e => e.status === 'Active').length;
+    const remoteEmployees = employees.filter(e => e.status === 'Remote').length;
+
+    const departmentNames = [...new Set(employees.map(e => e.department).filter(Boolean))];
+
+    const recentEmployees = employees.slice(0, 5).map(e => ({
+      id: e.id, name: e.name, email: e.email,
+      jobTitle: e.jobTitle, department: e.department,
+      status: e.status, createdAt: e.createdAt
     }));
-    
-    // Get status distribution
+
+    const departmentDistribution = departmentNames.map(dept => ({
+      name: dept,
+      count: employees.filter(e => e.department === dept).length
+    }));
+
     const statusDistribution = [
-      { name: 'Active', count: employees.filter(emp => emp.status === 'Active').length },
-      { name: 'Remote', count: employees.filter(emp => emp.status === 'Remote').length },
-      { name: 'Onboarding', count: employees.filter(emp => emp.status === 'Onboarding').length }
+      { name: 'Active', count: activeEmployees },
+      { name: 'Remote', count: remoteEmployees },
+      { name: 'Onboarding', count: employees.filter(e => e.status === 'Onboarding').length }
     ];
-    
-    console.log("📊 Dashboard stats calculated:", {
-      totalEmployees,
-      activeEmployees,
-      remoteEmployees,
-      departments: departments.length
+
+    // Pull real leave data
+    const allLeave = await getAllLeaveRequests();
+    const leaveStatus = [
+      { status: 'Approved', count: allLeave.filter(l => l.status === 'Approved').length },
+      { status: 'Pending',  count: allLeave.filter(l => l.status === 'Pending').length },
+      { status: 'Rejected', count: allLeave.filter(l => l.status === 'Rejected').length }
+    ];
+
+    // Build monthly leave trends for the last 6 months
+    const now = new Date();
+    const leaveTrends = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      const month = d.toLocaleString('default', { month: 'short' });
+      const year = d.getFullYear();
+      const monthLeave = allLeave.filter(l => {
+        const ld = new Date(l.createdAt);
+        return ld.getMonth() === d.getMonth() && ld.getFullYear() === year;
+      });
+      return {
+        month,
+        approved: monthLeave.filter(l => l.status === 'Approved').length,
+        pending:  monthLeave.filter(l => l.status === 'Pending').length,
+        rejected: monthLeave.filter(l => l.status === 'Rejected').length
+      };
     });
-    
+
     res.json({
       success: true,
       data: {
-        totalEmployees,
-        activeEmployees,
-        remoteEmployees,
-        departments: departments.length,
-        recentEmployees,
-        departmentDistribution,
-        statusDistribution
+        totalEmployees, activeEmployees, remoteEmployees,
+        departments: departmentNames.length,
+        recentEmployees, departmentDistribution, statusDistribution,
+        leaveStatus, leaveTrends
       }
     });
-    
   } catch (error) {
-    console.error("❌ DASHBOARD ERROR:", error);
-    console.error("❌ ERROR STACK:", error.stack);
-    
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch dashboard statistics",
-      error: error.message
-    });
+    console.error("❌ DASHBOARD ERROR:", error.message);
+    res.status(500).json({ success: false, message: "Failed to fetch dashboard statistics", error: error.message });
   }
 };

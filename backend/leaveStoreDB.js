@@ -2,6 +2,17 @@ import fs from 'fs';
 import path from 'path';
 import { logDatabaseOperation } from './databaseLogger.js';
 
+// Resolve a user by ID from database
+const resolveUser = async (userId) => {
+  try {
+    const { default: prisma } = await import('./lib/prisma.js');
+    const u = await prisma.user.findUnique({ where: { id: parseInt(userId) }, select: { id: true, name: true, email: true, role: true } });
+    return u || { id: userId, name: 'Unknown User' };
+  } catch (_) {
+    return { id: userId, name: 'Unknown User' };
+  }
+};
+
 // Simple file-based database for leave requests
 const DB_FILE = path.join(process.cwd(), 'data', 'leaveRequests.json');
 
@@ -47,10 +58,6 @@ export const initializeLeaveData = async () => {
     
     if (existingRequests.length === 0) {
       console.log("🌱 Initializing leave requests database...");
-      
-      // Get existing users
-      const { getUsers } = await import('./userStore.js');
-      const users = getUsers();
       
       // Create sample leave requests
       const sampleLeaveRequests = [
@@ -135,15 +142,8 @@ export const createLeaveRequest = async (leaveData) => {
       status: 'Pending'
     }, leaveData.userId);
     
-    // Add user information for notifications
-    const { getUsers } = await import('./userStore.js');
-    const users = getUsers();
-    const user = users.find(u => u.id === parseInt(leaveData.userId));
-    
-    return {
-      ...newLeaveRequest,
-      user: user || { id: leaveData.userId, name: 'Unknown User' }
-    };
+    const user = await resolveUser(leaveData.userId);
+    return { ...newLeaveRequest, user };
   } catch (error) {
     console.error("❌ Error creating leave request:", error);
     throw error;
@@ -176,15 +176,8 @@ export const updateLeaveRequestStatus = async (id, status) => {
       userId: leaveRequests[requestIndex].userId
     });
     
-    // Add user information for notifications
-    const { getUsers } = await import('./userStore.js');
-    const users = getUsers();
-    const user = users.find(u => u.id === leaveRequests[requestIndex].userId);
-    
-    return {
-      ...leaveRequests[requestIndex],
-      user: user || { id: leaveRequests[requestIndex].userId, name: 'Unknown User' }
-    };
+    const user = await resolveUser(leaveRequests[requestIndex].userId);
+    return { ...leaveRequests[requestIndex], user };
   } catch (error) {
     console.error("❌ Error updating leave request status:", error);
     throw error;

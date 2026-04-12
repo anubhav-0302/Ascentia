@@ -40,14 +40,12 @@ const writeNotifications = (notifications) => {
   }
 };
 
-// Helper function to get all users for notification routing
+// Helper function to get all users for notification routing (database only)
 export const getAllUsers = async () => {
   try {
-    // Import from userStore to get users
-    const { getUsers } = await import('./userStore.js');
-    return getUsers();
-  } catch (error) {
-    console.error("❌ Error getting all users:", error);
+    const { default: prisma } = await import('./lib/prisma.js');
+    return await prisma.user.findMany({ select: { id: true, name: true, email: true, role: true } });
+  } catch (_) {
     return [];
   }
 };
@@ -58,19 +56,16 @@ export const getAdminUsers = async () => {
     const users = await getAllUsers();
     return users.filter(user => user.role === 'admin');
   } catch (error) {
-    console.error("❌ Error getting admin users:", error);
     return [];
   }
 };
 
-// Helper function to get user by ID
+// Helper function to get user by ID (database only)
 export const getUserById = async (userId) => {
   try {
-    const { getUsers } = await import('./userStore.js');
-    const users = getUsers();
-    return users.find(u => u.id === parseInt(userId)) || null;
-  } catch (error) {
-    console.error("❌ Error getting user by ID:", error);
+    const { default: prisma } = await import('./lib/prisma.js');
+    return await prisma.user.findUnique({ where: { id: parseInt(userId) }, select: { id: true, name: true, email: true, role: true } }) || null;
+  } catch (_) {
     return null;
   }
 };

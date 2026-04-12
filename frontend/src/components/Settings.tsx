@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { StandardLayout } from './StandardLayout';
-import { Settings as SettingsIcon, Bell, Shield, Palette, Globe, Database } from 'lucide-react';
+import { Settings as SettingsIcon, Bell, Shield, Palette, Globe, Database, Users } from 'lucide-react';
 import Card from './Card';
 import { PageTransition, FadeIn } from './PageTransition';
+import PermissionManagement from './PermissionManagement';
+import { useIsAdmin } from '../store/useAuthStore';
 
 const Settings: React.FC = () => {
   const [darkMode, setDarkMode] = useState(true);
@@ -11,6 +13,7 @@ const Settings: React.FC = () => {
   const [timezone, setTimezone] = useState('UTC-5 (Eastern)');
   const [dateFormat, setDateFormat] = useState('MM/DD/YYYY');
   const [activeSection, setActiveSection] = useState('general');
+  const isAdmin = useIsAdmin();
 
   const handleExportData = () => {
     // Create actual data export functionality
@@ -208,168 +211,115 @@ const Settings: React.FC = () => {
                     <Database className="w-4 h-4 mr-3" />
                     Data & Privacy
                   </button>
+                  {isAdmin && (
+                    <button 
+                      onClick={() => handleNavigationClick('permissions')}
+                      className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        activeSection === 'permissions'
+                          ? 'bg-teal-500/10 text-teal-400 border-l-4 border-teal-500'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                      }`}
+                    >
+                      <Users className="w-4 h-4 mr-3" />
+                      Permission Management
+                    </button>
+                  )}
                 </nav>
               </Card>
             </div>
-
-            {/* Settings Content */}
-            <div className="lg:col-span-2 space-y-6">
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold text-white mb-6 flex items-center">
-                  <SettingsIcon className="w-5 h-5 mr-2 text-teal-400" />
-                  General Settings
-                </h3>
-                
+            <div className="lg:col-span-2">
+              {activeSection === 'permissions' ? (
+                <PermissionManagement />
+              ) : (
                 <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Application Language</label>
-                    <select 
-                      value={language}
-                      onChange={(e) => setLanguage(e.target.value)}
-                      className="w-full px-4 py-2 bg-slate-700/60 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    >
-                      <option>English (US)</option>
-                      <option>Spanish</option>
-                      <option>French</option>
-                      <option>German</option>
-                      <option>Chinese</option>
-                    </select>
-                  </div>
+                  <Card className="p-6">
+                    <h3 className="text-lg font-semibold text-white mb-6 flex items-center">
+                      <SettingsIcon className="w-5 h-5 mr-2 text-teal-400" />
+                      General Settings
+                    </h3>
+                    
+                    <div className="space-y-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Application Language</label>
+                        <select 
+                          value={language}
+                          onChange={(e) => setLanguage(e.target.value)}
+                          className="w-full px-4 py-2 bg-slate-700/60 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        >
+                          <option>English (US)</option>
+                          <option>Spanish</option>
+                          <option>French</option>
+                          <option>German</option>
+                          <option>Chinese</option>
+                        </select>
+                      </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Timezone</label>
-                    <select 
-                      value={timezone}
-                      onChange={(e) => setTimezone(e.target.value)}
-                      className="w-full px-4 py-2 bg-slate-700/60 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    >
-                      <option>UTC-5 (Eastern)</option>
-                      <option>UTC-6 (Central)</option>
-                      <option>UTC-7 (Mountain)</option>
-                      <option>UTC-8 (Pacific)</option>
-                      <option>UTC+0 (GMT)</option>
-                      <option>UTC+1 (CET)</option>
-                    </select>
-                  </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Timezone</label>
+                        <select 
+                          value={timezone}
+                          onChange={(e) => setTimezone(e.target.value)}
+                          className="w-full px-4 py-2 bg-slate-700/60 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        >
+                          <option>UTC-5 (Eastern)</option>
+                          <option>UTC-6 (Central)</option>
+                          <option>UTC-7 (Mountain)</option>
+                          <option>UTC-8 (Pacific)</option>
+                          <option>UTC+0 (GMT)</option>
+                          <option>UTC+1 (CET)</option>
+                        </select>
+                      </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Date Format</label>
-                    <select 
-                      value={dateFormat}
-                      onChange={(e) => setDateFormat(e.target.value)}
-                      className="w-full px-4 py-2 bg-slate-700/60 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    >
-                      <option>MM/DD/YYYY</option>
-                      <option>DD/MM/YYYY</option>
-                      <option>YYYY-MM-DD</option>
-                      <option>Month DD, YYYY</option>
-                    </select>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold text-white mb-6">Appearance</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-white font-medium">Dark Mode</p>
-                      <p className="text-gray-400 text-sm">Use dark theme across the application</p>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-2">Date Format</label>
+                        <select 
+                          value={dateFormat}
+                          onChange={(e) => setDateFormat(e.target.value)}
+                          className="w-full px-4 py-2 bg-slate-700/60 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        >
+                          <option>MM/DD/YYYY</option>
+                          <option>DD/MM/YYYY</option>
+                          <option>YYYY-MM-DD</option>
+                        </select>
+                      </div>
                     </div>
-                    <button 
-                      onClick={() => setDarkMode(!darkMode)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        darkMode ? 'bg-teal-600' : 'bg-slate-600'
-                      }`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        darkMode ? 'translate-x-6' : 'translate-x-1'
-                      }`}></span>
-                    </button>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-white font-medium">Compact View</p>
-                      <p className="text-gray-400 text-sm">Use more compact layout for better screen utilization</p>
-                    </div>
-                    <button 
-                      onClick={() => setCompactView(!compactView)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        compactView ? 'bg-teal-600' : 'bg-slate-600'
-                      }`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        compactView ? 'translate-x-6' : 'translate-x-1'
-                      }`}></span>
-                    </button>
-                  </div>
-                </div>
-              </Card>
+                  </Card>
 
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Security</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
-                    <div>
-                      <p className="text-white font-medium">Password</p>
-                      <p className="text-gray-400 text-sm">Last changed recently</p>
+                  <Card className="p-6">
+                    <h3 className="text-lg font-semibold text-white mb-6">Quick Actions</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <button 
+                        onClick={handleExportData}
+                        className="p-4 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-colors"
+                      >
+                        <h4 className="text-white font-medium mb-1">Export Data</h4>
+                        <p className="text-gray-400 text-sm">Download your personal data</p>
+                      </button>
+                      <button 
+                        onClick={handleClearCache}
+                        className="p-4 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-colors"
+                      >
+                        <h4 className="text-white font-medium mb-1">Clear Cache</h4>
+                        <p className="text-gray-400 text-sm">Remove temporary application data</p>
+                      </button>
+                      <button 
+                        onClick={handleResetSettings}
+                        className="p-4 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-colors"
+                      >
+                        <h4 className="text-white font-medium mb-1">Reset Settings</h4>
+                        <p className="text-gray-400 text-sm">Restore default configuration</p>
+                      </button>
+                      <button 
+                        onClick={handleDeleteAccount}
+                        className="p-4 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg text-left transition-colors"
+                      >
+                        <h4 className="text-red-400 font-medium mb-1">Delete Account</h4>
+                        <p className="text-red-300 text-sm">Permanently remove your account</p>
+                      </button>
                     </div>
-                    <button 
-                      onClick={handlePasswordChange}
-                      className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg text-sm transition-colors"
-                    >
-                      Change
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
-                    <div>
-                      <p className="text-white font-medium">Two-Factor Authentication</p>
-                      <p className="text-gray-400 text-sm">Add an extra layer of security</p>
-                    </div>
-                    <button 
-                      onClick={handle2FASetup}
-                      className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg text-sm transition-colors"
-                    >
-                      Enable
-                    </button>
-                  </div>
+                  </Card>
                 </div>
-              </Card>
-
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold text-white mb-6">Quick Actions</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <button 
-                    onClick={handleExportData}
-                    className="p-4 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-colors"
-                  >
-                    <h4 className="text-white font-medium mb-1">Export Data</h4>
-                    <p className="text-gray-400 text-sm">Download your personal data</p>
-                  </button>
-                  <button 
-                    onClick={handleClearCache}
-                    className="p-4 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-colors"
-                  >
-                    <h4 className="text-white font-medium mb-1">Clear Cache</h4>
-                    <p className="text-gray-400 text-sm">Remove temporary application data</p>
-                  </button>
-                  <button 
-                    onClick={handleResetSettings}
-                    className="p-4 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-colors"
-                  >
-                    <h4 className="text-white font-medium mb-1">Reset Settings</h4>
-                    <p className="text-gray-400 text-sm">Restore default configuration</p>
-                  </button>
-                  <button 
-                    onClick={handleDeleteAccount}
-                    className="p-4 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg text-left transition-colors"
-                  >
-                    <h4 className="text-red-400 font-medium mb-1">Delete Account</h4>
-                    <p className="text-red-300 text-sm">Permanently remove your account</p>
-                  </button>
-                </div>
-              </Card>
+              )}
             </div>
           </div>
         </FadeIn>

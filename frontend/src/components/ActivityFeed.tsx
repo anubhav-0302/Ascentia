@@ -1,26 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { formatDistanceToNow } from 'date-fns';
+import { getAllLeaves } from '../api/leaveApi';
 
 interface Activity {
   id: string;
-  type: 'employee_added' | 'leave_requested' | 'leave_approved' | 'leave_rejected' | 'profile_updated' | 'birthday' | 'work_anniversary';
+  type: 'leave_requested' | 'leave_approved' | 'leave_rejected';
   title: string;
   description: string;
-  actor: {
-    name: string;
-    avatar?: string;
-    id: string;
-  };
-  target?: {
-    name: string;
-    id: string;
-  };
+  actor: { name: string; id: string; };
   timestamp: Date;
-  metadata?: {
-    department?: string;
-    leaveType?: string;
-    duration?: string;
-  };
+  metadata?: { leaveType?: string; };
 }
 
 const ActivityFeed: React.FC = () => {
@@ -28,156 +17,52 @@ const ActivityFeed: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'my_team' | 'company'>('all');
 
-  // Mock activity data
-  const mockActivities: Activity[] = [
-    {
-      id: '1',
-      type: 'employee_added',
-      title: 'New Employee Joined',
-      description: 'Sarah Chen joined as Senior Frontend Developer',
-      actor: {
-        name: 'Sarah Chen',
-        avatar: 'https://picsum.photos/seed/sarah/40/40.jpg',
-        id: '1'
-      },
-      timestamp: new Date(Date.now() - 1000 * 60 * 15), // 15 minutes ago
-      metadata: {
-        department: 'Engineering'
-      }
-    },
-    {
-      id: '2',
-      type: 'leave_requested',
-      title: 'Leave Request Submitted',
-      description: 'Michael Brown requested sick leave for 2 days',
-      actor: {
-        name: 'Michael Brown',
-        avatar: 'https://picsum.photos/seed/michael/40/40.jpg',
-        id: '2'
-      },
-      timestamp: new Date(Date.now() - 1000 * 60 * 60), // 1 hour ago
-      metadata: {
-        leaveType: 'Sick Leave',
-        duration: '2 days'
-      }
-    },
-    {
-      id: '3',
-      type: 'leave_approved',
-      title: 'Leave Approved',
-      description: 'Emma Wilson\'s vacation request was approved',
-      actor: {
-        name: 'John Davis',
-        avatar: 'https://picsum.photos/seed/john/40/40.jpg',
-        id: '3'
-      },
-      target: {
-        name: 'Emma Wilson',
-        id: '4'
-      },
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-      metadata: {
-        leaveType: 'Vacation',
-        duration: '5 days'
-      }
-    },
-    {
-      id: '4',
-      type: 'profile_updated',
-      title: 'Profile Updated',
-      description: 'Alex Johnson updated their skills and certifications',
-      actor: {
-        name: 'Alex Johnson',
-        avatar: 'https://picsum.photos/seed/alex/40/40.jpg',
-        id: '5'
-      },
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4), // 4 hours ago
-      metadata: {
-        department: 'Engineering'
-      }
-    },
-    {
-      id: '5',
-      type: 'work_anniversary',
-      title: 'Work Anniversary',
-      description: 'Lisa Anderson celebrates 3 years at Ascentia',
-      actor: {
-        name: 'Lisa Anderson',
-        avatar: 'https://picsum.photos/seed/lisa/40/40.jpg',
-        id: '6'
-      },
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6), // 6 hours ago,
-      metadata: {
-        department: 'Marketing'
-      }
-    },
-    {
-      id: '6',
-      type: 'birthday',
-      title: 'Birthday',
-      description: 'David Martinez is celebrating their birthday today!',
-      actor: {
-        name: 'David Martinez',
-        avatar: 'https://picsum.photos/seed/david/40/40.jpg',
-        id: '7'
-      },
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 8), // 8 hours ago
-      metadata: {
-        department: 'Sales'
-      }
+  const fetchActivities = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await getAllLeaves();
+      const leaves = res.data || [];
+      const mapped: Activity[] = leaves
+        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 20)
+        .map((l: any) => {
+          const statusType =
+            l.status === 'Approved' ? 'leave_approved' :
+            l.status === 'Rejected' ? 'leave_rejected' :
+            'leave_requested';
+          const statusLabel =
+            l.status === 'Approved' ? 'approved' :
+            l.status === 'Rejected' ? 'rejected' :
+            'submitted';
+          return {
+            id: String(l.id),
+            type: statusType,
+            title: l.status === 'Pending' ? 'Leave Request Submitted' : `Leave ${l.status}`,
+            description: `${l.user?.name || 'Employee'} ${statusLabel} a ${l.type || 'leave'} request`,
+            actor: { name: l.user?.name || 'Employee', id: String(l.userId) },
+            timestamp: new Date(l.createdAt),
+            metadata: { leaveType: l.type }
+          };
+        });
+      setActivities(mapped);
+    } catch {
+      setActivities([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  }, []);
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setActivities(mockActivities);
-      setLoading(false);
-    }, 1000);
-
-    // Simulate real-time updates
-    const interval = setInterval(() => {
-      // In a real app, this would be a WebSocket connection
-      // const newActivity: Activity = {
-      //   id: Date.now().toString(),
-      //   type: 'profile_updated',
-      //   title: 'Profile Updated',
-      //   description: 'Someone updated their profile',
-      //   actor: {
-      //     name: 'Active User',
-      //     avatar: 'https://picsum.photos/seed/user/40/40.jpg',
-      //     id: 'random'
-      //   },
-      //   timestamp: new Date()
-      // };
-      
-      // Uncomment to simulate real-time updates
-      // setActivities(prev => [newActivity, ...prev.slice(0, 9)]);
-    }, 30000); // Every 30 seconds
-
-    return () => clearInterval(interval);
-  }, []);
+    fetchActivities();
+  }, [fetchActivities]);
 
   const getActivityIcon = (type: Activity['type']) => {
     const iconClasses = 'w-5 h-5';
-    
     switch (type) {
-      case 'employee_added':
-        return <i className={`fas fa-user-plus text-green-400 ${iconClasses}`}></i>;
-      case 'leave_requested':
-        return <i className={`fas fa-calendar-plus text-blue-400 ${iconClasses}`}></i>;
-      case 'leave_approved':
-        return <i className={`fas fa-calendar-check text-green-400 ${iconClasses}`}></i>;
-      case 'leave_rejected':
-        return <i className={`fas fa-calendar-times text-red-400 ${iconClasses}`}></i>;
-      case 'profile_updated':
-        return <i className={`fas fa-user-edit text-purple-400 ${iconClasses}`}></i>;
-      case 'birthday':
-        return <i className={`fas fa-birthday-cake text-pink-400 ${iconClasses}`}></i>;
-      case 'work_anniversary':
-        return <i className={`fas fa-award text-yellow-400 ${iconClasses}`}></i>;
-      default:
-        return <i className={`fas fa-info-circle text-gray-400 ${iconClasses}`}></i>;
+      case 'leave_requested': return <i className={`fas fa-calendar-plus text-blue-400 ${iconClasses}`}></i>;
+      case 'leave_approved':  return <i className={`fas fa-calendar-check text-green-400 ${iconClasses}`}></i>;
+      case 'leave_rejected':  return <i className={`fas fa-calendar-times text-red-400 ${iconClasses}`}></i>;
+      default: return <i className={`fas fa-info-circle text-gray-400 ${iconClasses}`}></i>;
     }
   };
 
@@ -185,11 +70,7 @@ const ActivityFeed: React.FC = () => {
     return formatDistanceToNow(date, { addSuffix: true });
   };
 
-  const filteredActivities = activities.filter(() => {
-    if (filter === 'all') return true;
-    // In a real app, you'd filter based on user's team/department
-    return true;
-  });
+  const filteredActivities = activities;
 
   if (loading) {
     return (
@@ -257,7 +138,7 @@ const ActivityFeed: React.FC = () => {
           </div>
           
           {/* Refresh Button */}
-          <button className="p-2 text-gray-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all duration-200 button-interactive">
+          <button onClick={fetchActivities} className="p-2 text-gray-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all duration-200 button-interactive">
             <i className="fas fa-sync-alt text-sm"></i>
           </button>
         </div>
@@ -294,26 +175,12 @@ const ActivityFeed: React.FC = () => {
                     </p>
                     
                     {/* Metadata */}
-                    {activity.metadata && (
+                    {activity.metadata?.leaveType && (
                       <div className="flex flex-wrap gap-2 mb-2">
-                        {activity.metadata.department && (
-                          <span className="inline-flex items-center px-2 py-1 bg-slate-600/50 text-gray-300 text-xs rounded-md">
-                            <i className="fas fa-building mr-1"></i>
-                            {activity.metadata.department}
-                          </span>
-                        )}
-                        {activity.metadata.leaveType && (
-                          <span className="inline-flex items-center px-2 py-1 bg-slate-600/50 text-gray-300 text-xs rounded-md">
-                            <i className="fas fa-calendar mr-1"></i>
-                            {activity.metadata.leaveType}
-                          </span>
-                        )}
-                        {activity.metadata.duration && (
-                          <span className="inline-flex items-center px-2 py-1 bg-slate-600/50 text-gray-300 text-xs rounded-md">
-                            <i className="fas fa-clock mr-1"></i>
-                            {activity.metadata.duration}
-                          </span>
-                        )}
+                        <span className="inline-flex items-center px-2 py-1 bg-slate-600/50 text-gray-300 text-xs rounded-md">
+                          <i className="fas fa-calendar mr-1"></i>
+                          {activity.metadata.leaveType}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -326,20 +193,10 @@ const ActivityFeed: React.FC = () => {
 
                 {/* Actor Info */}
                 <div className="flex items-center space-x-2 mt-2">
-                  <img
-                    src={activity.actor.avatar}
-                    alt={activity.actor.name}
-                    className="w-6 h-6 rounded-full border border-slate-600"
-                  />
-                  <span className="text-xs text-gray-400">
-                    {activity.actor.name}
-                    {activity.target && (
-                      <>
-                        {' → '}
-                        <span className="text-gray-300">{activity.target.name}</span>
-                      </>
-                    )}
-                  </span>
+                  <div className="w-6 h-6 rounded-full bg-teal-500/20 flex items-center justify-center">
+                    <span className="text-xs text-teal-400 font-bold">{activity.actor.name.charAt(0)}</span>
+                  </div>
+                  <span className="text-xs text-gray-400">{activity.actor.name}</span>
                 </div>
               </div>
             </div>

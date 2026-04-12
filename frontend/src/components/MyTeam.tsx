@@ -1,87 +1,26 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { StandardLayout } from './StandardLayout';
 import { useFilters } from '../contexts/FilterContext';
 import Filter from './Filter';
 import { Users, UserPlus, TrendingUp, Award, Calendar, Target, Star } from 'lucide-react';
 import Card from './Card';
 import { PageTransition, FadeIn } from './PageTransition';
+import { useEmployeeStore } from '../store/useEmployeeStore';
 
 const MyTeam: React.FC = () => {
   const { filters } = useFilters();
+  const { employees, fetchEmployees } = useEmployeeStore();
 
-  const teamStats = [
-    {
-      title: 'Team Members',
-      value: '12',
-      change: '+2 this month',
-      icon: Users,
-      color: 'text-blue-400'
-    },
-    {
-      title: 'Performance Score',
-      value: '8.7',
-      change: '+0.3',
-      icon: TrendingUp,
-      color: 'text-green-400'
-    },
-    {
-      title: 'Projects Active',
-      value: '6',
-      change: 'On track',
-      icon: Target,
-      color: 'text-purple-400'
-    },
-    {
-      title: 'Avg. Satisfaction',
-      value: '92%',
-      change: '+5%',
-      icon: Award,
-      color: 'text-yellow-400'
-    }
-  ];
+  useEffect(() => { fetchEmployees(); }, [fetchEmployees]);
 
-  const teamMembers = [
-    {
-      id: 1,
-      name: 'Sarah Chen',
-      role: 'Senior Frontend Developer',
-      performance: 9.2,
-      status: 'Active',
-      avatar: 'SC',
-      projects: 3,
-      joinDate: 'Jan 2023'
-    },
-    {
-      id: 2,
-      name: 'Michael Brown',
-      role: 'Engineering Manager',
-      performance: 8.8,
-      status: 'Active',
-      avatar: 'MB',
-      projects: 2,
-      joinDate: 'Mar 2022'
-    },
-    {
-      id: 3,
-      name: 'Emma Wilson',
-      role: 'Frontend Developer',
-      performance: 8.5,
-      status: 'Active',
-      avatar: 'EW',
-      projects: 4,
-      joinDate: 'Jun 2023'
-    },
-    {
-      id: 4,
-      name: 'David Lee',
-      role: 'UX Designer',
-      performance: 9.0,
-      status: 'On Leave',
-      avatar: 'DL',
-      projects: 2,
-      joinDate: 'Feb 2023'
-    }
-  ];
+  const teamStats = useMemo(() => [
+    { title: 'Team Members', value: String(employees.length), change: 'Total employees', icon: Users, color: 'text-blue-400' },
+    { title: 'Active', value: String(employees.filter(e => e.status === 'Active').length), change: 'Currently active', icon: TrendingUp, color: 'text-green-400' },
+    { title: 'Remote', value: String(employees.filter(e => e.status === 'Remote').length), change: 'Working remotely', icon: Target, color: 'text-purple-400' },
+    { title: 'Departments', value: String(new Set(employees.map(e => e.department).filter(Boolean)).size), change: 'Active departments', icon: Award, color: 'text-yellow-400' }
+  ], [employees]);
+
+  const teamMembers = employees;
 
   const upcomingEvents = [
     {
@@ -106,12 +45,6 @@ const MyTeam: React.FC = () => {
     }
   ];
 
-  const getPerformanceColor = (score: number) => {
-    if (score >= 9) return 'text-green-400 bg-green-400/10';
-    if (score >= 8) return 'text-blue-400 bg-blue-400/10';
-    return 'text-yellow-400 bg-yellow-400/10';
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Active': return 'text-green-400 bg-green-400/10';
@@ -125,7 +58,8 @@ const MyTeam: React.FC = () => {
     return teamMembers.filter(member => {
       const matchesSearch = !filters.search || 
         member.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        member.role.toLowerCase().includes(filters.search.toLowerCase());
+        member.jobTitle.toLowerCase().includes(filters.search.toLowerCase()) ||
+        member.department.toLowerCase().includes(filters.search.toLowerCase());
 
       const matchesStatus = !filters.status || filters.status === 'all' ||
         member.status.toLowerCase() === filters.status.toLowerCase();
@@ -210,25 +144,16 @@ const MyTeam: React.FC = () => {
                       <div key={member.id} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
                         <div className="flex items-center space-x-4">
                           <div className="w-12 h-12 bg-teal-500/20 rounded-full flex items-center justify-center">
-                            <span className="text-lg font-bold text-teal-400">{member.avatar}</span>
+                            <span className="text-lg font-bold text-teal-400">{member.name.charAt(0)}</span>
                           </div>
                           <div>
                             <h4 className="text-white font-medium">{member.name}</h4>
-                            <p className="text-gray-400 text-sm">{member.role}</p>
-                            <p className="text-gray-500 text-xs">Joined {member.joinDate}</p>
+                            <p className="text-gray-400 text-sm">{member.jobTitle}</p>
+                            <p className="text-gray-500 text-xs">{member.department} · {member.location}</p>
                           </div>
                         </div>
                         <div className="flex items-center space-x-3">
-                          <div className="text-right">
-                            <p className="text-xs text-gray-400">Performance</p>
-                            <p className={`text-sm font-medium ${getPerformanceColor(member.performance).split(' ')[0]}`}>
-                              {member.performance}/10
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xs text-gray-400">Projects</p>
-                            <p className="text-sm font-medium text-white">{member.projects}</p>
-                          </div>
+                          <span className="text-xs text-gray-400">{member.email}</span>
                           <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(member.status)}`}>
                             {member.status}
                           </span>

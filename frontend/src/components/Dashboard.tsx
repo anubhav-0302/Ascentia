@@ -44,46 +44,12 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const { updateFilters } = useFilters();
 
-  // Mock data for charts (will be replaced with real API data)
-  const mockChartData = {
-    departmentDistribution: [
-      { name: 'Engineering', count: 45 },
-      { name: 'Sales', count: 32 },
-      { name: 'Marketing', count: 28 },
-      { name: 'HR', count: 15 },
-      { name: 'Finance', count: 20 },
-      { name: 'Operations', count: 25 }
-    ],
-    leaveStatus: [
-      { status: 'Approved', count: 68 },
-      { status: 'Pending', count: 23 },
-      { status: 'Rejected', count: 12 }
-    ],
-    leaveTrends: [
-      { month: 'Jan', approved: 45, pending: 12, rejected: 5 },
-      { month: 'Feb', approved: 52, pending: 15, rejected: 8 },
-      { month: 'Mar', approved: 48, pending: 18, rejected: 6 },
-      { month: 'Apr', approved: 61, pending: 14, rejected: 9 },
-      { month: 'May', approved: 55, pending: 20, rejected: 7 },
-      { month: 'Jun', approved: 68, pending: 23, rejected: 12 }
-    ]
-  };
-
   const fetchStats = async () => {
     try {
       setLoading(true);
       setError(null);
       const data = await getDashboardStats();
-      
-      // Merge real data with mock chart data
-      const enrichedData = {
-        ...data,
-        departmentDistribution: data.departmentDistribution || mockChartData.departmentDistribution,
-        leaveStatus: data.leaveStatus || mockChartData.leaveStatus,
-        leaveTrends: data.leaveTrends || mockChartData.leaveTrends
-      };
-      
-      setStats(enrichedData);
+      setStats(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load dashboard data');
     } finally {

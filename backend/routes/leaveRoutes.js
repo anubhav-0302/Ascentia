@@ -1,6 +1,6 @@
 import express from 'express';
 import { getMyLeaveRequests, getAllLeaveRequests, createLeaveRequest, updateLeaveRequestStatus } from '../leaveController.js';
-import { authorize } from '../middleware/auth.js';
+import { requireAuth, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -10,16 +10,16 @@ router.use((req, res, next) => {
   next();
 });
 
-// GET /api/leave/my - Get my leave requests
-router.get('/my', getMyLeaveRequests);
+// GET /api/leave/my - Get my leave requests (authenticated users only)
+router.get('/my', requireAuth, getMyLeaveRequests);
 
 // GET /api/leave - Get all leave requests (admin only)
-router.get('/', authorize('admin'), getAllLeaveRequests);
+router.get('/', requireAuth, authorize('admin'), getAllLeaveRequests);
 
-// POST /api/leave - Create leave request
-router.post('/', createLeaveRequest);
+// POST /api/leave - Create leave request (authenticated users only)
+router.post('/', requireAuth, createLeaveRequest);
 
 // PUT /api/leave/:id - Update leave request status (admin only)
-router.put('/:id', authorize('admin'), updateLeaveRequestStatus);
+router.put('/:id', requireAuth, authorize('admin'), updateLeaveRequestStatus);
 
 export default router;

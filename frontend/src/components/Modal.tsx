@@ -30,27 +30,28 @@ const Modal: React.FC<ModalProps> = ({
       // Store previous focus
       previousFocusRef.current = document.activeElement as HTMLElement;
       
-      // Focus modal
-      modalRef.current?.focus();
-      
       // Prevent body scroll
       document.body.style.overflow = 'hidden';
       
-      // Handle escape key
+      // Handle escape key - only when not in input elements
       const handleEscape = (e: KeyboardEvent) => {
-        if (e.key === 'Escape' && closeOnEscape) {
+        if (e.key === 'Escape' && closeOnEscape && 
+            !['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as Element).tagName)) {
+          e.preventDefault();
+          e.stopPropagation();
           onClose();
         }
       };
       
-      document.addEventListener('keydown', handleEscape);
+      // Use capture phase to ensure it runs before other handlers
+      document.addEventListener('keydown', handleEscape, true);
       
       return () => {
-        document.removeEventListener('keydown', handleEscape);
+        document.removeEventListener('keydown', handleEscape, true);
         document.body.style.overflow = '';
         
-        // Restore focus
-        if (previousFocusRef.current) {
+        // Restore focus only when modal closes and not focusing on input
+        if (previousFocusRef.current && document.activeElement?.tagName !== 'INPUT') {
           previousFocusRef.current.focus();
         }
       };
@@ -91,9 +92,7 @@ const Modal: React.FC<ModalProps> = ({
           bg-slate-800/95 backdrop-blur-lg border border-slate-700/50 
           rounded-2xl shadow-2xl modal-content-enter
           max-h-[90vh] overflow-hidden flex flex-col
-          outline-none focus:outline-none
         `}
-        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? 'modal-title' : undefined}

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .info { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffe0e0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #e0ffe0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f8f8; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Authentication Debug Tool</h1>
+    
+    <button onclick="checkAuth()">Check Authentication Status</button>
+    <button onclick="testAPI()">Test Users API</button>
+    <button onclick="clearAuth()">Clear Auth Data</button>
+    <button onclick="loginAsAdmin()">Login as Admin</button>
+    
+    <div id="result"></div>
+    
+    <script>
+        function checkAuth() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<h3>Checking Authentication...</h3>';
+            
+            try {
+                const storage = localStorage.getItem('auth-storage');
+                console.log('Raw storage:', storage);
+                
+                if (!storage) {
+                    resultDiv.innerHTML = '<div class="error">No auth data found in localStorage</div>';
+                    return;
+                }
+                
+                const parsed = JSON.parse(storage);
+                console.log('Parsed storage:', parsed);
+                
+                const token = parsed.state?.token;
+                const user = parsed.state?.user;
+                
+                let html = '<h3>Authentication Status:</h3>';
+                html += `<div class="info">Token exists: ${!!token}</div>`;
+                html += `<div class="info">User exists: ${!!user}</div>`;
+                
+                if (user) {
+                    html += `<div class="info">User ID: ${user.id}</div>`;
+                    html += `<div class="info">User Email: ${user.email}</div>`;
+                    html += `<div class="info">User Role: ${user.role}</div>`;
+                }
+                
+                if (token) {
+                    html += `<div class="success">Token (first 50 chars): ${token.substring(0, 50)}...</div>`;
+                }
+                
+                html += `<h4>Full Storage:</h4><pre>${JSON.stringify(parsed, null, 2)}</pre>`;
+                resultDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error checking auth: ${error.message}</div>`;
+            }
+        }
+        
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<h3>Testing API...</h3>';
+            
+            try {
+                const storage = localStorage.getItem('auth-storage');
+                let token = null;
+                
+                if (storage) {
+                    const parsed = JSON.parse(storage);
+                    token = parsed.state?.token;
+                }
+                
+                console.log('Using token:', token ? token.substring(0, 50) + '...' : 'none');
+                
+                const response = await fetch('http://localhost:5000/api/users', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    }
+                });
+                
+                console.log('Response:', response);
+                
+                let html = `<h3>API Test Results:</h3>`;
+                html += `<div class="info">Status: ${response.status} ${response.statusText}</div>`;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    html += `<div class="success">Success! Found ${data.data?.length || 0} users</div>`;
+                    html += `<h4>Response Data:</h4><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    const errorText = await response.text();
+                    html += `<div class="error">API Error: ${errorText}</div>`;
+                }
+                
+                resultDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Network Error: ${error.message}</div>`;
+            }
+        }
+        
+        function clearAuth() {
+            localStorage.removeItem('auth-storage');
+            document.getElementById('result').innerHTML = '<div class="success">Auth data cleared</div>';
+        }
+        
+        async function loginAsAdmin() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<h3>Logging in as admin...</h3>';
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@ascentia.com',
+                        password: 'admin123'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Store in the same format as the app
+                    const authData = {
+                        state: {
+                            user: data.data.user,
+                            token: data.data.token,
+                            isAuthenticated: true
+                        }
+                    };
+                    
+                    localStorage.setItem('auth-storage', JSON.stringify(authData));
+                    
+                    resultDiv.innerHTML = `<div class="success">Login successful! User: ${data.data.user.email}</div>`;
+                } else {
+                    const errorText = await response.text();
+                    resultDiv.innerHTML = `<div class="error">Login failed: ${errorText}</div>`;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Login error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

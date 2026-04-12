@@ -1,0 +1,103 @@
+[
+  {
+    "id": "1775928256507kq1iwo1mb",
+    "type": "employee_deleted",
+    "message": "Employee was removed",
+    "user": {
+      "id": 1,
+      "name": "Admin User",
+      "email": "admin@ascentia.com",
+      "avatar": null
+    },
+    "timestamp": "2026-04-11T17:24:16.507Z",
+    "metadata": {}
+  },
+  {
+    "id": "1775928256501nhpb97w6a",
+    "type": "employee_updated",
+    "message": "Employee profile was updated",
+    "user": {
+      "id": 1,
+      "name": "Admin User",
+      "email": "admin@ascentia.com",
+      "avatar": null
+    },
+    "timestamp": "2026-04-11T17:24:16.501Z",
+    "metadata": {}
+  },
+  {
+    "id": "1775928256494uad4kpgbe",
+    "type": "leave_rejected",
+    "message": "Leave request was rejected",
+    "user": {
+      "id": 1,
+      "name": "Admin User",
+      "email": "admin@ascentia.com",
+      "avatar": null
+    },
+    "timestamp": "2026-04-11T17:24:16.494Z",
+    "metadata": {}
+  },
+  {
+    "id": "1775928256488g4osdh1sw",
+    "type": "leave_approved",
+    "message": "Leave request was approved",
+    "user": {
+      "id": 1,
+      "name": "Admin User",
+      "email": "admin@ascentia.com",
+      "avatar": null
+    },
+    "timestamp": "2026-04-11T17:24:16.488Z",
+    "metadata": {}
+  },
+  {
+    "id": "1775928256480f84nbgup3",
+    "type": "leave_applied",
+    "message": "Leave request submitted for Sick Leave",
+    "user": {
+      "id": 2,
+      "name": "Employee User",
+      "email": "employee@ascentia.com",
+      "avatar": null
+    },
+    "timestamp": "2026-04-11T17:24:16.480Z",
+    "metadata": {
+      "leaveId": 456,
+      "leaveType": "Sick Leave",
+      "startDate": "2024-12-25",
+      "endDate": "2024-12-26",
+      "employeeId": 2
+    }
+  },
+  {
+    "id": "1775928256474ezxy5wsc4",
+    "type": "employee_created",
+    "message": "John Doe was added to the team",
+    "user": {
+      "id": 1,
+      "name": "Admin User",
+      "email": "admin@ascentia.com",
+      "avatar": null
+    },
+    "timestamp": "2026-04-11T17:24:16.474Z",
+    "metadata": {
+      "employeeId": 123,
+      "employeeName": "John Doe",
+      "department": "Engineering"
+    }
+  },
+  {
+    "id": "1775928256453j2w4nweh8",
+    "type": "employee_created",
+    "message": "Test employee was added",
+    "user": {
+      "id": 1,
+      "name": "Admin User",
+      "email": "admin@ascentia.com",
+      "avatar": null
+    },
+    "timestamp": "2026-04-11T17:24:16.453Z",
+    "metadata": {}
+  }
+]

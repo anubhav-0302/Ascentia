@@ -1,6 +1,6 @@
 import express from 'express';
 import { getEmployees, createEmployee, updateEmployee, deleteEmployee } from '../employeeController.js';
-import { authorize } from '../middleware/auth.js';
+import { requireAuth, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -10,16 +10,16 @@ router.use((req, res, next) => {
   next();
 });
 
-// GET /api/employees - Get all employees
-router.get('/', getEmployees);
+// GET /api/employees - Get all employees (admin only)
+router.get('/', requireAuth, authorize('admin'), getEmployees);
 
 // POST /api/employees - Create new employee (admin only)
-router.post('/', authorize('admin'), createEmployee);
+router.post('/', requireAuth, authorize('admin'), createEmployee);
 
 // PUT /api/employees/:id - Update employee (admin only)
-router.put('/:id', authorize('admin'), updateEmployee);
+router.put('/:id', requireAuth, authorize('admin'), updateEmployee);
 
 // DELETE /api/employees/:id - Delete employee (admin only)
-router.delete('/:id', authorize('admin'), deleteEmployee);
+router.delete('/:id', requireAuth, authorize('admin'), deleteEmployee);
 
 export default router;

@@ -1,54 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
 import GlobalSearch from './GlobalSearch';
 
 interface HeaderProps {
-  title?: string;
-  subtitle?: string;
+  // No props needed since title/subtitle are handled by individual pages
 }
 
-const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
-  const [pageTitle, setPageTitle] = useState("Dashboard");
-  const [pageSubtitle, setPageSubtitle] = useState("");
+const Header: React.FC<HeaderProps> = () => {
   const [showProfile, setShowProfile] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
-  const location = useLocation();
-
-  useEffect(() => {
-    const path = location.pathname;
-    
-    // Use custom title/subtitle if provided, otherwise use defaults
-    if (title && subtitle) {
-      setPageTitle(title);
-      setPageSubtitle(subtitle);
-      return;
-    }
-
-    const pageInfo: { [key: string]: { title: string; subtitle: string } } = {
-      "/": { title: "Dashboard", subtitle: "Overview of your HR metrics and employee data" },
-      "/dashboard": { title: "Dashboard", subtitle: "Overview of your HR metrics and employee data" },
-      "/directory": { title: "Directory", subtitle: "Browse and manage employee information" },
-      "/command-center": { title: "Command Center", subtitle: "Central hub for HR operations and management" },
-      "/workflow-hub": { title: "Workflow Hub", subtitle: "Manage and automate HR workflows" },
-      "/my-team": { title: "My Team", subtitle: "Manage your team members and performance" },
-      "/leave-attendance": { title: "Leave & Attendance", subtitle: "Manage time off and attendance records" },
-      "/payroll-benefits": { title: "Payroll & Benefits", subtitle: "Compensation and benefits administration" },
-      "/recruiting": { title: "Recruiting", subtitle: "Manage job postings and candidate pipeline" },
-      "/reports": { title: "Reports", subtitle: "Generate and view HR analytics reports" },
-      "/profile": { title: "Employee Profile", subtitle: "Comprehensive employee information and history" },
-      "/team-view": { title: "Team View", subtitle: "Organization hierarchy and team analytics" },
-      "/calendar": { title: "Team Calendar", subtitle: "Visualize team leave schedules and manage time off" },
-    };
-    
-    const info = pageInfo[path] || { title: "Dashboard", subtitle: "Overview of your HR metrics and employee data" };
-    setPageTitle(info.title);
-    setPageSubtitle(info.subtitle);
-  }, [location.pathname, title, subtitle]);
 
   const handleProfileClick = () => {
     setShowProfile(false);
@@ -80,34 +45,44 @@ const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
   return (
     <header className="h-16 bg-slate-900/80 backdrop-blur-lg border-b border-slate-800/50 fixed top-0 right-0 left-64 z-40">
       <div className="h-full px-6 flex items-center justify-between">
-        {/* Left Section - Page Title */}
-        <div className="flex-1">
-          <h1 className="text-xl font-semibold text-white">
-            {pageTitle}
-          </h1>
-          {pageSubtitle && (
-            <p className="text-sm text-slate-400">
-              {pageSubtitle}
-            </p>
-          )}
+        {/* Left Section - Visual balance with subtle accent */}
+        <div className="flex-1 flex items-center">
+          <div className="w-px h-8 bg-gradient-to-b from-transparent via-slate-700 to-transparent"></div>
         </div>
 
-        {/* Right Section */}
-        <div className="flex items-center space-x-4">
+        {/* Center Divider */}
+        <div className="h-8 w-px bg-gradient-to-b from-transparent via-slate-700 to-transparent mx-4"></div>
+
+        {/* Right Section - Enhanced visual presentation */}
+        <div className="flex items-center space-x-3">
           {/* Global Search */}
-          <GlobalSearch />
+          <div className="relative">
+            <GlobalSearch />
+          </div>
+
+          {/* Separator */}
+          <div className="h-6 w-px bg-slate-700/50"></div>
 
           {/* Notification Bell */}
-          <NotificationCenter />
+          <div className="relative">
+            <NotificationCenter />
+          </div>
+
+          {/* Separator */}
+          <div className="h-6 w-px bg-slate-700/50"></div>
 
           {/* User Dropdown */}
           <div ref={profileRef} className="relative">
             <button
               onClick={() => setShowProfile(!showProfile)}
-              className="flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-800/50 transition-colors duration-200"
+              className="flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-800/50 transition-all duration-200 border border-transparent hover:border-slate-700/50"
             >
-              <div className="w-8 h-8 bg-teal-500 rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center shadow-lg shadow-teal-500/20">
                 <User className="w-5 h-5 text-white" />
+              </div>
+              <div className="hidden md:block text-left">
+                <p className="text-sm font-medium text-white">{user?.name || 'John Davis'}</p>
+                <p className="text-xs text-slate-400">{user?.role || 'Administrator'}</p>
               </div>
               <ChevronDown 
                 className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
@@ -116,45 +91,64 @@ const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
               />
             </button>
 
-            {/* Dropdown Menu */}
+            {/* Enhanced Dropdown Menu */}
             {showProfile && (
-              <div className="absolute right-0 mt-2 w-56 bg-slate-800/95 backdrop-blur-lg border border-slate-700/50 rounded-xl shadow-xl z-50">
-                <div className="p-4 border-b border-slate-700/50">
+              <div className="absolute right-0 mt-3 w-72 bg-slate-800/95 backdrop-blur-lg border border-slate-700/50 rounded-xl shadow-2xl z-50 overflow-hidden">
+                {/* User Profile Section */}
+                <div className="p-4 bg-gradient-to-r from-teal-600/20 to-blue-600/20 border-b border-slate-700/50">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center">
+                    <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center shadow-lg shadow-teal-500/30">
                       <User className="w-6 h-6 text-white" />
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-white">{user?.name || 'John Davis'}</p>
-                      <p className="text-xs text-slate-400">{user?.email || 'john@ascentia.com'}</p>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-white">{user?.name || 'John Davis'}</p>
+                      <p className="text-xs text-slate-300">{user?.email || 'john@ascentia.com'}</p>
+                      <p className="text-xs text-teal-400 mt-1">{user?.role || 'Administrator'}</p>
                     </div>
                   </div>
                 </div>
 
+                {/* Menu Items */}
                 <div className="py-2">
                   <button 
                     onClick={handleProfileClick}
-                    className="w-full px-4 py-2 text-left text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition-colors duration-200 flex items-center space-x-3"
+                    className="w-full px-4 py-3 text-left text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all duration-200 flex items-center space-x-3 group"
                   >
-                    <User className="w-4 h-4" />
-                    <span>Profile</span>
+                    <div className="w-8 h-8 bg-slate-700/50 rounded-lg flex items-center justify-center group-hover:bg-teal-600/20 transition-colors duration-200">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">Profile</p>
+                      <p className="text-xs text-slate-500">View your profile</p>
+                    </div>
                   </button>
                   <button 
                     onClick={handleSettingsClick}
-                    className="w-full px-4 py-2 text-left text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition-colors duration-200 flex items-center space-x-3"
+                    className="w-full px-4 py-3 text-left text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all duration-200 flex items-center space-x-3 group"
                   >
-                    <Settings className="w-4 h-4" />
-                    <span>Settings</span>
+                    <div className="w-8 h-8 bg-slate-700/50 rounded-lg flex items-center justify-center group-hover:bg-teal-600/20 transition-colors duration-200">
+                      <Settings className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">Settings</p>
+                      <p className="text-xs text-slate-500">App preferences</p>
+                    </div>
                   </button>
                 </div>
 
-                <div className="border-t border-slate-700/50 py-2">
+                {/* Logout Section */}
+                <div className="border-t border-slate-700/50 p-2">
                   <button 
                     onClick={handleLogout}
-                    className="w-full px-4 py-2 text-left text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-colors duration-200 flex items-center space-x-3"
+                    className="w-full px-4 py-3 text-left text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-all duration-200 flex items-center space-x-3 rounded-lg group"
                   >
-                    <LogOut className="w-4 h-4" />
-                    <span>Sign out</span>
+                    <div className="w-8 h-8 bg-red-400/10 rounded-lg flex items-center justify-center group-hover:bg-red-400/20 transition-colors duration-200">
+                      <LogOut className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">Sign out</p>
+                      <p className="text-xs text-red-500/70">Logout from account</p>
+                    </div>
                   </button>
                 </div>
               </div>

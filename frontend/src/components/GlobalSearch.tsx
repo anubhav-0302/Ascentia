@@ -1,23 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useDebounce } from '../hooks/useDebounce';
 import { useNavigate } from 'react-router-dom';
+import { employeeApi } from '../api/employeeApi';
 
 interface SearchResult {
   id: string;
-  type: 'employee' | 'leave' | 'document' | 'action';
+  type: 'employee';
   title: string;
   description: string;
   metadata?: {
     department?: string;
     status?: string;
-    date?: string;
-    priority?: 'high' | 'medium' | 'low';
     email?: string;
-    type?: string;
-    assignee?: string;
   };
   url: string;
-  avatar?: string;
 }
 
 const GlobalSearch: React.FC = () => {
@@ -30,249 +26,56 @@ const GlobalSearch: React.FC = () => {
   const navigate = useNavigate();
   const debouncedQuery = useDebounce(query, 300);
 
-  // Enhanced mock search data with more realistic content
-  const mockData: SearchResult[] = [
-    {
-      id: '1',
-      type: 'employee',
-      title: 'Sarah Chen',
-      description: 'Senior Frontend Developer • Engineering Department',
-      metadata: {
-        department: 'Engineering',
-        status: 'Active',
-        email: 'sarah.chen@ascentia.com'
-      },
-      url: '/directory',
-      avatar: 'https://picsum.photos/seed/sarah/32/32.jpg'
-    },
-    {
-      id: '2',
-      type: 'employee',
-      title: 'Michael Brown',
-      description: 'Engineering Manager • Engineering Department',
-      metadata: {
-        department: 'Engineering',
-        status: 'Active',
-        email: 'michael.brown@ascentia.com'
-      },
-      url: '/directory',
-      avatar: 'https://picsum.photos/seed/michael/32/32.jpg'
-    },
-    {
-      id: '3',
-      type: 'employee',
-      title: 'Emma Wilson',
-      description: 'Frontend Developer • Engineering Department',
-      metadata: {
-        department: 'Engineering',
-        status: 'Active',
-        email: 'emma.wilson@ascentia.com'
-      },
-      url: '/directory',
-      avatar: 'https://picsum.photos/seed/emma/32/32.jpg'
-    },
-    {
-      id: '4',
-      type: 'employee',
-      title: 'David Lee',
-      description: 'UX Designer • Design Department',
-      metadata: {
-        department: 'Design',
-        status: 'On Leave',
-        email: 'david.lee@ascentia.com'
-      },
-      url: '/directory',
-      avatar: 'https://picsum.photos/seed/david/32/32.jpg'
-    },
-    {
-      id: '5',
-      type: 'employee',
-      title: 'Maria Garcia',
-      description: 'Product Manager • Product Department',
-      metadata: {
-        department: 'Product',
-        status: 'Active',
-        email: 'maria.garcia@ascentia.com'
-      },
-      url: '/directory',
-      avatar: 'https://picsum.photos/seed/maria/32/32.jpg'
-    },
-    {
-      id: '6',
-      type: 'employee',
-      title: 'James Chen',
-      description: 'DevOps Engineer • Engineering Department',
-      metadata: {
-        department: 'Engineering',
-        status: 'Active',
-        email: 'james.chen@ascentia.com'
-      },
-      url: '/directory',
-      avatar: 'https://picsum.photos/seed/james/32/32.jpg'
-    },
-    {
-      id: '7',
-      type: 'leave',
-      title: 'Vacation Request - Sarah Chen',
-      description: '3 days vacation request • Dec 25-30, 2024',
-      metadata: {
-        status: 'Pending',
-        date: '2024-12-20',
-        priority: 'medium'
-      },
-      url: '/leave-attendance'
-    },
-    {
-      id: '8',
-      type: 'leave',
-      title: 'Sick Leave - Michael Brown',
-      description: '2 days sick leave • Jan 15-16, 2024',
-      metadata: {
-        status: 'Approved',
-        date: '2024-01-14',
-        priority: 'high'
-      },
-      url: '/leave-attendance'
-    },
-    {
-      id: '9',
-      type: 'document',
-      title: 'Employment Contract - John Davis',
-      description: 'Employee contract • Uploaded Jan 15, 2024',
-      metadata: {
-        date: '2024-01-15',
-        type: 'Contract'
-      },
-      url: '/profile'
-    },
-    {
-      id: '10',
-      type: 'document',
-      title: 'Performance Review Template',
-      description: 'Q4 2024 performance review template • Standard template',
-      metadata: {
-        date: '2024-01-10',
-        type: 'Template'
-      },
-      url: '/reports'
-    },
-    {
-      id: '11',
-      type: 'action',
-      title: 'Complete Performance Reviews',
-      description: 'Q4 reviews for Engineering team • Due by Dec 31',
-      metadata: {
-        priority: 'high',
-        date: '2024-12-15',
-        assignee: 'Michael Brown'
-      },
-      url: '/my-team'
-    },
-    {
-      id: '12',
-      type: 'action',
-      title: 'Review Job Applications',
-      description: 'Frontend Developer position • 24 applications to review',
-      metadata: {
-        priority: 'medium',
-        date: '2024-12-18',
-        assignee: 'Maria Garcia'
-      },
-      url: '/recruiting'
-    }
-  ];
-
   useEffect(() => {
-    // Load recent searches from localStorage
     const saved = localStorage.getItem('recentSearches');
-    if (saved) {
-      setRecentSearches(JSON.parse(saved));
-    }
+    if (saved) setRecentSearches(JSON.parse(saved));
   }, []);
 
   useEffect(() => {
-    if (debouncedQuery) {
-      performSearch(debouncedQuery);
-    } else {
-      setResults([]);
-    }
+    if (debouncedQuery) performSearch(debouncedQuery);
+    else setResults([]);
   }, [debouncedQuery]);
 
   useEffect(() => {
-    // Close dropdown when clicking outside
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const performSearch = async (searchQuery: string) => {
+  const performSearch = useCallback(async (searchQuery: string) => {
     setLoading(true);
-    
-    // Simulate API call with improved filtering
-    setTimeout(() => {
-      const filtered = mockData.filter(item => {
-        const query = searchQuery.toLowerCase();
-        
-        // Search in title
-        if (item.title.toLowerCase().includes(query)) {
-          return true;
-        }
-        
-        // Search in description
-        if (item.description.toLowerCase().includes(query)) {
-          return true;
-        }
-        
-        // Search in metadata
-        if (item.metadata) {
-          // Search in department
-          if (item.metadata.department?.toLowerCase().includes(query)) {
-            return true;
-          }
-          
-          // Search in status
-          if (item.metadata.status?.toLowerCase().includes(query)) {
-            return true;
-          }
-          
-          // Search in email
-          if (item.metadata.email?.toLowerCase().includes(query)) {
-            return true;
-          }
-          
-          // Search in type
-          if (item.metadata.type?.toLowerCase().includes(query)) {
-            return true;
-          }
-          
-          // Search in assignee
-          if (item.metadata.assignee?.toLowerCase().includes(query)) {
-            return true;
-          }
-          
-          // Search in priority
-          if (item.metadata.priority?.toLowerCase().includes(query)) {
-            return true;
-          }
-        }
-        
-        // Search by type
-        if (item.type.toLowerCase().includes(query)) {
-          return true;
-        }
-        
-        return false;
-      });
-      
+    try {
+      const res = await employeeApi.getEmployees();
+      const employees = res.data || [];
+      const q = searchQuery.toLowerCase();
+      const filtered: SearchResult[] = employees
+        .filter((e: any) =>
+          e.name?.toLowerCase().includes(q) ||
+          e.email?.toLowerCase().includes(q) ||
+          e.jobTitle?.toLowerCase().includes(q) ||
+          e.department?.toLowerCase().includes(q) ||
+          e.status?.toLowerCase().includes(q)
+        )
+        .slice(0, 10)
+        .map((e: any) => ({
+          id: String(e.id),
+          type: 'employee' as const,
+          title: e.name,
+          description: `${e.jobTitle} • ${e.department}`,
+          metadata: { department: e.department, status: e.status, email: e.email },
+          url: '/directory'
+        }));
       setResults(filtered);
+    } catch {
+      setResults([]);
+    } finally {
       setLoading(false);
-    }, 300);
-  };
+    }
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -289,36 +92,6 @@ const GlobalSearch: React.FC = () => {
     setQuery('');
     // Navigate to the result URL
     navigate(result.url);
-  };
-
-  const getSearchIcon = (type: SearchResult['type']) => {
-    const iconClasses = 'w-4 h-4';
-    
-    switch (type) {
-      case 'employee':
-        return <i className={`fas fa-user text-blue-400 ${iconClasses}`}></i>;
-      case 'leave':
-        return <i className={`fas fa-calendar text-green-400 ${iconClasses}`}></i>;
-      case 'document':
-        return <i className={`fas fa-file text-purple-400 ${iconClasses}`}></i>;
-      case 'action':
-        return <i className={`fas fa-tasks text-orange-400 ${iconClasses}`}></i>;
-      default:
-        return <i className={`fas fa-search text-gray-400 ${iconClasses}`}></i>;
-    }
-  };
-
-  const getPriorityColor = (priority?: string) => {
-    switch (priority) {
-      case 'high':
-        return 'text-red-400 bg-red-400/10 border-red-400/30';
-      case 'medium':
-        return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30';
-      case 'low':
-        return 'text-green-400 bg-green-400/10 border-green-400/30';
-      default:
-        return '';
-    }
   };
 
   const getStatusColor = (status?: string) => {
@@ -444,19 +217,11 @@ const GlobalSearch: React.FC = () => {
                       onClick={() => handleResultClick(result)}
                       className="w-full px-4 py-3 flex items-start space-x-3 hover:bg-slate-700/50 transition-all duration-200"
                     >
-                      {/* Icon or Avatar */}
+                      {/* Icon */}
                       <div className="flex-shrink-0 mt-0.5">
-                        {result.avatar ? (
-                          <img
-                            src={result.avatar}
-                            alt={result.title}
-                            className="w-8 h-8 rounded-full border border-slate-600"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 bg-slate-700/50 rounded-lg flex items-center justify-center">
-                            {getSearchIcon(result.type)}
-                          </div>
-                        )}
+                        <div className="w-8 h-8 bg-teal-500/20 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-bold text-teal-400">{result.title.charAt(0)}</span>
+                        </div>
                       </div>
 
                       {/* Content */}
@@ -465,11 +230,6 @@ const GlobalSearch: React.FC = () => {
                           <h4 className="text-sm font-medium text-white truncate">
                             {result.title}
                           </h4>
-                          {result.metadata?.priority && (
-                            <span className={`px-1.5 py-0.5 text-xs rounded border ${getPriorityColor(result.metadata.priority)}`}>
-                              {result.metadata.priority}
-                            </span>
-                          )}
                         </div>
                         <p className="text-xs text-gray-400 mb-1">{result.description}</p>
                         
@@ -486,10 +246,10 @@ const GlobalSearch: React.FC = () => {
                               {result.metadata.status}
                             </span>
                           )}
-                          {result.metadata?.date && (
+                          {result.metadata?.email && (
                             <span className="text-gray-500">
-                              <i className="fas fa-calendar mr-1"></i>
-                              {new Date(result.metadata.date).toLocaleDateString()}
+                              <i className="fas fa-envelope mr-1"></i>
+                              {result.metadata.email}
                             </span>
                           )}
                         </div>

@@ -58,5 +58,35 @@
     "actionUrl": "/leave-attendance",
     "read": false,
     "createdAt": "2026-04-11T17:06:05.628Z"
+  },
+  {
+    "id": "17760321654356z3fi6hp9",
+    "userId": 2,
+    "title": "Leave Request Approved",
+    "description": "Your Sick Leave leave request from 2024-01-15 to 2024-01-16 has been approved",
+    "type": "success",
+    "actionUrl": "/leave-attendance",
+    "read": false,
+    "createdAt": "2026-04-12T22:16:05.435Z"
+  },
+  {
+    "id": "1776032165444a3wpxkvgk",
+    "userId": 6,
+    "title": "Leave Request Approved",
+    "description": "Employee User's Sick Leave leave request has been approved",
+    "type": "info",
+    "actionUrl": "/leave-attendance",
+    "read": false,
+    "createdAt": "2026-04-12T22:16:05.444Z"
+  },
+  {
+    "id": "1776032165445fdfjap5pg",
+    "userId": 10,
+    "title": "Leave Request Approved",
+    "description": "Employee User's Sick Leave leave request has been approved",
+    "type": "info",
+    "actionUrl": "/leave-attendance",
+    "read": false,
+    "createdAt": "2026-04-12T22:16:05.445Z"
   }
 ]
