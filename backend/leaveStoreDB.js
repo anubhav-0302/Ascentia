@@ -2,12 +2,15 @@ import fs from 'fs';
 import path from 'path';
 import { logDatabaseOperation } from './databaseLogger.js';
 
-// Resolve a user by ID from database
+// Resolve a user by ID from database - now works with Employee model
 const resolveUser = async (userId) => {
   try {
     const { default: prisma } = await import('./lib/prisma.js');
-    const u = await prisma.user.findUnique({ where: { id: parseInt(userId) }, select: { id: true, name: true, email: true, role: true } });
-    return u || { id: userId, name: 'Unknown User' };
+    const employee = await prisma.employee.findUnique({ 
+      where: { id: parseInt(userId) }, 
+      select: { id: true, name: true, email: true, role: true, jobTitle: true, department: true } 
+    });
+    return employee || { id: userId, name: 'Unknown User' };
   } catch (_) {
     return { id: userId, name: 'Unknown User' };
   }

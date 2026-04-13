@@ -7,10 +7,10 @@ import type { CreateUserData } from '../api/userApi';
 interface UserFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: CreateUserData) => Promise<void>;
-  loading: boolean;
+  onSubmit: (data: CreateUserData & { jobTitle?: string; department?: string; }) => Promise<void>;
+  loading?: boolean;
   title: string;
-  initialData?: Partial<CreateUserData>;
+  initialData?: Partial<CreateUserData & { jobTitle?: string; department?: string; }>;
 }
 
 const UserForm: React.FC<UserFormProps> = ({
@@ -23,11 +23,13 @@ const UserForm: React.FC<UserFormProps> = ({
 }) => {
   console.log('🔍 UserForm: Component rendered, isOpen:', isOpen, 'initialData:', initialData);
   
-  const [formData, setFormData] = useState<CreateUserData>(() => ({
+  const [formData, setFormData] = useState<CreateUserData & { jobTitle?: string; department?: string; }>(() => ({
     name: '',
     email: '',
     password: '',
     role: 'employee',
+    jobTitle: 'Employee',
+    department: 'General',
     ...initialData
   }));
 
@@ -39,6 +41,8 @@ const UserForm: React.FC<UserFormProps> = ({
         email: '',
         password: '',
         role: 'employee',
+        jobTitle: 'Employee',
+        department: 'General',
         ...initialData
       });
     }
@@ -64,7 +68,7 @@ const UserForm: React.FC<UserFormProps> = ({
     }
   };
 
-  const handleChange = (field: keyof CreateUserData, value: string) => {
+  const handleChange = (field: keyof (CreateUserData & { jobTitle?: string; department?: string; }), value: string) => {
     console.log(`🔤 UserForm: ${String(field)} change:`, value);
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
@@ -146,6 +150,32 @@ const UserForm: React.FC<UserFormProps> = ({
             <option value="admin">Admin</option>
           </select>
         </div>
+        <Input
+          label="Job Title"
+          value={formData.jobTitle || ''}
+          onChange={(e) => {
+            e.stopPropagation();
+            handleChange('jobTitle', e.target.value);
+          }}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+          }}
+          placeholder="Enter job title"
+          required
+        />
+        <Input
+          label="Department"
+          value={formData.department || ''}
+          onChange={(e) => {
+            e.stopPropagation();
+            handleChange('department', e.target.value);
+          }}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+          }}
+          placeholder="Enter department"
+          required
+        />
         <div className="flex justify-end space-x-3 pt-4">
           <Button
             type="button"

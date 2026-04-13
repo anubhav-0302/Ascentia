@@ -9,35 +9,27 @@ datasource db {
   provider = "sqlite"
 }
 
-model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  role      String   @default("admin")
-  status    String   @default("active")
-  lastLogin DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  createdBy Int?
+model Employee {
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String   @unique
+  password   String?  // Nullable for contractors/third parties
+  jobTitle   String
+  department String
+  location   String
+  status     String   @default("active") // active/inactive/terminated
+  role       String   @default("employee") // admin/hr/employee
+  lastLogin  DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  createdBy  Int?
 
   leaveRequests LeaveRequest[]
 }
 
-model Employee {
-  id         Int      @id @default(autoincrement())
-  name       String
-  email      String
-  jobTitle   String
-  department String
-  location   String
-  status     String
-  createdAt  DateTime @default(now())
-}
-
 model LeaveRequest {
   id        Int      @id @default(autoincrement())
-  userId    Int
+  employeeId Int
   type      String
   startDate DateTime
   endDate   DateTime
@@ -45,6 +37,6 @@ model LeaveRequest {
   status    String   @default("Pending")
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id])
+  employee  Employee @relation(fields: [employeeId], references: [id])
 }
 

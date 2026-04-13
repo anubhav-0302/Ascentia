@@ -1,6 +1,6 @@
 import { apiClient } from "./apiClient";
 
-// Employee interface
+// Employee interface - unified model with authentication
 export interface Employee {
   id: number;
   name: string;
@@ -9,8 +9,11 @@ export interface Employee {
   department: string;
   location: string;
   status: string;
-  avatar?: string;
+  role: string;
+  lastLogin?: string;
   createdAt?: string;
+  updatedAt?: string;
+  hasPassword?: boolean;
 }
 
 // Explicit type definitions for better TypeScript compatibility
@@ -21,7 +24,8 @@ export interface CreateEmployeeRequest {
   department: string;
   location: string;
   status: string;
-  avatar?: string;
+  role?: string;
+  password?: string;
 }
 
 export interface UpdateEmployeeRequest {
@@ -31,7 +35,8 @@ export interface UpdateEmployeeRequest {
   department?: string;
   location?: string;
   status?: string;
-  avatar?: string;
+  role?: string;
+  password?: string;
 }
 
 // API Error class for better error handling

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getDashboardStats, type DashboardStats } from "../api/dashboardApi";
 import { useFilters } from "../contexts/FilterContext";
-import { AddEmployeeModal } from "./AddEmployeeModal";
+import { useIsAdmin } from "../store/useAuthStore";
 import {
   PieChart,
   Pie,
@@ -43,8 +43,8 @@ const Dashboard = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [addModalOpen, setAddModalOpen] = useState(false);
   const { updateFilters } = useFilters();
+  const isAdmin = useIsAdmin();
 
   const fetchStats = async () => {
     try {
@@ -336,21 +336,22 @@ const Dashboard = () => {
           </h3>
           
           <div className="space-y-3">
-            <button
-              onClick={() => setAddModalOpen(true)}
-              className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group block"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-teal-500/20 rounded-lg flex items-center justify-center group-hover:bg-teal-500/30 transition-colors duration-200">
-                  <i className="fas fa-user-plus text-teal-400 text-sm"></i>
+            {isAdmin && (
+              <Link 
+                to="/permission-management"
+                className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group block"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-teal-500/20 rounded-lg flex items-center justify-center group-hover:bg-teal-500/30 transition-colors duration-200">
+                    <i className="fas fa-user-plus text-teal-400 text-sm"></i>
+                  </div>
+                  <div>
+                    <p className="text-white font-medium text-sm">Add Employee</p>
+                    <p className="text-gray-500 text-xs">Onboard new team member</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-white font-medium text-sm">Add Employee</p>
-                  <p className="text-gray-500 text-xs">Onboard new team member</p>
-                </div>
-              </div>
-            </button>
-
+              </Link>
+            )}
             <Link 
               to="/leave-attendance"
               className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group block"
@@ -658,13 +659,6 @@ const Dashboard = () => {
 
       {/* Activity Feed */}
       <ActivityFeed />
-
-      {/* Add Employee Modal */}
-      <AddEmployeeModal
-        isOpen={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        onSuccess={fetchStats}
-      />
     </LayoutWrapper>
   );
 };

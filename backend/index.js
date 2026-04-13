@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import bcrypt from 'bcryptjs';
 import authRoutes from './routes/authRoutes.js';
 import employeeRoutes from './routes/employeeRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
@@ -19,6 +20,30 @@ const initializeDatabase = async () => {
   try {
     console.log("🔧 Initializing database...");
     await initializeLeaveData();
+    
+    // Seed default admin employee if not exists
+    const adminEmail = 'admin@ascentia.com';
+    const existingAdmin = await prisma.employee.findFirst({
+      where: { email: adminEmail }
+    });
+    
+    if (!existingAdmin) {
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      await prisma.employee.create({
+        data: {
+          name: 'Admin User',
+          email: adminEmail,
+          password: hashedPassword,
+          role: 'admin',
+          status: 'active',
+          jobTitle: 'System Administrator',
+          department: 'IT',
+          location: 'Main Office'
+        }
+      });
+      console.log("✅ Created default admin employee:", adminEmail);
+    }
+    
     console.log("✅ Database initialized successfully");
   } catch (error) {
     console.error("❌ Database initialization failed:", error);

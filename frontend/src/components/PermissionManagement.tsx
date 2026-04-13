@@ -1,15 +1,11 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { 
-  getAllUsers, 
-  createUser, 
-  updateUser, 
-  resetUserPassword, 
-  deleteUser, 
-  type User, 
-  type CreateUserData, 
-  type UpdateUserData 
-} from '../api/userApi';
+  employeeApi, 
+  type Employee, 
+  type CreateEmployeeRequest, 
+  type UpdateEmployeeRequest 
+} from '../api/employeeApi';
 import { useUser } from '../store/useAuthStore';
 import Button from './Button';
 import Input from './Input';
@@ -35,7 +31,7 @@ const PermissionManagement = () => {
   console.log('🔍 PermissionManagement: Component rendering');
   const currentUser = useUser();
   console.log('🔍 PermissionManagement: currentUser from useUser:', currentUser);
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -45,17 +41,21 @@ const PermissionManagement = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<Employee | null>(null);
   
   // Form states
-  const [createFormData, setCreateFormData] = useState<CreateUserData>({
+  const [createFormData, setCreateFormData] = useState<CreateEmployeeRequest & { password: string }>({
     name: '',
     email: '',
     password: '',
-    role: 'employee'
+    role: 'employee',
+    jobTitle: 'Employee',
+    department: 'General',
+    location: 'Main Office',
+    status: 'active'
   });
   
-  const [editFormData, setEditFormData] = useState<UpdateUserData>({
+  const [editFormData, setEditFormData] = useState<UpdateEmployeeRequest>({
     name: '',
     email: '',
     role: 'employee',
@@ -91,8 +91,8 @@ const PermissionManagement = () => {
       setLoading(true);
       setError(null);
       
-      console.log('🔍 Calling getAllUsers API...');
-      const response = await getAllUsers();
+      console.log('🔍 Calling employeeApi.getEmployees API...');
+      const response = await employeeApi.getEmployees();
       console.log('🔍 API Response:', response);
       console.log('🔍 Response type:', typeof response);
       console.log('🔍 Response keys:', Object.keys(response));
@@ -148,8 +148,8 @@ const PermissionManagement = () => {
     fetchUsers();
   };
 
-  const handleCreateUser = async (userData: CreateUserData) => {
-    if (!userData.name || !userData.email || !userData.password) {
+  const handleCreateUser = async (userData: CreateEmployeeRequest & { password: string }) => {
+    if (!userData.name || !userData.email || !userData.password || !userData.jobTitle || !userData.department) {
       toast.error('Please fill all required fields');
       return;
     }
@@ -161,10 +161,19 @@ const PermissionManagement = () => {
 
     try {
       setLoading(true);
-      await createUser(userData);
+      await employeeApi.createEmployee(userData);
       toast.success('User created successfully');
       setShowCreateModal(false);
-      setCreateFormData({ name: '', email: '', password: '', role: 'employee' });
+      setCreateFormData({ 
+        name: '', 
+        email: '', 
+        password: '', 
+        role: 'employee',
+        jobTitle: 'Employee',
+        department: 'General',
+        location: 'Main Office',
+        status: 'active'
+      });
       fetchUsers();
     } catch (err: any) {
       toast.error(err.message || 'Failed to create user');
@@ -183,7 +192,7 @@ const PermissionManagement = () => {
 
     try {
       setLoading(true);
-      await updateUser(selectedUser.id, editFormData);
+      await employeeApi.updateEmployee(selectedUser.id, editFormData);
       toast.success('User updated successfully');
       setShowEditModal(false);
       setSelectedUser(null);
@@ -215,7 +224,7 @@ const PermissionManagement = () => {
 
     try {
       setLoading(true);
-      await resetUserPassword(selectedUser.id, { newPassword: passwordFormData.newPassword });
+      await employeeApi.updateEmployee(selectedUser.id, { password: passwordFormData.newPassword });
       toast.success('Password reset successfully');
       setShowPasswordModal(false);
       setSelectedUser(null);
@@ -232,7 +241,7 @@ const PermissionManagement = () => {
 
     try {
       setLoading(true);
-      await deleteUser(selectedUser.id);
+      await employeeApi.deleteEmployee(selectedUser.id);
       toast.success('User deleted successfully');
       setShowDeleteModal(false);
       setSelectedUser(null);
@@ -244,7 +253,7 @@ const PermissionManagement = () => {
     }
   };
 
-  const openEditModal = (user: User) => {
+  const openEditModal = (user: Employee) => {
     setSelectedUser(user);
     setEditFormData({
       name: user.name,
@@ -255,13 +264,13 @@ const PermissionManagement = () => {
     setShowEditModal(true);
   };
 
-  const openPasswordModal = (user: User) => {
+  const openPasswordModal = (user: Employee) => {
     setSelectedUser(user);
     setPasswordFormData({ newPassword: '', confirmPassword: '' });
     setShowPasswordModal(true);
   };
 
-  const openDeleteModal = (user: User) => {
+  const openDeleteModal = (user: Employee) => {
     setSelectedUser(user);
     setShowDeleteModal(true);
   };
@@ -315,7 +324,7 @@ const PermissionManagement = () => {
             className="bg-teal-600 hover:bg-teal-700"
           >
             <UserPlus className="w-4 h-4 mr-2" />
-            Add User
+            Add Employee
           </Button>
         </div>
       </div>
@@ -413,11 +422,11 @@ const PermissionManagement = () => {
                     </td>
                     <td className="py-3 px-2">
                       <p className="text-gray-300 text-sm">
-                        {new Date(user.createdAt).toLocaleDateString('en-US', { 
+                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { 
                           month: 'short', 
                           day: 'numeric', 
                           year: 'numeric' 
-                        })}
+                        }) : 'N/A'}
                       </p>
                     </td>
                     <td className="py-3 px-2">

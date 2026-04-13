@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma.js';
 
-// Authentication middleware - database only
+// Authentication middleware - database only - now works with Employee model
 export const requireAuth = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -12,11 +12,20 @@ export const requireAuth = async (req, res, next) => {
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, "secret123");
 
-    const dbUser = await prisma.user.findUnique({ where: { id: decoded.id } });
-    if (!dbUser)
-      return res.status(401).json({ success: false, message: 'Invalid token - user not found' });
+    const employee = await prisma.employee.findUnique({ where: { id: decoded.id } });
+    if (!employee)
+      return res.status(401).json({ success: false, message: 'Invalid token - employee not found' });
 
-    req.user = { id: dbUser.id, name: dbUser.name, email: dbUser.email, role: dbUser.role, createdAt: dbUser.createdAt };
+    req.user = { 
+      id: employee.id, 
+      name: employee.name, 
+      email: employee.email, 
+      role: employee.role, 
+      jobTitle: employee.jobTitle,
+      department: employee.department,
+      status: employee.status,
+      createdAt: employee.createdAt 
+    };
     next();
   } catch (err) {
     return res.status(401).json({ success: false, message: "Invalid token" });

@@ -15,8 +15,7 @@ import { PageTransition, StaggerContainer, FadeIn } from "./PageTransition";
 import { EnhancedModal } from "./EnhancedModal";
 import { CardSkeleton } from "./EnhancedSkeletonLoader";
 import { EmployeesEmptyState, SearchEmptyState } from "./EmptyState";
-import { AddEmployeeModal } from "./AddEmployeeModal";
-import { Search, Plus, Edit, Trash2 } from 'lucide-react';
+import { Search, Edit, Trash2 } from 'lucide-react';
 
 /* =========================
    MODAL
@@ -171,7 +170,6 @@ function Directory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
-  const [addModalOpen, setAddModalOpen] = useState(false);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const { addNotification } = useNotificationStore();
@@ -234,10 +232,7 @@ function Directory() {
     });
   }, [employees, debouncedSearchTerm, filters]);
 
-  const handleAddEmployee = () => {
-    setAddModalOpen(true);
-  };
-
+  
   const handleEditEmployee = (emp: Employee) => {
     setEditingEmployee(emp);
     setIsModalOpen(true);
@@ -315,17 +310,6 @@ function Directory() {
               showLocation={true}
               showSortOptions={true}
             />
-
-            {/* Admin-only Add Employee Button */}
-            {isAdmin && (
-              <Button
-                onClick={handleAddEmployee}
-                icon={<Plus className="w-4 h-4" />}
-                className="mb-6"
-              >
-                Add Employee
-              </Button>
-            )}
           </FadeIn>
 
           {/* Content */}
@@ -350,9 +334,7 @@ function Directory() {
                   onClearSearch={() => setSearchTerm("")}
                 />
               ) : (
-                <EmployeesEmptyState 
-                  onAddEmployee={isAdmin ? handleAddEmployee : undefined}
-                />
+                <EmployeesEmptyState />
               )
             ) : (
               <StaggerContainer staggerDelay={100} initialDelay={300}>
@@ -432,13 +414,6 @@ function Directory() {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onSave={handleSaveEmployee}
-        />
-
-        {/* Add Employee Modal */}
-        <AddEmployeeModal
-          isOpen={addModalOpen}
-          onClose={() => setAddModalOpen(false)}
-          onSuccess={fetchEmployees}
         />
       </div>
     </PageTransition>
