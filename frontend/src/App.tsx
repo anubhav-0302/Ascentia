@@ -14,9 +14,11 @@ import Recruiting from './components/Recruiting';
 import Reports from './components/Reports';
 import Profile from './components/Profile';
 import Settings from './components/Settings';
+import PermissionManagement from './components/PermissionManagement';
 import Login from './components/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import GlobalSearch from './components/GlobalSearch';
 import { FilterProvider } from './contexts/FilterContext';
 import { useAuthStore, useAuthInitialized, useIsAuthenticated } from './store/useAuthStore';
 import './styles/globals.css';
@@ -81,6 +83,7 @@ function App() {
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/settings" element={<Settings />} />
+                  <Route path="/permission-management" element={<PermissionManagement />} />
                   <Route path="/login" element={<Navigate to="/dashboard" replace />} />
                   <Route path="*" element={<Navigate to="/dashboard" replace />} />
                 </Routes>
@@ -89,6 +92,9 @@ function App() {
           </div>
         </main>
         <Toaster position="top-right" />
+        
+        {/* Global Command Palette */}
+        <GlobalSearch />
       </div>
     </FilterProvider>
   );

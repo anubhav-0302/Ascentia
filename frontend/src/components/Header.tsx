@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
-import GlobalSearch from './GlobalSearch';
+import HeaderSearch from './HeaderSearch';
 
 interface HeaderProps {
   // No props needed since title/subtitle are handled by individual pages
@@ -55,9 +55,9 @@ const Header: React.FC<HeaderProps> = () => {
 
         {/* Right Section - Enhanced visual presentation */}
         <div className="flex items-center space-x-3">
-          {/* Global Search */}
+          {/* Header Search */}
           <div className="relative">
-            <GlobalSearch />
+            <HeaderSearch />
           </div>
 
           {/* Separator */}
