@@ -3,3 +3,15 @@ node_modules
 .env
 
 /generated/prisma
+
+# SQLite database (runtime data, not source code)
+dev.db
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Runtime-generated data files (modified by the app at runtime)
+data/database-logs.json
+data/leaveRequests.json
+data/notifications.json
