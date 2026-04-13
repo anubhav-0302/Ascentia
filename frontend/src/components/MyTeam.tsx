@@ -64,13 +64,13 @@ const MyTeam: React.FC = () => {
       const matchesStatus = !filters.status || filters.status === 'all' ||
         member.status.toLowerCase() === filters.status.toLowerCase();
 
-      const matchesDepartment = !filters.department || filters.department === 'all'; // No department data in team members
+      const matchesDepartment = !filters.department || filters.department === 'all' || 
+        member.department === filters.department;
 
-      const matchesLocation = !filters.location || filters.location === 'all'; // No location data in team members
+      const matchesLocation = !filters.location || filters.location === 'all' || 
+        member.location === filters.location;
 
-      const matchesEmploymentType = !filters.employmentType || filters.employmentType === 'all'; // No employment type data in team members
-
-      return matchesSearch && matchesStatus && matchesDepartment && matchesLocation && matchesEmploymentType;
+      return matchesSearch && matchesStatus && matchesDepartment && matchesLocation;
     }).sort((a, b) => {
       const { sortBy } = filters;
       switch (sortBy) {
@@ -79,7 +79,7 @@ const MyTeam: React.FC = () => {
         case 'status':
           return a.status.localeCompare(b.status);
         case 'department':
-          return 0; // No department data
+          return a.department.localeCompare(b.department);
         case 'date':
           return 0; // No date data
         default:
@@ -87,6 +87,27 @@ const MyTeam: React.FC = () => {
       }
     });
   }, [teamMembers, filters]);
+
+  // Group employees by department
+  const employeesByDepartment = useMemo(() => {
+    const groups: { [key: string]: typeof filteredTeamMembers } = {};
+    
+    filteredTeamMembers.forEach(member => {
+      const department = member.department || 'Unassigned';
+      if (!groups[department]) {
+        groups[department] = [];
+      }
+      groups[department].push(member);
+    });
+
+    // Sort departments alphabetically
+    const sortedGroups: { [key: string]: typeof filteredTeamMembers } = {};
+    Object.keys(groups).sort().forEach(department => {
+      sortedGroups[department] = groups[department];
+    });
+
+    return sortedGroups;
+  }, [filteredTeamMembers]);
 
   return (
     <PageTransition>
@@ -97,10 +118,10 @@ const MyTeam: React.FC = () => {
         <FadeIn delay={100}>
           {/* Filter Component */}
           <Filter
-            showDepartment={false}
+            showDepartment={true}
             showStatus={true}
             showEmploymentType={false}
-            showLocation={false}
+            showLocation={true}
             showSortOptions={true}
             showDateRange={false}
             showReportType={false}
@@ -134,29 +155,51 @@ const MyTeam: React.FC = () => {
                     Add Member
                   </button>
                 </div>
-                <div className="space-y-4">
-                  {filteredTeamMembers.length === 0 ? (
+                
+                {/* Department Groups */}
+                <div className="space-y-6">
+                  {Object.keys(employeesByDepartment).length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-gray-400">No team members found matching your filters.</p>
                     </div>
                   ) : (
-                    filteredTeamMembers.map((member) => (
-                      <div key={member.id} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-teal-500/20 rounded-full flex items-center justify-center">
-                            <span className="text-lg font-bold text-teal-400">{member.name.charAt(0)}</span>
-                          </div>
-                          <div>
-                            <h4 className="text-white font-medium">{member.name}</h4>
-                            <p className="text-gray-400 text-sm">{member.jobTitle}</p>
-                            <p className="text-gray-500 text-xs">{member.department} · {member.location}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <span className="text-xs text-gray-400">{member.email}</span>
-                          <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(member.status)}`}>
-                            {member.status}
+                    Object.entries(employeesByDepartment).map(([department, members]) => (
+                      <div key={department} className="space-y-3">
+                        {/* Department Header */}
+                        <div className="flex items-center space-x-2 pb-2 border-b border-slate-700/50">
+                          <Award className="w-4 h-4 text-yellow-400" />
+                          <h4 className="text-white font-medium">{department}</h4>
+                          <span className="text-xs text-gray-500 bg-slate-700/50 px-2 py-1 rounded-full">
+                            {members.length} {members.length === 1 ? 'member' : 'members'}
                           </span>
+                        </div>
+                        
+                        {/* Employee Cards */}
+                        <div className="grid grid-cols-1 gap-3">
+                          {members.map((member) => (
+                            <div key={member.id} className="bg-slate-800/60 rounded-xl p-4 hover:bg-slate-800/80 transition-all duration-200">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                  {/* Avatar */}
+                                  <div className="w-10 h-10 bg-teal-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span className="text-sm font-bold text-teal-400">{member.name.charAt(0)}</span>
+                                  </div>
+                                  
+                                  {/* Employee Info */}
+                                  <div className="min-w-0 flex-1">
+                                    <h5 className="text-white font-medium text-sm truncate">{member.name}</h5>
+                                    <p className="text-gray-400 text-xs truncate">{member.jobTitle}</p>
+                                    <p className="text-gray-500 text-xs truncate">{member.email}</p>
+                                  </div>
+                                </div>
+                                
+                                {/* Status Badge */}
+                                <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(member.status)} flex-shrink-0`}>
+                                  {member.status}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     ))

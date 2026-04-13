@@ -7,6 +7,7 @@ import Button from './Button';
 import Input from './Input';
 import StatusBadge from './StatusBadge';
 import Card from './Card';
+import LeaveCalendar from './LeaveCalendar';
 import { Calendar, CheckCircle, XCircle, Plus } from 'lucide-react';
 
 const LeaveAttendance = () => {
@@ -434,6 +435,19 @@ const LeaveAttendance = () => {
               </form>
             </Card>
           )}
+        </div>
+
+        {/* Leave Calendar */}
+        <div className="mb-8">
+          <LeaveCalendar 
+            onDateSelect={(startDate, endDate) => {
+              setFormData(prev => ({ ...prev, startDate, endDate }));
+              setShowForm(true);
+            }}
+            onClear={() => {
+              setFormData(prev => ({ ...prev, startDate: '', endDate: '' }));
+            }}
+          />
         </div>
 
         {/* Leave History */}
