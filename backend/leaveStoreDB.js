@@ -51,41 +51,11 @@ const writeLeaveRequests = (leaveRequests) => {
   }
 };
 
-// Initialize database with sample data if needed
+// Initialize leave requests database (ensure data directory exists)
 export const initializeLeaveData = async () => {
   try {
-    const existingRequests = readLeaveRequests();
-    
-    if (existingRequests.length === 0) {
-      console.log("🌱 Initializing leave requests database...");
-      
-      // Create sample leave requests
-      const sampleLeaveRequests = [
-        {
-          id: 1,
-          userId: 2, // Employee user
-          type: 'Sick Leave',
-          startDate: '2024-01-15',
-          endDate: '2024-01-16',
-          reason: 'Medical appointment and recovery',
-          status: 'Pending',
-          createdAt: new Date('2024-01-10T10:00:00Z').toISOString()
-        },
-        {
-          id: 2,
-          userId: 2, // Employee user
-          type: 'Annual Leave',
-          startDate: '2024-02-10',
-          endDate: '2024-02-12',
-          reason: 'Family vacation',
-          status: 'Approved',
-          createdAt: new Date('2024-01-20T14:30:00Z').toISOString()
-        }
-      ];
-      
-      writeLeaveRequests(sampleLeaveRequests);
-      console.log("✅ Sample leave requests created in database");
-    }
+    ensureDataDir();
+    console.log("✅ Leave requests database initialized");
   } catch (error) {
     console.error("❌ Error initializing leave data:", error);
   }

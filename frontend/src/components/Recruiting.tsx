@@ -6,116 +6,65 @@ import { Users, UserPlus, Briefcase, TrendingUp, Calendar, Filter as FilterIcon,
 import Card from './Card';
 import { PageTransition, FadeIn } from './PageTransition';
 
+interface OpenPosition {
+  id: number;
+  title: string;
+  department: string;
+  location: string;
+  type: string;
+  applicants: number;
+  status: string;
+  posted: string;
+  priority: string;
+}
+
+interface RecentCandidate {
+  id: number;
+  name: string;
+  position: string;
+  stage: string;
+  rating: number;
+  applied: string;
+  avatar: string;
+}
+
 const Recruiting: React.FC = () => {
   const { filters } = useFilters();
 
   const recruitingStats = [
     {
       title: 'Active Job Postings',
-      value: '6',
-      change: '+1 this week',
+      value: '0',
+      change: 'No postings',
       icon: Briefcase,
-      color: 'text-blue-400'
+      color: 'text-gray-400'
     },
     {
       title: 'Total Applicants',
-      value: '89',
-      change: '+15',
+      value: '0',
+      change: 'No applicants',
       icon: Users,
-      color: 'text-green-400'
+      color: 'text-gray-400'
     },
     {
       title: 'Interviews Scheduled',
-      value: '12',
-      change: 'This week',
+      value: '0',
+      change: 'No interviews',
       icon: Calendar,
-      color: 'text-purple-400'
+      color: 'text-gray-400'
     },
     {
       title: 'Time to Hire',
-      value: '18 days',
-      change: '-3 days',
+      value: 'N/A',
+      change: 'No data',
       icon: TrendingUp,
-      color: 'text-yellow-400'
+      color: 'text-gray-400'
     }
   ];
 
-  const openPositions = [
-    {
-      id: 1,
-      title: 'Senior Frontend Developer',
-      department: 'Engineering',
-      location: 'Remote',
-      type: 'Full-time',
-      applicants: 24,
-      status: 'Active',
-      posted: '3 days ago',
-      priority: 'High'
-    },
-    {
-      id: 2,
-      title: 'Product Manager',
-      department: 'Product',
-      location: 'New York',
-      type: 'Full-time',
-      applicants: 18,
-      status: 'Active',
-      posted: '1 week ago',
-      priority: 'Medium'
-    },
-    {
-      id: 3,
-      title: 'UX Designer',
-      department: 'Design',
-      location: 'San Francisco',
-      type: 'Full-time',
-      applicants: 31,
-      status: 'Active',
-      posted: '5 days ago',
-      priority: 'High'
-    },
-    {
-      id: 4,
-      title: 'DevOps Engineer',
-      department: 'Engineering',
-      location: 'Remote',
-      type: 'Full-time',
-      applicants: 15,
-      status: 'Review',
-      posted: '2 weeks ago',
-      priority: 'Medium'
-    }
-  ];
+  const openPositions: OpenPosition[] = [];
 
-  const recentCandidates = [
-    {
-      id: 1,
-      name: 'Alex Thompson',
-      position: 'Senior Frontend Developer',
-      stage: 'Technical Interview',
-      rating: 4.5,
-      applied: '2 days ago',
-      avatar: 'AT'
-    },
-    {
-      id: 2,
-      name: 'Maria Garcia',
-      position: 'Product Manager',
-      stage: 'Final Round',
-      rating: 4.8,
-      applied: '1 week ago',
-      avatar: 'MG'
-    },
-    {
-      id: 3,
-      name: 'James Chen',
-      position: 'UX Designer',
-      stage: 'Portfolio Review',
-      rating: 4.2,
-      applied: '3 days ago',
-      avatar: 'JC'
-    }
-  ];
+  const recentCandidates: RecentCandidate[] = [];
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {

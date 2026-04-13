@@ -18,48 +18,7 @@ interface Workflow {
 const WorkflowHub: React.FC = () => {
   const [activeTab, setActiveTab] = useState('workflows');
 
-  const workflows: Workflow[] = [
-    {
-      id: '1',
-      name: 'Employee Onboarding',
-      description: 'Automated onboarding process for new hires',
-      status: 'active',
-      trigger: 'New Employee Added',
-      actions: 8,
-      lastRun: '2 hours ago',
-      successRate: 98
-    },
-    {
-      id: '2',
-      name: 'Leave Request Approval',
-      description: 'Multi-level approval workflow for leave requests',
-      status: 'active',
-      trigger: 'Leave Request Submitted',
-      actions: 5,
-      lastRun: '4 hours ago',
-      successRate: 95
-    },
-    {
-      id: '3',
-      name: 'Performance Review Cycle',
-      description: 'Quarterly performance review automation',
-      status: 'paused',
-      trigger: 'Scheduled',
-      actions: 12,
-      lastRun: '3 days ago',
-      successRate: 88
-    },
-    {
-      id: '4',
-      name: 'Payroll Processing',
-      description: 'Monthly payroll calculation and distribution',
-      status: 'active',
-      trigger: 'Monthly Schedule',
-      actions: 15,
-      lastRun: '1 week ago',
-      successRate: 99
-    }
-  ];
+  const workflows: Workflow[] = [];
 
   const workflowTemplates = [
     {

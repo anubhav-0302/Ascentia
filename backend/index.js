@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import bcrypt from 'bcryptjs';
 import authRoutes from './routes/authRoutes.js';
 import employeeRoutes from './routes/employeeRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
@@ -14,56 +13,11 @@ import prisma from './lib/prisma.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Seed sample employees to database if none exist
-const seedDefaultEmployees = async () => {
-  try {
-    const count = await prisma.employee.count();
-    if (count === 0) {
-      await prisma.employee.createMany({
-        data: [
-          { name: 'John Doe', email: 'john@ascentia.com', jobTitle: 'Software Engineer', department: 'Engineering', location: 'New York', status: 'Active' },
-          { name: 'Jane Smith', email: 'jane@ascentia.com', jobTitle: 'Product Manager', department: 'Product', location: 'San Francisco', status: 'Active' },
-          { name: 'Mike Johnson', email: 'mike@ascentia.com', jobTitle: 'UX Designer', department: 'Design', location: 'Remote', status: 'Remote' },
-          { name: 'Sarah Williams', email: 'sarah@ascentia.com', jobTitle: 'DevOps Engineer', department: 'Engineering', location: 'London', status: 'Active' },
-          { name: 'Tom Brown', email: 'tom@ascentia.com', jobTitle: 'Marketing Manager', department: 'Marketing', location: 'New York', status: 'Onboarding' },
-          { name: 'Emily Davis', email: 'emily@ascentia.com', jobTitle: 'Data Analyst', department: 'Analytics', location: 'Remote', status: 'Remote' },
-          { name: 'Chris Wilson', email: 'chris@ascentia.com', jobTitle: 'Backend Developer', department: 'Engineering', location: 'San Francisco', status: 'Active' },
-          { name: 'Lisa Anderson', email: 'lisa@ascentia.com', jobTitle: 'HR Manager', department: 'Human Resources', location: 'New York', status: 'Active' }
-        ]
-      });
-      console.log('✅ Seeded 8 sample employees to database');
-    }
-  } catch (err) {
-    console.error('❌ Failed to seed employees:', err.message);
-  }
-};
-
-// Seed default users into database if they don't exist
-const seedDefaultUsers = async () => {
-  try {
-    const defaults = [
-      { name: 'Admin User', email: 'admin@ascentia.com', password: 'admin123', role: 'admin' },
-      { name: 'Employee User', email: 'employee@ascentia.com', password: '123456', role: 'employee' }
-    ];
-    for (const u of defaults) {
-      const exists = await prisma.user.findUnique({ where: { email: u.email } });
-      if (!exists) {
-        const hashed = await bcrypt.hash(u.password, 10);
-        await prisma.user.create({ data: { name: u.name, email: u.email, password: hashed, role: u.role, status: 'active' } });
-        console.log(`✅ Seeded default user: ${u.email}`);
-      }
-    }
-  } catch (err) {
-    console.error("❌ Failed to seed default users:", err.message);
-  }
-};
 
 // Initialize database on startup
 const initializeDatabase = async () => {
   try {
     console.log("🔧 Initializing database...");
-    await seedDefaultUsers();
-    await seedDefaultEmployees();
     await initializeLeaveData();
     console.log("✅ Database initialized successfully");
   } catch (error) {

@@ -11,93 +11,68 @@ const PayrollBenefits: React.FC = () => {
   const payrollStats = [
     {
       title: 'Total Payroll',
-      value: '$485,750',
-      change: '+2.3%',
+      value: '$0',
+      change: 'No data',
       icon: DollarSign,
-      color: 'text-green-400'
+      color: 'text-gray-400'
     },
     {
       title: 'Active Employees',
-      value: '156',
-      change: '+4',
+      value: '0',
+      change: 'No data',
       icon: Users,
-      color: 'text-blue-400'
+      color: 'text-gray-400'
     },
     {
       title: 'Benefits Cost',
-      value: '$67,230',
-      change: '+1.8%',
+      value: '$0',
+      change: 'No data',
       icon: Shield,
-      color: 'text-purple-400'
+      color: 'text-gray-400'
     },
     {
       title: 'Tax Withheld',
-      value: '$97,150',
-      change: '+2.1%',
+      value: '$0',
+      change: 'No data',
       icon: Calculator,
-      color: 'text-yellow-400'
+      color: 'text-gray-400'
     }
   ];
 
-  const recentPayrolls = [
-    {
-      id: 1,
-      period: 'December 2024',
-      processedDate: '2024-01-05',
-      totalAmount: '$485,750',
-      employees: 156,
-      status: 'Processed'
-    },
-    {
-      id: 2,
-      period: 'November 2024',
-      processedDate: '2023-12-05',
-      totalAmount: '$474,820',
-      employees: 152,
-      status: 'Processed'
-    },
-    {
-      id: 3,
-      period: 'October 2024',
-      processedDate: '2023-11-05',
-      totalAmount: '$468,900',
-      employees: 150,
-      status: 'Processed'
-    }
-  ];
+  const recentPayrolls = [];
 
   const benefitsEnrollment = [
     {
       id: 1,
       name: 'Health Insurance',
-      enrolled: 142,
-      eligible: 156,
-      percentage: 91,
-      cost: '$45,200'
+      enrolled: 0,
+      eligible: 0,
+      percentage: 0,
+      cost: '$0'
     },
     {
       id: 2,
       name: 'Dental Insurance',
-      enrolled: 128,
-      eligible: 156,
-      percentage: 82,
-      cost: '$12,800'
+      enrolled: 0,
+      eligible: 0,
+      percentage: 0,
+      cost: '$0'
     },
     {
       id: 3,
       name: '401(k) Retirement',
-      enrolled: 98,
-      eligible: 156,
-      percentage: 63,
-      cost: '$9,230'
+      enrolled: 0,
+      eligible: 0,
+      percentage: 0,
+      cost: '$0'
     }
   ];
 
   const handleExportPayroll = () => {
     const payrollData = {
       period: selectedPayPeriod,
-      totalPayroll: '$485,750',
-      employees: 156,
+      totalPayroll: '$0',
+      employees: 0,
       exportDate: new Date().toISOString()
     };
     

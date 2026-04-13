@@ -15,6 +15,7 @@ import { PageTransition, StaggerContainer, FadeIn } from "./PageTransition";
 import { EnhancedModal } from "./EnhancedModal";
 import { CardSkeleton } from "./EnhancedSkeletonLoader";
 import { EmployeesEmptyState, SearchEmptyState } from "./EmptyState";
+import { AddEmployeeModal } from "./AddEmployeeModal";
 import { Search, Plus, Edit, Trash2 } from 'lucide-react';
 
 /* =========================
@@ -170,6 +171,7 @@ function Directory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [addModalOpen, setAddModalOpen] = useState(false);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const { addNotification } = useNotificationStore();
@@ -233,8 +235,7 @@ function Directory() {
   }, [employees, debouncedSearchTerm, filters]);
 
   const handleAddEmployee = () => {
-    setEditingEmployee(null);
-    setIsModalOpen(true);
+    setAddModalOpen(true);
   };
 
   const handleEditEmployee = (emp: Employee) => {
@@ -431,6 +432,13 @@ function Directory() {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onSave={handleSaveEmployee}
+        />
+
+        {/* Add Employee Modal */}
+        <AddEmployeeModal
+          isOpen={addModalOpen}
+          onClose={() => setAddModalOpen(false)}
+          onSuccess={fetchEmployees}
         />
       </div>
     </PageTransition>

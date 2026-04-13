@@ -7,82 +7,72 @@ import Filter from './Filter';
 import { useFilters } from '../contexts/FilterContext';
 import { PageTransition, FadeIn } from './PageTransition';
 
+interface RecentReport {
+  id: number;
+  name: string;
+  type: string;
+  date: string;
+  status: string;
+  size: string;
+  format: string;
+}
+
+interface ReportStat {
+  title: string;
+  value: string;
+  change: string;
+  icon: any;
+  color: string;
+  link: string;
+}
+
+interface ReportTemplate {
+  name: string;
+  description: string;
+  icon: any;
+  color: string;
+  frequency: string;
+}
+
 const Reports: React.FC = () => {
   const { filters } = useFilters();
 
-  const reportStats = [
+  const reportStats: ReportStat[] = [
     {
       title: 'Reports Generated',
-      value: '47',
-      change: '+12 this week',
+      value: '0',
+      change: 'No reports',
       icon: FileText,
-      color: 'text-blue-400',
+      color: 'text-gray-400',
       link: '/reports'
     },
     {
       title: 'Automated Reports',
-      value: '15',
-      change: 'Running',
+      value: '0',
+      change: 'Not running',
       icon: Calendar,
-      color: 'text-green-400',
+      color: 'text-gray-400',
       link: '/workflow-hub'
     },
     {
       title: 'Data Processing',
-      value: '99.2%',
-      change: '+0.1%',
+      value: '0%',
+      change: 'No data',
       icon: TrendingUp,
-      color: 'text-purple-400',
+      color: 'text-gray-400',
       link: '/payroll-benefits'
     },
     {
       title: 'Storage Used',
-      value: '2.8 GB',
-      change: '+120 MB',
+      value: '0 GB',
+      change: 'No data',
       icon: Download,
-      color: 'text-yellow-400',
+      color: 'text-gray-400',
       link: '/settings'
     }
   ];
 
-  const recentReports = [
-    {
-      id: 1,
-      name: 'Monthly Performance Report',
-      type: 'Performance',
-      date: '2024-01-15',
-      status: 'Completed',
-      size: '2.4 MB',
-      format: 'PDF'
-    },
-    {
-      id: 2,
-      name: 'Employee Attendance Summary',
-      type: 'Attendance',
-      date: '2024-01-14',
-      status: 'Completed',
-      size: '1.8 MB',
-      format: 'Excel'
-    },
-    {
-      id: 3,
-      name: 'Department Budget Analysis',
-      type: 'Financial',
-      date: '2024-01-13',
-      status: 'Processing',
-      size: '-',
-      format: 'PDF'
-    },
-    {
-      id: 4,
-      name: 'Recruitment Pipeline Report',
-      type: 'Recruitment',
-      date: '2024-01-12',
-      status: 'Completed',
-      size: '3.1 MB',
-      format: 'PDF'
-    }
-  ];
+  const recentReports: RecentReport[] = [];
 
   // Filter recent reports based on filter context
   const filteredReports = React.useMemo(() => {
@@ -143,7 +133,7 @@ const Reports: React.FC = () => {
     });
   }, [recentReports, filters]);
 
-  const reportTemplates = [
+  const reportTemplates: ReportTemplate[] = [
     {
       name: 'Employee Performance',
       description: 'Individual and team performance metrics',

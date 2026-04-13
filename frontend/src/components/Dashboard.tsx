@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getDashboardStats, type DashboardStats } from "../api/dashboardApi";
 import { useFilters } from "../contexts/FilterContext";
+import { AddEmployeeModal } from "./AddEmployeeModal";
 import {
   PieChart,
   Pie,
@@ -42,6 +43,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [addModalOpen, setAddModalOpen] = useState(false);
   const { updateFilters } = useFilters();
 
   const fetchStats = async () => {
@@ -334,8 +336,8 @@ const Dashboard = () => {
           </h3>
           
           <div className="space-y-3">
-            <Link 
-              to="/directory"
+            <button
+              onClick={() => setAddModalOpen(true)}
               className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group block"
             >
               <div className="flex items-center space-x-3">
@@ -347,7 +349,7 @@ const Dashboard = () => {
                   <p className="text-gray-500 text-xs">Onboard new team member</p>
                 </div>
               </div>
-            </Link>
+            </button>
 
             <Link 
               to="/leave-attendance"
@@ -656,6 +658,13 @@ const Dashboard = () => {
 
       {/* Activity Feed */}
       <ActivityFeed />
+
+      {/* Add Employee Modal */}
+      <AddEmployeeModal
+        isOpen={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSuccess={fetchStats}
+      />
     </LayoutWrapper>
   );
 };

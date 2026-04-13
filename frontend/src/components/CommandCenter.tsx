@@ -8,85 +8,60 @@ const CommandCenter: React.FC = () => {
   const stats = [
     {
       title: 'System Alerts',
-      value: '3',
-      change: '-2',
+      value: '0',
+      change: 'No alerts',
       icon: AlertTriangle,
-      color: 'text-red-400'
+      color: 'text-gray-400'
     },
     {
       title: 'Pending Workflows',
-      value: '12',
-      change: '+4',
+      value: '0',
+      change: 'No workflows',
       icon: Zap,
-      color: 'text-yellow-400'
+      color: 'text-gray-400'
     },
     {
       title: 'Active Integrations',
-      value: '8',
-      change: 'Stable',
+      value: '0',
+      change: 'Not configured',
       icon: Shield,
-      color: 'text-green-400'
+      color: 'text-gray-400'
     },
     {
       title: 'API Calls Today',
-      value: '1,247',
-      change: '+18%',
+      value: '0',
+      change: 'No activity',
       icon: Activity,
-      color: 'text-blue-400'
+      color: 'text-gray-400'
     }
   ];
 
-  const recentActivities = [
-    {
-      id: 1,
-      type: 'alert',
-      title: 'API Rate Limit Warning',
-      description: 'Approaching daily API limit - 85% used',
-      time: '15 minutes ago',
-      priority: 'high'
-    },
-    {
-      id: 2,
-      type: 'workflow',
-      title: 'Automated Payroll Workflow',
-      description: 'Monthly payroll processing completed successfully',
-      time: '2 hours ago',
-      priority: 'low'
-    },
-    {
-      id: 3,
-      type: 'integration',
-      title: 'Slack Integration Sync',
-      description: 'Failed to sync with Slack - retry scheduled',
-      time: '4 hours ago',
-      priority: 'medium'
-    }
-  ];
+  const recentActivities = [];
 
   const quickActions = [
     {
       title: 'System Diagnostics',
       description: 'Run system health checks and diagnostics',
       icon: Shield,
-      color: 'bg-blue-500/20 text-blue-400'
+      color: 'bg-gray-500/20 text-gray-400'
     },
     {
       title: 'Workflow Monitor',
       description: 'View and manage active workflows',
       icon: Zap,
-      color: 'bg-green-500/20 text-green-400'
+      color: 'bg-gray-500/20 text-gray-400'
     },
     {
       title: 'API Dashboard',
       description: 'Monitor API usage and performance',
       icon: Activity,
-      color: 'bg-purple-500/20 text-purple-400'
+      color: 'bg-gray-500/20 text-gray-400'
     },
     {
       title: 'Integration Manager',
       description: 'Configure third-party integrations',
       icon: Users,
-      color: 'bg-yellow-500/20 text-yellow-400'
+      color: 'bg-gray-500/20 text-gray-400'
     }
   ];
 
