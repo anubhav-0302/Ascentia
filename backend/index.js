@@ -7,6 +7,9 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 import leaveRoutes from './routes/leaveRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import timesheetRoutes from './routes/timesheetRoutes.js';
+import performanceRoutes from './routes/performanceRoutes.js';
+import payrollRoutes from './routes/payrollRoutes.js';
 import { requireAuth } from './middleware/auth.js';
 import { initializeLeaveData } from './leaveStoreDB.js';
 import prisma from './lib/prisma.js';
@@ -84,6 +87,9 @@ app.use('/api/dashboard', requireAuth, dashboardRoutes);
 app.use('/api/leave', requireAuth, leaveRoutes);
 app.use('/api/notifications', requireAuth, notificationRoutes);
 app.use('/api/users', requireAuth, userRoutes);
+app.use('/api/timesheet', requireAuth, timesheetRoutes);
+app.use('/api/performance', requireAuth, performanceRoutes);
+app.use('/api/payroll', requireAuth, payrollRoutes);
 
 // Start server
 app.listen(PORT, async () => {
@@ -114,6 +120,28 @@ app.listen(PORT, async () => {
   console.log('  PUT  /api/users/:id (PROTECTED)');
   console.log('  PUT  /api/users/:id/password (PROTECTED)');
   console.log('  DELETE /api/users/:id (PROTECTED)');
+  console.log('  GET  /api/timesheet (PROTECTED)');
+  console.log('  GET  /api/timesheet/all (PROTECTED)');
+  console.log('  POST /api/timesheet (PROTECTED)');
+  console.log('  PUT  /api/timesheet/:id (PROTECTED)');
+  console.log('  PUT  /api/timesheet/:id/approve (PROTECTED)');
+  console.log('  DELETE /api/timesheet/:id (PROTECTED)');
+  console.log('  GET  /api/timesheet/history (PROTECTED)');
+  console.log('  GET  /api/performance/cycles (PROTECTED)');
+  console.log('  POST /api/performance/cycles (PROTECTED)');
+  console.log('  GET  /api/performance/goals (PROTECTED)');
+  console.log('  POST /api/performance/goals (PROTECTED)');
+  console.log('  PUT  /api/performance/goals/:id (PROTECTED)');
+  console.log('  GET  /api/performance/reviews (PROTECTED)');
+  console.log('  POST /api/performance/reviews (PROTECTED)');
+  console.log('  PUT  /api/performance/reviews/:id (PROTECTED)');
+  console.log('  GET  /api/payroll/salary-components (PROTECTED)');
+  console.log('  POST /api/payroll/salary-components (PROTECTED)');
+  console.log('  PUT  /api/payroll/salary-components/:id (PROTECTED)');
+  console.log('  DELETE /api/payroll/salary-components/:id (PROTECTED)');
+  console.log('  GET  /api/payroll/employee-salaries (PROTECTED)');
+  console.log('  POST /api/payroll/employee-salaries (PROTECTED)');
+  console.log('  PUT  /api/payroll/employee-salaries/:id (PROTECTED)');
 });
 
 export default app;

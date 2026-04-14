@@ -57,6 +57,11 @@ export const employeeApi = {
     return apiClient.get("/employees");
   },
   
+  getEmployee: (id: number) => {
+    console.log("🔍 Fetching employee:", id);
+    return apiClient.get(`/employees/${id}`);
+  },
+  
   createEmployee: (data: CreateEmployeeRequest) => {
     console.log("🔍 Creating employee:", data);
     const result = apiClient.post("/employees", data);

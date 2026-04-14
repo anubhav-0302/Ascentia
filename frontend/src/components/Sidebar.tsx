@@ -11,7 +11,9 @@ import {
   Command,
   GitBranch,
   Building,
-  User
+  User,
+  Clock,
+  Target
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -91,6 +93,16 @@ const Sidebar: React.FC = () => {
           name: 'Leave & Attendance', 
           path: '/leave-attendance',
           icon: Calendar
+        },
+        { 
+          name: 'Timesheet Entry', 
+          path: '/timesheet-entry',
+          icon: Clock
+        },
+        { 
+          name: 'Performance Goals', 
+          path: '/performance-goals',
+          icon: Target
         },
         { 
           name: 'Payroll & Benefits', 

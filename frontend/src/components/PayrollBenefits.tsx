@@ -1,12 +1,193 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StandardLayout } from './StandardLayout';
-import { DollarSign, Calendar, Download, Users, Shield, FileText, Calculator } from 'lucide-react';
+import { DollarSign, Calendar, Download, Users, Shield, FileText, Calculator, Plus, Edit, Trash2, CheckCircle } from 'lucide-react';
 import Card from './Card';
 import { PageTransition, FadeIn } from './PageTransition';
+import Button from './Button';
+import Input from './Input';
+import StatusBadge from './StatusBadge';
+import { useIsAdmin } from '../store/useAuthStore';
+import { 
+  getSalaryComponents, 
+  createSalaryComponent, 
+  updateSalaryComponent, 
+  deleteSalaryComponent,
+  getEmployeeSalaries,
+  assignSalaryToEmployee,
+  type SalaryComponent,
+  type CreateSalaryComponentRequest,
+  type AssignSalaryRequest
+} from '../api/payrollApi';
+import { useEmployeeStore } from '../store/useEmployeeStore';
 
 const PayrollBenefits: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedPayPeriod, setSelectedPayPeriod] = useState('current');
+  const isAdmin = useIsAdmin();
+  const { employees } = useEmployeeStore();
+  
+  // Salary components state
+  const [salaryComponents, setSalaryComponents] = useState<SalaryComponent[]>([]);
+  const [employeeSalaries, setEmployeeSalaries] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  
+  // Modal states
+  const [showComponentModal, setShowComponentModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [editingComponent, setEditingComponent] = useState<SalaryComponent | null>(null);
+  
+  // Form states
+  const [componentForm, setComponentForm] = useState<CreateSalaryComponentRequest>({
+    name: '',
+    type: 'Earning',
+    category: 'Basic',
+    amount: 0,
+    isPercentage: false,
+    isTaxable: true
+  });
+  
+  const [assignForm, setAssignForm] = useState<AssignSalaryRequest>({
+    employeeId: 0,
+    componentId: 0,
+    amount: 0,
+    effectiveDate: '',
+    endDate: ''
+  });
+
+  // Fetch salary components on component mount
+  useEffect(() => {
+    if (activeTab === 'salary-components') {
+      fetchSalaryComponents();
+      fetchEmployeeSalaries();
+    }
+  }, [activeTab]);
+
+  const fetchSalaryComponents = async () => {
+    try {
+      setLoading(true);
+      const response = await getSalaryComponents();
+      setSalaryComponents(response.data || []);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch salary components');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchEmployeeSalaries = async () => {
+    try {
+      const response = await getEmployeeSalaries();
+      setEmployeeSalaries(response.data || []);
+    } catch (err: any) {
+      console.error('Failed to fetch employee salaries:', err);
+    }
+  };
+
+  const handleCreateComponent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      setLoading(true);
+      await createSalaryComponent(componentForm);
+      setSuccess('Salary component created successfully');
+      setShowComponentModal(false);
+      setComponentForm({
+        name: '',
+        type: 'Earning',
+        category: 'Basic',
+        amount: 0,
+        isPercentage: false,
+        isTaxable: true
+      });
+      fetchSalaryComponents();
+    } catch (err: any) {
+      setError(err.message || 'Failed to create salary component');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateComponent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editingComponent) return;
+    
+    try {
+      setLoading(true);
+      await updateSalaryComponent(editingComponent.id, componentForm);
+      setSuccess('Salary component updated successfully');
+      setShowComponentModal(false);
+      setEditingComponent(null);
+      setComponentForm({
+        name: '',
+        type: 'Earning',
+        category: 'Basic',
+        amount: 0,
+        isPercentage: false,
+        isTaxable: true
+      });
+      fetchSalaryComponents();
+    } catch (err: any) {
+      setError(err.message || 'Failed to update salary component');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteComponent = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this salary component?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await deleteSalaryComponent(id);
+      setSuccess('Salary component deleted successfully');
+      fetchSalaryComponents();
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete salary component');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAssignSalary = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      setLoading(true);
+      await assignSalaryToEmployee(assignForm);
+      setSuccess('Salary component assigned successfully');
+      setShowAssignModal(false);
+      setAssignForm({
+        employeeId: 0,
+        componentId: 0,
+        amount: 0,
+        effectiveDate: '',
+        endDate: ''
+      });
+      fetchEmployeeSalaries();
+    } catch (err: any) {
+      setError(err.message || 'Failed to assign salary component');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditComponent = (component: SalaryComponent) => {
+    setEditingComponent(component);
+    setComponentForm({
+      name: component.name,
+      type: component.type,
+      category: component.category,
+      amount: component.amount,
+      isPercentage: component.isPercentage,
+      isTaxable: component.isTaxable
+    });
+    setShowComponentModal(true);
+  };
 
   const payrollStats = [
     {
@@ -109,6 +290,25 @@ const PayrollBenefits: React.FC = () => {
         description="Manage payroll processing, benefits enrollment, and compensation"
       >
         <FadeIn delay={100}>
+          {/* Success/Error Messages */}
+          {success && (
+            <div className="mb-6 p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
+              <div className="flex items-center">
+                <CheckCircle className="w-5 h-5 text-green-400 mr-3" />
+                <p className="text-green-400">{success}</p>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-lg">
+              <div className="flex items-center">
+                <CheckCircle className="w-5 h-5 text-red-400 mr-3" />
+                <p className="text-red-400">{error}</p>
+              </div>
+            </div>
+          )}
+
           {/* Tab Navigation */}
           <div className="border-b border-slate-700 mb-6">
             <nav className="flex space-x-8">
@@ -141,6 +341,16 @@ const PayrollBenefits: React.FC = () => {
                 }`}
               >
                 Benefits Management
+              </button>
+              <button
+                onClick={() => setActiveTab('salary-components')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'salary-components'
+                    ? 'border-teal-500 text-teal-400'
+                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                Salary Components
               </button>
               <button
                 onClick={() => setActiveTab('reports')}
@@ -302,6 +512,226 @@ const PayrollBenefits: React.FC = () => {
             </div>
           )}
 
+          {/* Salary Components Tab */}
+          {activeTab === 'salary-components' && (
+            <div className="space-y-6">
+              {/* Action Buttons */}
+              <div className="flex gap-4">
+                {isAdmin && (
+                  <Button
+                    onClick={() => setShowComponentModal(true)}
+                    icon={<Plus className="w-4 h-4" />}
+                  >
+                    Add Component
+                  </Button>
+                )}
+                <Button
+                  onClick={() => setShowAssignModal(true)}
+                  icon={<Plus className="w-4 h-4" />}
+                  variant="secondary"
+                >
+                  Assign to Employee
+                </Button>
+              </div>
+
+              {/* Salary Components Table */}
+              <Card className="overflow-hidden">
+                {loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+                    <span className="ml-3 text-gray-400">Loading salary components...</span>
+                  </div>
+                ) : salaryComponents.length === 0 ? (
+                  <div className="text-center py-12">
+                    <DollarSign className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+                    <p className="text-gray-400 text-lg">No salary components found</p>
+                    <p className="text-gray-500 text-sm mt-2">
+                      Create your first salary component to get started with payroll configuration.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-slate-700/50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Component Name
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Type
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Category
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Amount
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Taxable
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-700/50">
+                        {salaryComponents.map((component) => (
+                          <tr key={component.id} className="hover:bg-slate-700/40 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-white">
+                                {component.name}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 py-1 text-xs rounded ${
+                                component.type === 'Earning' 
+                                  ? 'bg-green-500/20 text-green-400' 
+                                  : 'bg-red-500/20 text-red-400'
+                              }`}>
+                                {component.type}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-300">
+                                {component.category}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-white font-medium">
+                                {component.isPercentage ? `${component.amount}%` : `$${component.amount}`}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 py-1 text-xs rounded ${
+                                component.isTaxable 
+                                  ? 'bg-blue-500/20 text-blue-400' 
+                                  : 'bg-gray-500/20 text-gray-400'
+                              }`}>
+                                {component.isTaxable ? 'Yes' : 'No'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <StatusBadge status={component.status} />
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex space-x-2">
+                                {isAdmin && (
+                                  <>
+                                    <Button
+                                      onClick={() => handleEditComponent(component)}
+                                      size="sm"
+                                      icon={<Edit className="w-3 h-3" />}
+                                    >
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      onClick={() => handleDeleteComponent(component.id)}
+                                      variant="danger"
+                                      size="sm"
+                                      icon={<Trash2 className="w-3 h-3" />}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </Card>
+
+              {/* Employee Salaries Table */}
+              <Card className="overflow-hidden">
+                <h3 className="text-lg font-semibold text-white mb-4 p-6 pb-0">
+                  Assigned Employee Salaries
+                </h3>
+                {employeeSalaries.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Users className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+                    <p className="text-gray-400 text-lg">No salary assignments found</p>
+                    <p className="text-gray-500 text-sm mt-2">
+                      Assign salary components to employees to see their salary structure.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-slate-700/50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Employee
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Component
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Amount
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Effective Date
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            End Date
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-700/50">
+                        {employeeSalaries.map((salary) => (
+                          <tr key={salary.id} className="hover:bg-slate-700/40 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-white">
+                                {salary.employee?.name}
+                              </div>
+                              <div className="text-xs text-gray-400">
+                                {salary.employee?.department}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-white">
+                                {salary.component?.name}
+                              </div>
+                              <div className="text-xs text-gray-400">
+                                {salary.component?.type}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-white font-medium">
+                                {salary.component?.isPercentage ? `${salary.amount}%` : `$${salary.amount}`}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-300">
+                                {new Date(salary.effectiveDate).toLocaleDateString()}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-300">
+                                {salary.endDate ? new Date(salary.endDate).toLocaleDateString() : 'Ongoing'}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <StatusBadge status={salary.status} />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </Card>
+            </div>
+          )}
+
           {/* Reports Tab */}
           {activeTab === 'reports' && (
             <div className="space-y-6">
@@ -328,6 +758,248 @@ const PayrollBenefits: React.FC = () => {
                     <p className="text-gray-400 text-sm">Annual payroll and tax summaries</p>
                   </button>
                 </div>
+              </Card>
+            </div>
+          )}
+
+          {/* Create/Edit Salary Component Modal */}
+          {showComponentModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <Card className="w-full max-w-md p-6">
+                <h3 className="text-lg font-semibold text-white mb-4">
+                  {editingComponent ? 'Edit Salary Component' : 'Create Salary Component'}
+                </h3>
+                
+                <form onSubmit={editingComponent ? handleUpdateComponent : handleCreateComponent} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Component Name *
+                    </label>
+                    <Input
+                      type="text"
+                      value={componentForm.name}
+                      onChange={(e) => setComponentForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="e.g., Basic Salary, HRA, PF"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Type *
+                      </label>
+                      <select
+                        value={componentForm.type}
+                        onChange={(e) => setComponentForm(prev => ({ ...prev, type: e.target.value as 'Earning' | 'Deduction' }))}
+                        className="w-full px-4 py-2 bg-slate-700/60 rounded-xl border border-slate-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                        required
+                      >
+                        <option value="Earning">Earning</option>
+                        <option value="Deduction">Deduction</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Category *
+                      </label>
+                      <select
+                        value={componentForm.category}
+                        onChange={(e) => setComponentForm(prev => ({ ...prev, category: e.target.value }))}
+                        className="w-full px-4 py-2 bg-slate-700/60 rounded-xl border border-slate-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                        required
+                      >
+                        <option value="Basic">Basic</option>
+                        <option value="Allowance">Allowance</option>
+                        <option value="Deduction">Deduction</option>
+                        <option value="Bonus">Bonus</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Amount *
+                    </label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={componentForm.amount}
+                      onChange={(e) => setComponentForm(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
+                      placeholder="Amount or percentage"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="isPercentage"
+                        checked={componentForm.isPercentage}
+                        onChange={(e) => setComponentForm(prev => ({ ...prev, isPercentage: e.target.checked }))}
+                        className="w-4 h-4 text-teal-600 bg-slate-700 border-slate-600 rounded focus:ring-teal-500"
+                      />
+                      <label htmlFor="isPercentage" className="ml-2 text-sm text-gray-300">
+                        Is Percentage
+                      </label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="isTaxable"
+                        checked={componentForm.isTaxable}
+                        onChange={(e) => setComponentForm(prev => ({ ...prev, isTaxable: e.target.checked }))}
+                        className="w-4 h-4 text-teal-600 bg-slate-700 border-slate-600 rounded focus:ring-teal-500"
+                      />
+                      <label htmlFor="isTaxable" className="ml-2 text-sm text-gray-300">
+                        Is Taxable
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-4">
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        setShowComponentModal(false);
+                        setEditingComponent(null);
+                        setComponentForm({
+                          name: '',
+                          type: 'Earning',
+                          category: 'Basic',
+                          amount: 0,
+                          isPercentage: false,
+                          isTaxable: true
+                        });
+                      }}
+                      variant="secondary"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      loading={loading}
+                    >
+                      {editingComponent ? 'Update' : 'Create'} Component
+                    </Button>
+                  </div>
+                </form>
+              </Card>
+            </div>
+          )}
+
+          {/* Assign Salary to Employee Modal */}
+          {showAssignModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <Card className="w-full max-w-md p-6">
+                <h3 className="text-lg font-semibold text-white mb-4">Assign Salary Component</h3>
+                
+                <form onSubmit={handleAssignSalary} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Employee *
+                    </label>
+                    <select
+                      value={assignForm.employeeId}
+                      onChange={(e) => setAssignForm(prev => ({ ...prev, employeeId: parseInt(e.target.value) }))}
+                      className="w-full px-4 py-2 bg-slate-700/60 rounded-xl border border-slate-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                      required
+                    >
+                      <option value="">Select an employee</option>
+                      {employees.map(emp => (
+                        <option key={emp.id} value={emp.id}>{emp.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Salary Component *
+                    </label>
+                    <select
+                      value={assignForm.componentId}
+                      onChange={(e) => setAssignForm(prev => ({ ...prev, componentId: parseInt(e.target.value) }))}
+                      className="w-full px-4 py-2 bg-slate-700/60 rounded-xl border border-slate-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                      required
+                    >
+                      <option value="">Select a component</option>
+                      {salaryComponents.map(comp => (
+                        <option key={comp.id} value={comp.id}>{comp.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Amount *
+                    </label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={assignForm.amount}
+                      onChange={(e) => setAssignForm(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
+                      placeholder="Amount or percentage"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Effective Date *
+                      </label>
+                      <Input
+                        type="date"
+                        value={assignForm.effectiveDate}
+                        onChange={(e) => setAssignForm(prev => ({ ...prev, effectiveDate: e.target.value }))}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        End Date
+                      </label>
+                      <Input
+                        type="date"
+                        value={assignForm.endDate}
+                        onChange={(e) => setAssignForm(prev => ({ ...prev, endDate: e.target.value }))}
+                        min={assignForm.effectiveDate}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-4">
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        setShowAssignModal(false);
+                        setAssignForm({
+                          employeeId: 0,
+                          componentId: 0,
+                          amount: 0,
+                          effectiveDate: '',
+                          endDate: ''
+                        });
+                      }}
+                      variant="secondary"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      loading={loading}
+                    >
+                      Assign Component
+                    </Button>
+                  </div>
+                </form>
               </Card>
             </div>
           )}

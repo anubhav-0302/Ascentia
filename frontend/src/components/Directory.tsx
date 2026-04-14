@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useEmployeeStore } from "../store/useEmployeeStore";
 import { useDebounce } from "../hooks/useDebounce";
@@ -163,6 +164,7 @@ function EmployeeFormModal({
    MAIN COMPONENT
 ========================= */
 function Directory() {
+  const navigate = useNavigate();
   const { employees = [], loading, error, fetchEmployees } = useEmployeeStore();
   const isAdmin = useIsAdmin();
   const { filters } = useFilters();
@@ -348,7 +350,10 @@ function Directory() {
                           className="w-10 h-10 rounded-full mr-3 group-hover:scale-110 transition-transform duration-300"
                         />
                         <div className="flex-1">
-                          <h3 className="text-white font-medium group-hover:text-teal-400 transition-colors duration-200">
+                          <h3 
+                            className="text-white font-medium group-hover:text-teal-400 transition-colors duration-200 cursor-pointer hover:underline"
+                            onClick={() => navigate(`/employee/${emp.id}`)}
+                          >
                             {emp.name}
                           </h3>
                           <p className="text-gray-400 text-sm">{emp.jobTitle}</p>

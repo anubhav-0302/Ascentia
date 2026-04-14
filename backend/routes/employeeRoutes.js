@@ -1,5 +1,5 @@
 import express from 'express';
-import { getEmployees, createEmployee, updateEmployee, deleteEmployee } from '../employeeController.js';
+import { getEmployees, getEmployee, createEmployee, updateEmployee, deleteEmployee } from '../employeeController.js';
 import { requireAuth, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -12,6 +12,9 @@ router.use((req, res, next) => {
 
 // GET /api/employees - Get all employees (admin only)
 router.get('/', requireAuth, authorize('admin'), getEmployees);
+
+// GET /api/employees/:id - Get single employee (admin only or own profile)
+router.get('/:id', requireAuth, getEmployee);
 
 // POST /api/employees - Create new employee (admin only)
 router.post('/', requireAuth, authorize('admin'), createEmployee);

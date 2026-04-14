@@ -7,12 +7,15 @@ import Dashboard from './components/Dashboard';
 import Directory from './components/Directory';
 import CommandCenter from './components/CommandCenter';
 import WorkflowHub from './components/WorkflowHub';
+import TimesheetEntry from './components/TimesheetEntry';
+import PerformanceGoals from './components/PerformanceGoals';
 import MyTeam from './components/MyTeam';
 import LeaveAttendance from './components/LeaveAttendance';
 import PayrollBenefits from './components/PayrollBenefits';
 import Recruiting from './components/Recruiting';
 import Reports from './components/Reports';
 import Profile from './components/Profile';
+import EmployeeProfile from './components/EmployeeProfile';
 import Settings from './components/Settings';
 import PermissionManagement from './components/PermissionManagement';
 import Login from './components/Login';
@@ -76,12 +79,15 @@ function App() {
                   <Route path="/directory" element={<Directory />} />
                   <Route path="/command-center" element={<CommandCenter />} />
                   <Route path="/workflow-hub" element={<WorkflowHub />} />
+                  <Route path="/timesheet-entry" element={<TimesheetEntry />} />
+                  <Route path="/performance-goals" element={<PerformanceGoals />} />
                   <Route path="/my-team" element={<MyTeam />} />
                   <Route path="/leave-attendance" element={<LeaveAttendance />} />
                   <Route path="/payroll-benefits" element={<PayrollBenefits />} />
                   <Route path="/recruiting" element={<Recruiting />} />
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/profile" element={<Profile />} />
+                  <Route path="/employee/:id" element={<EmployeeProfile />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/permission-management" element={<PermissionManagement />} />
                   <Route path="/login" element={<Navigate to="/dashboard" replace />} />

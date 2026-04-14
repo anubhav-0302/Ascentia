@@ -29,6 +29,62 @@ export const getEmployees = async (req, res) => {
   }
 };
 
+// GET /api/employees/:id - Get single employee by ID
+export const getEmployee = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const employeeId = parseInt(id);
+    
+    if (isNaN(employeeId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid employee ID' 
+      });
+    }
+
+    // Check if user is admin or requesting their own profile
+    const isAdmin = req.user.role === 'admin';
+    const isOwnProfile = req.user.id === employeeId;
+    
+    if (!isAdmin && !isOwnProfile) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Access denied: You can only view your own profile or need admin privileges' 
+      });
+    }
+
+    const employee = await prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        jobTitle: true,
+        department: true,
+        location: true,
+        status: true,
+        role: true,
+        lastLogin: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+
+    if (!employee) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Employee not found' 
+      });
+    }
+
+    console.log(`📊 getEmployee: Found employee ${employee.name} (ID: ${employeeId})`);
+    res.json({ success: true, data: employee });
+  } catch (error) {
+    console.error("❌ GET EMPLOYEE ERROR:", error.message);
+    res.status(500).json({ success: false, message: "Failed to fetch employee", error: error.message });
+  }
+};
+
 // POST /api/employees - Create new employee with optional authentication
 export const createEmployee = async (req, res) => {
   try {

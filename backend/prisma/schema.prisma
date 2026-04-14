@@ -24,7 +24,13 @@ model Employee {
   updatedAt  DateTime @updatedAt
   createdBy  Int?
 
-  leaveRequests LeaveRequest[]
+  leaveRequests     LeaveRequest[]
+  timesheets        Timesheet[]
+  approvedTimesheets Timesheet[] @relation("TimesheetApprover")
+  goals             PerformanceGoal[]
+  reviews           PerformanceReview[]
+  writtenReviews    PerformanceReview[] @relation("PerformanceReviewer")
+  salaries          EmployeeSalary[]
 }
 
 model LeaveRequest {
@@ -38,5 +44,100 @@ model LeaveRequest {
   createdAt DateTime @default(now())
 
   employee  Employee @relation(fields: [employeeId], references: [id])
+}
+
+model Timesheet {
+  id          Int      @id @default(autoincrement())
+  employeeId  Int
+  date        DateTime
+  hours       Float
+  description String?
+  status      String   @default("Pending")
+  approvedBy  Int?
+  approvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  approver    Employee? @relation("TimesheetApprover", fields: [approvedBy], references: [id])
+}
+
+model PerformanceCycle {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  status      String   @default("Active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  goals       PerformanceGoal[]
+  reviews     PerformanceReview[]
+}
+
+model PerformanceGoal {
+  id           Int      @id @default(autoincrement())
+  cycleId      Int
+  employeeId   Int
+  title        String
+  description  String
+  targetDate   DateTime
+  status       String   @default("Active")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  cycle        PerformanceCycle @relation(fields: [cycleId], references: [id])
+  employee     Employee @relation(fields: [employeeId], references: [id])
+  reviews      PerformanceReview[]
+}
+
+model PerformanceReview {
+  id           Int      @id @default(autoincrement())
+  cycleId      Int
+  goalId       Int
+  employeeId   Int
+  reviewerId   Int
+  type         String   // "Self" or "Manager"
+  rating       Int      // 1-5 scale
+  comments     String?
+  status       String   @default("Pending")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  cycle        PerformanceCycle @relation(fields: [cycleId], references: [id])
+  goal         PerformanceGoal @relation(fields: [goalId], references: [id])
+  employee     Employee @relation(fields: [employeeId], references: [id])
+  reviewer     Employee @relation("PerformanceReviewer", fields: [reviewerId], references: [id])
+}
+
+model SalaryComponent {
+  id          Int      @id @default(autoincrement())
+  name        String
+  type        String   // "Earning" or "Deduction"
+  category    String   // "Basic", "Allowance", "Deduction", etc.
+  amount      Float
+  isPercentage Boolean @default(false)
+  isTaxable   Boolean @default(true)
+  status      String   @default("Active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employeeSalaries EmployeeSalary[]
+}
+
+model EmployeeSalary {
+  id               Int      @id @default(autoincrement())
+  employeeId       Int
+  componentId      Int
+  amount           Float
+  effectiveDate    DateTime
+  endDate          DateTime?
+  status           String   @default("Active")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  employee         Employee @relation(fields: [employeeId], references: [id])
+  component        SalaryComponent @relation(fields: [componentId], references: [id])
 }
 
