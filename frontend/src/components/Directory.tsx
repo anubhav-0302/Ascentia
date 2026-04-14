@@ -1,164 +1,22 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useEmployeeStore } from "../store/useEmployeeStore";
 import { useDebounce } from "../hooks/useDebounce";
 import { employeeApi, type Employee, type CreateEmployeeRequest, type UpdateEmployeeRequest } from "../api/employeeApi";
-import { useIsAdmin } from "../store/useAuthStore";
+import { useIsAdmin, useAuthStore } from "../store/useAuthStore";
 import { useFilters } from "../contexts/FilterContext";
 import { useNotificationStore, createEmployeeNotification } from "../store/notificationStore";
 import Button from "./Button";
-import Input from "./Input";
 import StatusBadge from "./StatusBadge";
 import Card from "./Card";
 import Filter from "./Filter";
 import { PageTransition, StaggerContainer, FadeIn } from "./PageTransition";
-import { EnhancedModal } from "./EnhancedModal";
 import { CardSkeleton } from "./EnhancedSkeletonLoader";
 import { EmployeesEmptyState, SearchEmptyState } from "./EmptyState";
-import { Search, Edit, Trash2 } from 'lucide-react';
+import EmployeeFormModal from "./EmployeeFormModal";
+import { Search, Edit, Trash2, UserPlus } from 'lucide-react';
 
-/* =========================
-   MODAL
-========================= */
-function EmployeeFormModal({
-  employee,
-  isOpen,
-  onClose,
-  onSave
-}: {
-  employee: Employee | null;
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (data: CreateEmployeeRequest | UpdateEmployeeRequest) => Promise<void>;
-}) {
-  const [formData, setFormData] = useState<CreateEmployeeRequest>({
-    name: "",
-    email: "",
-    jobTitle: "",
-    department: "",
-    location: "",
-    status: "Active"
-  });
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (employee) {
-      setFormData({ ...employee });
-    } else {
-      setFormData({
-        name: "",
-        email: "",
-        jobTitle: "",
-        department: "",
-        location: "",
-        status: "Active"
-      });
-    }
-    setError("");
-  }, [employee, isOpen]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await onSave(formData);
-      onClose();
-    } catch (err: any) {
-      setError(err.message || "Failed to save employee");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <EnhancedModal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={employee ? "Edit Employee" : "Add Employee"}
-    >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm">
-            {error}
-          </div>
-        )}
-        
-        <Input
-          name="name"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          placeholder="Name"
-          required
-        />
-        <Input
-          name="email"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          placeholder="Email"
-          type="email"
-          required
-        />
-          <Input
-            name="jobTitle"
-            value={formData.jobTitle}
-            onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
-            placeholder="Job Title"
-            required
-          />
-          <Input
-            name="department"
-            value={formData.department}
-            onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-            placeholder="Department"
-            required
-          />
-          <Input
-            name="location"
-            value={formData.location || ''}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            placeholder="Location"
-          />
-
-          <select
-            name="status"
-            value={formData.status}
-            onChange={(e) =>
-              setFormData({ ...formData, status: e.target.value })
-            }
-            className="w-full bg-slate-700/60 rounded-xl border border-slate-600 text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
-          >
-            <option>Active</option>
-            <option>Onboarding</option>
-            <option>Remote</option>
-          </select>
-
-          <div className="flex gap-2">
-            <Button 
-              type="button" 
-              onClick={onClose}
-              variant="secondary"
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              loading={loading}
-              className="flex-1"
-              loadingText="Saving..."
-            >
-              {employee ? "Update" : "Save"}
-            </Button>
-          </div>
-        </form>
-      </EnhancedModal>
-    ); 
-}
 
 /* =========================
    MAIN COMPONENT
@@ -167,6 +25,7 @@ function Directory() {
   const navigate = useNavigate();
   const { employees = [], loading, error, fetchEmployees } = useEmployeeStore();
   const isAdmin = useIsAdmin();
+  const { user } = useAuthStore();
   const { filters } = useFilters();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -290,16 +149,30 @@ function Directory() {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <FadeIn delay={100}>
-            <div className="mb-8">
-              <h1 className="text-4xl font-bold text-white mb-2">
-                {isAdmin ? "Employee Directory" : "Team Directory"}
-              </h1>
-              <p className="text-gray-400 text-sm">
-                {isAdmin 
-                  ? "Manage your team members and their information"
-                  : "View your team members and their information"
-                }
-              </p>
+            <div className="mb-8 flex justify-between items-start">
+              <div>
+                <h1 className="text-4xl font-bold text-white mb-2">
+                  {isAdmin ? "Employee Directory" : "Team Directory"}
+                </h1>
+                <p className="text-gray-400 text-sm">
+                  {isAdmin 
+                    ? "Manage your team members and their information"
+                    : "View your team members and their information"
+                  }
+                </p>
+              </div>
+              {isAdmin && (
+                <Button
+                  onClick={() => {
+                    setEditingEmployee(null);
+                    setIsModalOpen(true);
+                  }}
+                  className="bg-teal-600 hover:bg-teal-500 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
+                >
+                  <UserPlus className="w-4 h-4 mr-2 flex-shrink-0" />
+                  Add Employee
+                </Button>
+              )}
             </div>
           </FadeIn>
 
@@ -419,6 +292,8 @@ function Directory() {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onSave={handleSaveEmployee}
+          employees={employees}
+          currentUserId={user?.id}
         />
       </div>
     </PageTransition>

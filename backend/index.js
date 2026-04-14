@@ -18,6 +18,9 @@ import prisma from './lib/prisma.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Serve static files from uploads directory
+app.use('/uploads', express.static('uploads'));
+
 
 // Initialize database on startup
 const initializeDatabase = async () => {

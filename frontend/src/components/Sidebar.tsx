@@ -124,12 +124,17 @@ const Sidebar: React.FC = () => {
       ]
     },
     {
-      title: 'SETTINGS',
+      title: 'CONFIGURE',
       items: [
         ...(isAdmin ? [{
           name: 'Audit Logs', 
           path: '/audit-logs',
           icon: Database
+        } as NavItem] : []),
+        ...(isAdmin ? [{
+          name: 'Permission Management', 
+          path: '/permission-management',
+          icon: Users
         } as NavItem] : []),
         { 
           name: 'Profile', 
@@ -214,25 +219,7 @@ const Sidebar: React.FC = () => {
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-slate-800/50">
-        <div className="flex items-center space-x-3 px-3 py-2">
-          <div className="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center">
-            <span className="text-slate-300 text-sm font-medium">
-              {getUserInitials(user?.name || '')}
-            </span>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">
-              {user?.name || 'Unknown User'}
-            </p>
-            <p className="text-xs text-slate-400 truncate">
-              {user?.email || 'unknown@ascentia.com'}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
   );
 };
 

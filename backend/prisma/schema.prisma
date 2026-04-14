@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,134 +7,150 @@ datasource db {
 }
 
 model Employee {
-  id         Int      @id @default(autoincrement())
-  name       String
-  email      String   @unique
-  password   String?  // Nullable for contractors/third parties
-  jobTitle   String
-  department String
-  location   String
-  status     String   @default("active") // active/inactive/terminated
-  role       String   @default("employee") // admin/hr/employee
-  lastLogin  DateTime?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  createdBy  Int?
+  id                 Int                 @id @default(autoincrement())
+  name               String
+  email              String              @unique
+  password           String?
+  jobTitle           String
+  department         String
+  location           String
+  status             String              @default("active")
+  role               String              @default("employee")
+  lastLogin          DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  createdBy          Int?
+  needsPasswordChange Boolean             @default(false)
+  profilePicture     String?             // URL to profile picture
+  phone              String?             // Phone number
+  address            String?             // Address
+  twoFactorEnabled   Boolean             @default(false)
+  twoFactorSecret    String?             // TOTP secret
+  managerId          Int?
+  manager            Employee?           @relation("EmployeeManager", fields: [managerId], references: [id])
+  directReports      Employee[]          @relation("EmployeeManager")
+  salaries           EmployeeSalary[]
+  leaveRequests      LeaveRequest[]
+  goals              PerformanceGoal[]
+  writtenReviews     PerformanceReview[] @relation("PerformanceReviewer")
+  reviews            PerformanceReview[]
+  approvedTimesheets Timesheet[]         @relation("TimesheetApprover")
+  timesheets         Timesheet[]
+  passwordChanges    PasswordChangeHistory[]
+  passwordChangesMade PasswordChangeHistory[] @relation("PasswordChanger")
+}
 
-  leaveRequests     LeaveRequest[]
-  timesheets        Timesheet[]
-  approvedTimesheets Timesheet[] @relation("TimesheetApprover")
-  goals             PerformanceGoal[]
-  reviews           PerformanceReview[]
-  writtenReviews    PerformanceReview[] @relation("PerformanceReviewer")
-  salaries          EmployeeSalary[]
+model PasswordChangeHistory {
+  id         Int      @id @default(autoincrement())
+  employeeId Int
+  changedAt  DateTime @default(now())
+  changedBy  Int      // User who changed the password (can be self or admin)
+  reason     String?  // Optional reason for password change
+  
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  changer    Employee @relation("PasswordChanger", fields: [changedBy], references: [id])
+  
+  @@index([employeeId])
+  @@index([changedAt])
 }
 
 model LeaveRequest {
-  id        Int      @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   employeeId Int
-  type      String
-  startDate DateTime
-  endDate   DateTime
-  reason    String
-  status    String   @default("Pending")
-  createdAt DateTime @default(now())
-
-  employee  Employee @relation(fields: [employeeId], references: [id])
+  type       String
+  startDate  DateTime
+  endDate    DateTime
+  reason     String
+  status     String   @default("Pending")
+  createdAt  DateTime @default(now())
+  employee   Employee @relation(fields: [employeeId], references: [id])
 }
 
 model Timesheet {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   employeeId  Int
   date        DateTime
   hours       Float
   description String?
-  status      String   @default("Pending")
+  status      String    @default("Pending")
   approvedBy  Int?
   approvedAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  employee    Employee @relation(fields: [employeeId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   approver    Employee? @relation("TimesheetApprover", fields: [approvedBy], references: [id])
+  employee    Employee  @relation(fields: [employeeId], references: [id])
 }
 
 model PerformanceCycle {
-  id          Int      @id @default(autoincrement())
+  id          Int                 @id @default(autoincrement())
   name        String
   description String?
   startDate   DateTime
   endDate     DateTime
-  status      String   @default("Active")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  status      String              @default("Active")
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
   goals       PerformanceGoal[]
   reviews     PerformanceReview[]
 }
 
 model PerformanceGoal {
-  id           Int      @id @default(autoincrement())
-  cycleId      Int
-  employeeId   Int
-  title        String
-  description  String
-  targetDate   DateTime
-  status       String   @default("Active")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  cycle        PerformanceCycle @relation(fields: [cycleId], references: [id])
-  employee     Employee @relation(fields: [employeeId], references: [id])
-  reviews      PerformanceReview[]
+  id          Int                 @id @default(autoincrement())
+  cycleId     Int
+  employeeId  Int
+  title       String
+  description String
+  targetDate  DateTime
+  status      String              @default("Active")
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  employee    Employee            @relation(fields: [employeeId], references: [id])
+  cycle       PerformanceCycle    @relation(fields: [cycleId], references: [id])
+  reviews     PerformanceReview[]
 }
 
 model PerformanceReview {
-  id           Int      @id @default(autoincrement())
-  cycleId      Int
-  goalId       Int
-  employeeId   Int
-  reviewerId   Int
-  type         String   // "Self" or "Manager"
-  rating       Int      // 1-5 scale
-  comments     String?
-  status       String   @default("Pending")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  cycle        PerformanceCycle @relation(fields: [cycleId], references: [id])
-  goal         PerformanceGoal @relation(fields: [goalId], references: [id])
-  employee     Employee @relation(fields: [employeeId], references: [id])
-  reviewer     Employee @relation("PerformanceReviewer", fields: [reviewerId], references: [id])
+  id         Int              @id @default(autoincrement())
+  cycleId    Int
+  goalId     Int
+  employeeId Int
+  reviewerId Int
+  type       String
+  rating     Int
+  comments   String?
+  status     String           @default("Pending")
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  reviewer   Employee         @relation("PerformanceReviewer", fields: [reviewerId], references: [id])
+  employee   Employee         @relation(fields: [employeeId], references: [id])
+  goal       PerformanceGoal  @relation(fields: [goalId], references: [id])
+  cycle      PerformanceCycle @relation(fields: [cycleId], references: [id])
 }
 
 model SalaryComponent {
-  id          Int      @id @default(autoincrement())
-  name        String
-  type        String   // "Earning" or "Deduction"
-  category    String   // "Basic", "Allowance", "Deduction", etc.
-  amount      Float
-  isPercentage Boolean @default(false)
-  isTaxable   Boolean @default(true)
-  status      String   @default("Active")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  id               Int              @id @default(autoincrement())
+  name             String
+  type             String
+  category         String
+  amount           Float
+  isPercentage     Boolean          @default(false)
+  isTaxable        Boolean          @default(true)
+  status           String           @default("Active")
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
   employeeSalaries EmployeeSalary[]
 }
 
 model EmployeeSalary {
-  id               Int      @id @default(autoincrement())
-  employeeId       Int
-  componentId      Int
-  amount           Float
-  effectiveDate    DateTime
-  endDate          DateTime?
-  status           String   @default("Active")
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  employee         Employee @relation(fields: [employeeId], references: [id])
-  component        SalaryComponent @relation(fields: [componentId], references: [id])
+  id            Int             @id @default(autoincrement())
+  employeeId    Int
+  componentId   Int
+  amount        Float
+  effectiveDate DateTime
+  endDate       DateTime?
+  status        String          @default("Active")
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  component     SalaryComponent @relation(fields: [componentId], references: [id])
+  employee      Employee        @relation(fields: [employeeId], references: [id])
 }
-

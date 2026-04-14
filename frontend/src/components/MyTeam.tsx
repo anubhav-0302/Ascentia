@@ -141,6 +141,89 @@ const MyTeam: React.FC = () => {
             ))}
           </div>
 
+          {/* Team Hierarchy View */}
+          <Card className="p-6 mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-white flex items-center">
+                <Users className="w-5 h-5 mr-2 text-purple-400" />
+                Team Structure
+              </h3>
+            </div>
+            
+            <div className="space-y-4">
+              {(() => {
+                // Group employees by manager
+                const hierarchy: { [key: string]: typeof filteredTeamMembers } = {};
+                const managers = new Set<string>();
+                
+                // First pass: identify managers and group employees
+                filteredTeamMembers.forEach(member => {
+                  if (member.managerId) {
+                    const managerKey = `${member.manager?.name || 'Unknown Manager'} (${member.manager?.jobTitle || 'Unknown'})`;
+                    if (!hierarchy[managerKey]) {
+                      hierarchy[managerKey] = [];
+                    }
+                    hierarchy[managerKey].push(member);
+                    managers.add(managerKey);
+                  }
+                });
+
+                // Find employees without managers (top level)
+                const topLevel = filteredTeamMembers.filter(member => !member.managerId);
+                
+                if (topLevel.length > 0) {
+                  hierarchy['Unassigned (No Manager)'] = topLevel;
+                }
+
+                return Object.keys(hierarchy).length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+                    <p className="text-gray-400">No hierarchy structure available</p>
+                    <p className="text-gray-500 text-sm mt-2">Assign managers to employees to see the team structure</p>
+                  </div>
+                ) : (
+                  Object.entries(hierarchy).map(([managerName, members]) => (
+                    <div key={managerName} className="space-y-3">
+                      <div className="flex items-center space-x-3 pb-2 border-b border-slate-700/50">
+                        <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center">
+                          <Users className="w-4 h-4 text-purple-400" />
+                        </div>
+                        <div>
+                          <h4 className="text-white font-medium">{managerName}</h4>
+                          <p className="text-gray-400 text-xs">{members.length} direct {members.length === 1 ? 'report' : 'reports'}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="ml-11 space-y-2">
+                        {members.map((member) => (
+                          <div key={member.id} className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg hover:bg-slate-700/50 transition-colors">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 bg-teal-500/20 rounded-full flex items-center justify-center">
+                                <span className="text-xs font-bold text-teal-400">
+                                  {member.name.split(' ').map(n => n[0]).join('')}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="text-white font-medium text-sm">{member.name}</p>
+                                <p className="text-gray-400 text-xs">{member.jobTitle}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-gray-500 text-xs">{member.department}</span>
+                              <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(member.status)}`}>
+                                {member.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                );
+              })()}
+            </div>
+          </Card>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Team Members */}
             <div className="lg:col-span-2">

@@ -14,6 +14,25 @@ export interface Employee {
   createdAt?: string;
   updatedAt?: string;
   hasPassword?: boolean;
+  managerId?: number;
+  manager?: {
+    id: number;
+    name: string;
+    email: string;
+    jobTitle: string;
+  };
+  directReports?: Array<{
+    id: number;
+    name: string;
+    email: string;
+    jobTitle: string;
+    department: string;
+    status: string;
+  }>;
+  _count?: {
+    directReports: number;
+  };
+  needsPasswordChange?: boolean;
 }
 
 // Explicit type definitions for better TypeScript compatibility
@@ -26,6 +45,7 @@ export interface CreateEmployeeRequest {
   status: string;
   role?: string;
   password?: string;
+  managerId?: number;
 }
 
 export interface UpdateEmployeeRequest {
@@ -37,6 +57,7 @@ export interface UpdateEmployeeRequest {
   status?: string;
   role?: string;
   password?: string;
+  managerId?: number;
 }
 
 // API Error class for better error handling

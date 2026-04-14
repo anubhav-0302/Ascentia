@@ -323,6 +323,22 @@ const EmployeeProfile: React.FC = () => {
                       <p className="text-white">{employee.department || 'Not available'}</p>
                     </div>
                     <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-2">Reports To</label>
+                      <p className="text-white flex items-center">
+                        <User className="w-4 h-4 mr-2 text-gray-400" />
+                        {employee.manager ? (
+                          <button
+                            onClick={() => navigate(`/employee/${employee.manager.id}`)}
+                            className="text-teal-400 hover:text-teal-300 transition-colors"
+                          >
+                            {employee.manager.name}
+                          </button>
+                        ) : (
+                          <span className="text-gray-400">No manager assigned</span>
+                        )}
+                      </p>
+                    </div>
+                    <div>
                       <label className="block text-sm font-medium text-gray-400 mb-2">Location</label>
                       <p className="text-white flex items-center">
                         <MapPin className="w-4 h-4 mr-2 text-gray-400" />
@@ -368,6 +384,42 @@ const EmployeeProfile: React.FC = () => {
                     </div>
                   </div>
                 </Card>
+
+                {/* Team Members Section */}
+                {employee.directReports && employee.directReports.length > 0 && (
+                  <Card className="bg-slate-800/60 rounded-2xl p-6 shadow-lg">
+                    <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
+                      <User className="w-5 h-5 mr-2 text-teal-400" />
+                      Team Members ({employee.directReports.length})
+                    </h2>
+                    
+                    <div className="space-y-3">
+                      {employee.directReports.map((report) => (
+                        <div
+                          key={report.id}
+                          className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700/70 transition-colors cursor-pointer"
+                          onClick={() => navigate(`/employee/${report.id}`)}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-teal-500/20 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-bold text-teal-400">
+                                {report.name.split(' ').map(n => n[0]).join('')}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="text-white font-medium">{report.name}</p>
+                              <p className="text-gray-400 text-sm">{report.jobTitle}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-gray-400 text-sm">{report.department}</p>
+                            <StatusBadge status={report.status} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
               </div>
 
               {/* Leave Summary Section */}

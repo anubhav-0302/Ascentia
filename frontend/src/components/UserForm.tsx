@@ -7,10 +7,12 @@ import type { CreateUserData } from '../api/userApi';
 interface UserFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: CreateUserData & { jobTitle?: string; department?: string; }) => Promise<void>;
+  onSubmit: (data: CreateUserData & { jobTitle?: string; department?: string; managerId?: number; }) => Promise<void>;
   loading?: boolean;
   title: string;
-  initialData?: Partial<CreateUserData & { jobTitle?: string; department?: string; }>;
+  initialData?: Partial<CreateUserData & { jobTitle?: string; department?: string; managerId?: number; }>;
+  employees?: Array<{ id: number; name: string; email: string; }>;
+  currentUserId?: number;
 }
 
 const UserForm: React.FC<UserFormProps> = ({
@@ -19,17 +21,20 @@ const UserForm: React.FC<UserFormProps> = ({
   onSubmit,
   loading,
   title,
-  initialData = {}
+  initialData = {},
+  employees = [],
+  currentUserId
 }) => {
   console.log('🔍 UserForm: Component rendered, isOpen:', isOpen, 'initialData:', initialData);
   
-  const [formData, setFormData] = useState<CreateUserData & { jobTitle?: string; department?: string; }>(() => ({
+  const [formData, setFormData] = useState<CreateUserData & { jobTitle?: string; department?: string; managerId?: number; }>(() => ({
     name: '',
     email: '',
     password: '',
     role: 'employee',
     jobTitle: 'Employee',
     department: 'General',
+    managerId: undefined,
     ...initialData
   }));
 
@@ -43,10 +48,11 @@ const UserForm: React.FC<UserFormProps> = ({
         role: 'employee',
         jobTitle: 'Employee',
         department: 'General',
+        managerId: undefined,
         ...initialData
       });
     }
-  }, [isOpen]); // Only depend on isOpen
+  }, [isOpen, initialData]); // Include initialData dependency
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +74,7 @@ const UserForm: React.FC<UserFormProps> = ({
     }
   };
 
-  const handleChange = (field: keyof (CreateUserData & { jobTitle?: string; department?: string; }), value: string) => {
+  const handleChange = (field: keyof (CreateUserData & { jobTitle?: string; department?: string; managerId?: number; }), value: string | number) => {
     console.log(`🔤 UserForm: ${String(field)} change:`, value);
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
@@ -176,6 +182,27 @@ const UserForm: React.FC<UserFormProps> = ({
           placeholder="Enter department"
           required
         />
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Manager (Optional)</label>
+          <select
+            value={formData.managerId || ''}
+            onChange={(e) => {
+              e.stopPropagation();
+              const value = e.target.value;
+              handleChange('managerId', value ? parseInt(value) : undefined);
+            }}
+            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+          >
+            <option value="">No Manager</option>
+            {employees
+              .filter(emp => currentUserId ? emp.id !== currentUserId : true) // Exclude current user
+              .map(employee => (
+                <option key={employee.id} value={employee.id}>
+                  {employee.name} - {employee.jobTitle}
+                </option>
+              ))}
+          </select>
+        </div>
         <div className="flex justify-end space-x-3 pt-4">
           <Button
             type="button"

@@ -12,6 +12,9 @@ import Input from './Input';
 import Card from './Card';
 import Modal from './Modal';
 import UserForm from './UserForm';
+import EmployeeFormModal from './EmployeeFormModal';
+import { useEmployeeStore } from '../store/useEmployeeStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { 
   Users, 
   UserPlus, 
@@ -27,9 +30,12 @@ import {
   User as UserIcon
 } from 'lucide-react';
 
+
 const PermissionManagement = () => {
   console.log('🔍 PermissionManagement: Component rendering');
   const currentUser = useUser();
+  const { user } = useAuthStore();
+  const { employees, fetchEmployees } = useEmployeeStore();
   console.log('🔍 PermissionManagement: currentUser from useUser:', currentUser);
   const [users, setUsers] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
@@ -42,6 +48,12 @@ const PermissionManagement = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<Employee | null>(null);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+
+  // Fetch employees on component mount
+  useEffect(() => {
+    fetchEmployees();
+  }, [fetchEmployees]);
   
   // Form states
   const [createFormData, setCreateFormData] = useState<CreateEmployeeRequest & { password: string }>({
@@ -148,38 +160,28 @@ const PermissionManagement = () => {
     fetchUsers();
   };
 
-  const handleCreateUser = async (userData: CreateEmployeeRequest & { password: string }) => {
-    if (!userData.name || !userData.email || !userData.password || !userData.jobTitle || !userData.department) {
-      toast.error('Please fill all required fields');
-      return;
-    }
-
-    if (userData.password.length < 6) {
-      toast.error('Password must be at least 6 characters long');
-      return;
-    }
-
+  const handleSaveEmployee = async (data: CreateEmployeeRequest | UpdateEmployeeRequest) => {
     try {
-      setLoading(true);
-      await employeeApi.createEmployee(userData);
-      toast.success('User created successfully');
+      if (editingEmployee) {
+        await employeeApi.updateEmployee(editingEmployee.id, data as UpdateEmployeeRequest);
+        toast.success("Employee updated successfully!");
+      } else {
+        await employeeApi.createEmployee(data as CreateEmployeeRequest);
+        toast.success("Employee added successfully!");
+      }
       setShowCreateModal(false);
-      setCreateFormData({ 
-        name: '', 
-        email: '', 
-        password: '', 
-        role: 'employee',
-        jobTitle: 'Employee',
-        department: 'General',
-        location: 'Main Office',
-        status: 'active'
-      });
+      setEditingEmployee(null);
       fetchUsers();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to create user');
-    } finally {
-      setLoading(false);
+      console.error('Error saving employee:', err);
+      toast.error(err.message || "Failed to save employee");
+      throw err; // Re-throw to let modal handle error display
     }
+  };
+
+  const handleEditEmployee = (emp: Employee) => {
+    setEditingEmployee(emp);
+    setShowCreateModal(true);
   };
 
   const handleUpdateUser = async (e: React.FormEvent) => {
@@ -320,10 +322,13 @@ const PermissionManagement = () => {
             {loading ? 'Refreshing...' : 'Refresh'}
           </Button>
           <Button
-            onClick={() => setShowCreateModal(true)}
-            className="bg-teal-600 hover:bg-teal-700"
+            onClick={() => {
+              setEditingEmployee(null);
+              setShowCreateModal(true);
+            }}
+            className="bg-teal-600 hover:bg-teal-500 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
           >
-            <UserPlus className="w-4 h-4 mr-2" />
+            <UserPlus className="w-4 h-4 mr-2 flex-shrink-0" />
             Add Employee
           </Button>
         </div>
@@ -432,7 +437,7 @@ const PermissionManagement = () => {
                     <td className="py-3 px-2">
                       <div className="flex items-center justify-end space-x-1">
                         <Button
-                          onClick={() => openEditModal(user)}
+                          onClick={() => handleEditEmployee(user)}
                           variant="secondary"
                           size="sm"
                           className="text-blue-400 hover:text-blue-300 p-1"
@@ -467,13 +472,17 @@ const PermissionManagement = () => {
         )}
       </Card>
 
-      {/* Create User Modal */}
-      <UserForm
+      {/* Create/Edit Employee Modal */}
+      <EmployeeFormModal
+        employee={editingEmployee}
         isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSubmit={handleCreateUser}
-        loading={loading}
-        title="Create New User"
+        onClose={() => {
+          setShowCreateModal(false);
+          setEditingEmployee(null);
+        }}
+        onSave={handleSaveEmployee}
+        employees={employees}
+        currentUserId={user?.id}
       />
 
       {/* Edit User Modal */}

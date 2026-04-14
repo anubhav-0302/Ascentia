@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { StandardLayout } from './StandardLayout';
-import { Settings as SettingsIcon, Bell, Shield, Palette, Globe, Database, Users } from 'lucide-react';
+import { Settings as SettingsIcon, Bell, Shield, Palette, Globe, Database } from 'lucide-react';
 import Card from './Card';
 import { PageTransition, FadeIn } from './PageTransition';
-import PermissionManagement from './PermissionManagement';
 import { useIsAdmin } from '../store/useAuthStore';
 
 const Settings: React.FC = () => {
@@ -211,27 +210,11 @@ const Settings: React.FC = () => {
                     <Database className="w-4 h-4 mr-3" />
                     Data & Privacy
                   </button>
-                  {isAdmin && (
-                    <button 
-                      onClick={() => handleNavigationClick('permissions')}
-                      className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        activeSection === 'permissions'
-                          ? 'bg-teal-500/10 text-teal-400 border-l-4 border-teal-500'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-                      }`}
-                    >
-                      <Users className="w-4 h-4 mr-3" />
-                      Permission Management
-                    </button>
-                  )}
-                </nav>
+                                  </nav>
               </Card>
             </div>
             <div className="lg:col-span-2">
-              {activeSection === 'permissions' ? (
-                <PermissionManagement />
-              ) : (
-                <div className="space-y-6">
+              <div className="space-y-6">
                   <Card className="p-6">
                     <h3 className="text-lg font-semibold text-white mb-6 flex items-center">
                       <SettingsIcon className="w-5 h-5 mr-2 text-teal-400" />
@@ -319,7 +302,6 @@ const Settings: React.FC = () => {
                     </div>
                   </Card>
                 </div>
-              )}
             </div>
           </div>
         </FadeIn>

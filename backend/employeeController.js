@@ -18,7 +18,20 @@ export const getEmployees = async (req, res) => {
         role: true,
         lastLogin: true,
         createdAt: true,
-        updatedAt: true
+        updatedAt: true,
+        managerId: true,
+        manager: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        _count: {
+          select: {
+            directReports: true
+          }
+        }
       }
     });
     console.log(`📊 getEmployees: ${employees.length} employees from database`);
@@ -66,7 +79,27 @@ export const getEmployee = async (req, res) => {
         role: true,
         lastLogin: true,
         createdAt: true,
-        updatedAt: true
+        updatedAt: true,
+        managerId: true,
+        manager: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            jobTitle: true
+          }
+        },
+        directReports: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            jobTitle: true,
+            department: true,
+            status: true
+          },
+          orderBy: { name: 'asc' }
+        }
       }
     });
 
@@ -88,12 +121,14 @@ export const getEmployee = async (req, res) => {
 // POST /api/employees - Create new employee with optional authentication
 export const createEmployee = async (req, res) => {
   try {
-    const { name, email, jobTitle, department, location, status, role, password } = req.body;
+    console.log('🔍 Received request body:', req.body);
+    const { name, email, jobTitle, department, location, status, role, password, managerId } = req.body;
+    console.log('🔍 Extracted fields:', { name, email, jobTitle, department, location, status, role, password, managerId });
 
-    if (!name || !email || !jobTitle || !department) {
+    if (!name || !email || !jobTitle || !department || !role) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Name, email, job title, and department are required' 
+        message: 'Name, email, job title, department, and role are required' 
       });
     }
 
@@ -109,10 +144,32 @@ export const createEmployee = async (req, res) => {
       });
     }
 
-    // Hash password if provided
+    // Validate managerId if provided
+    if (managerId) {
+      const manager = await prisma.employee.findUnique({ 
+        where: { id: parseInt(managerId) } 
+      });
+      if (!manager) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid manager ID' 
+        });
+      }
+    }
+
+    // Generate default password if not provided
     let hashedPassword = null;
+    let needsPasswordChange = false;
+    
     if (password) {
       hashedPassword = await bcrypt.hash(password, 10);
+    } else {
+      // Generate secure default password
+      const defaultPassword = 'Default@123';
+      hashedPassword = await bcrypt.hash(defaultPassword, 10);
+      needsPasswordChange = true;
+      
+      console.log(`🔐 Generated default password for ${email}: ${defaultPassword}`);
     }
 
     const employee = await prisma.employee.create({
@@ -124,7 +181,9 @@ export const createEmployee = async (req, res) => {
         location: location || 'Main Office', 
         status: status || 'active',
         role: role || 'employee',
-        password: hashedPassword
+        password: hashedPassword,
+        managerId: managerId ? parseInt(managerId) : null,
+        needsPasswordChange: needsPasswordChange
       }
     });
 
@@ -165,7 +224,7 @@ export const updateEmployee = async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid employee ID' });
 
-    const { name, email, jobTitle, department, location, status, role, password } = req.body;
+    const { name, email, jobTitle, department, location, status, role, password, managerId } = req.body;
 
     const existing = await prisma.employee.findUnique({ where: { id } });
     if (!existing) return res.status(404).json({ success: false, message: 'Employee not found' });
@@ -180,6 +239,32 @@ export const updateEmployee = async (req, res) => {
     if (role) updateData.role = role;
     if (password) {
       updateData.password = await bcrypt.hash(password, 10);
+    }
+
+    // Handle managerId with validation
+    if (managerId !== undefined) {
+      // Prevent self-assignment
+      if (parseInt(managerId) === id) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Employee cannot be their own manager' 
+        });
+      }
+
+      // Validate manager exists
+      if (managerId) {
+        const manager = await prisma.employee.findUnique({ 
+          where: { id: parseInt(managerId) } 
+        });
+        if (!manager) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'Invalid manager ID' 
+          });
+        }
+      }
+
+      updateData.managerId = managerId ? parseInt(managerId) : null;
     }
 
     const updated = await prisma.employee.update({

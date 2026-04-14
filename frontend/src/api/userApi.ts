@@ -29,6 +29,11 @@ export interface ResetPasswordData {
   newPassword: string;
 }
 
+export interface ChangePasswordData {
+  currentPassword: string;
+  newPassword: string;
+}
+
 // Get all users (admin only)
 export const getAllUsers = async () => {
   const response = await apiClient.get('/users');
@@ -56,6 +61,43 @@ export const updateUser = async (id: number, userData: UpdateUserData) => {
 // Reset user password (admin only)
 export const resetUserPassword = async (id: number, passwordData: ResetPasswordData) => {
   const response = await apiClient.put(`/users/${id}/password`, passwordData);
+  return response;
+};
+
+// Change own password (authenticated user)
+export const changePassword = async (data: ChangePasswordData) => {
+  const response = await apiClient.put('/users/me/password', data);
+  return response;
+};
+
+// Update own profile (authenticated user)
+export const updateProfile = async (data: { name: string; email: string; phone?: string; address?: string }) => {
+  const response = await apiClient.put('/users/me', data);
+  return response;
+};
+
+// Setup 2FA (authenticated user)
+export const setupTwoFactor = async () => {
+  const response = await apiClient.post('/users/me/2fa/setup', {});
+  return response;
+};
+
+// Disable 2FA (authenticated user)
+export const disableTwoFactor = async () => {
+  const response = await apiClient.post('/users/me/2fa/disable', {});
+  return response;
+};
+
+// Upload profile picture (authenticated user)
+export const uploadProfilePicture = async (file: File) => {
+  const formData = new FormData();
+  formData.append('profilePicture', file);
+  
+  const response = await apiClient.post('/users/me/profile-picture', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
   return response;
 };
 

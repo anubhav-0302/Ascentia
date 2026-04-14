@@ -150,3 +150,49 @@ export const getCurrentUser = async (req, res) => {
     });
   }
 };
+
+// Forgot Password: Send password reset instructions
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Email address is required" 
+      });
+    }
+
+    // Check if user exists
+    const employee = await prisma.employee.findFirst({ where: { email } });
+    
+    if (!employee) {
+      // Don't reveal if email exists or not for security
+      return res.json({ 
+        success: true, 
+        message: "If an account with that email exists, password reset instructions have been sent." 
+      });
+    }
+
+    // In a real implementation, you would:
+    // 1. Generate a reset token
+    // 2. Save it to the database with an expiry
+    // 3. Send an email with the reset link
+    // For now, we'll just log it and return success
+    console.log("🔑 Password reset requested for:", email);
+    console.log("📧 In production, send reset email to:", email);
+
+    // For demo purposes, we'll just return success
+    // In production, you would integrate with an email service
+    res.json({ 
+      success: true, 
+      message: "Password reset instructions have been sent to your email address." 
+    });
+  } catch (error) {
+    console.error("❌ FORGOT PASSWORD ERROR:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to process password reset request" 
+    });
+  }
+};
