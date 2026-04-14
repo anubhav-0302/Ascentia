@@ -1,4 +1,4 @@
-import { getMyLeaveRequests as getMyLeaveRequestsFromDB, getAllLeaveRequests as getAllLeaveRequestsFromDB, createLeaveRequest as createLeaveRequestInDB, updateLeaveRequestStatus as updateLeaveRequestStatusInDB, initializeLeaveData } from './leaveStoreDB.js';
+import { getMyLeaveRequests as getMyLeaveRequestsFromDB, getAllLeaveRequests as getAllLeaveRequestsFromDB, createLeaveRequest as createLeaveRequestInDB, updateLeaveRequestStatus as updateLeaveRequestStatusInDB, cancelLeaveRequest as cancelLeaveRequestFromDB, initializeLeaveData } from './leaveStoreDB.js';
 import { createLeaveRequestNotifications, createLeaveStatusUpdateNotifications } from './notificationStoreDB.js';
 
 // Initialize database on module load
@@ -64,6 +64,14 @@ export const createLeaveRequest = async (req, res) => {
     const end = new Date(endDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Set to start of day for fair comparison
+
+    // Validate start date is not in the past
+    if (start < today) {
+      return res.status(400).json({
+        success: false,
+        message: 'Start date cannot be in the past'
+      });
+    }
     
     // Validate date range (allow same-day leave)
     if (start > end) {
@@ -106,6 +114,26 @@ export const createLeaveRequest = async (req, res) => {
       message: 'Failed to create leave request',
       error: error.message
     });
+  }
+};
+
+// DELETE /api/leave/:id - Cancel leave request (employee only, pending only)
+export const cancelLeaveRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const cancelled = await cancelLeaveRequestFromDB(id, userId);
+
+    if (!cancelled) {
+      return res.status(404).json({ success: false, message: 'Leave request not found' });
+    }
+
+    res.json({ success: true, message: 'Leave request cancelled successfully' });
+  } catch (error) {
+    console.error('❌ CANCEL LEAVE ERROR:', error);
+    const status = error.message.startsWith('Unauthorized') ? 403 : 400;
+    res.status(status).json({ success: false, message: error.message });
   }
 };
 

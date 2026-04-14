@@ -38,6 +38,9 @@ export const leaveApi = {
   
   // Update leave status (admin only)
   updateLeaveStatus: (id: number, status: string) => apiClient.put(`/leave/${id}`, { status }),
+
+  // Cancel leave request (employee, pending only)
+  cancelLeave: (id: number) => apiClient.delete(`/leave/${id}`),
 };
 
 // Export individual functions for convenience
@@ -45,3 +48,4 @@ export const createLeave = leaveApi.createLeave;
 export const getMyLeaves = leaveApi.getMyLeaves;
 export const getAllLeaves = leaveApi.getAllLeaves;
 export const updateLeaveStatus = leaveApi.updateLeaveStatus;
+export const cancelLeave = leaveApi.cancelLeave;

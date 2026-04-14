@@ -10,6 +10,7 @@ import userRoutes from './routes/userRoutes.js';
 import timesheetRoutes from './routes/timesheetRoutes.js';
 import performanceRoutes from './routes/performanceRoutes.js';
 import payrollRoutes from './routes/payrollRoutes.js';
+import logsRoutes from './routes/logsRoutes.js';
 import { requireAuth } from './middleware/auth.js';
 import { initializeLeaveData } from './leaveStoreDB.js';
 import prisma from './lib/prisma.js';
@@ -90,6 +91,7 @@ app.use('/api/users', requireAuth, userRoutes);
 app.use('/api/timesheet', requireAuth, timesheetRoutes);
 app.use('/api/performance', requireAuth, performanceRoutes);
 app.use('/api/payroll', requireAuth, payrollRoutes);
+app.use('/api/logs', requireAuth, logsRoutes);
 
 // Start server
 app.listen(PORT, async () => {

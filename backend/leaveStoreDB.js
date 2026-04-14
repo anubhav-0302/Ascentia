@@ -91,6 +91,27 @@ export const createLeaveRequest = async (leaveData) => {
   try {
     const leaveRequests = readLeaveRequests();
     
+    // Check for overlapping leave requests for the same user
+    const newStart = new Date(leaveData.startDate);
+    const newEnd = new Date(leaveData.endDate);
+    
+    const overlappingRequest = leaveRequests.find(req => 
+      req.userId === parseInt(leaveData.userId) &&
+      req.status !== 'Rejected' && // Only check non-rejected requests
+      (
+        // New request starts during an existing request
+        (newStart >= new Date(req.startDate) && newStart <= new Date(req.endDate)) ||
+        // New request ends during an existing request
+        (newEnd >= new Date(req.startDate) && newEnd <= new Date(req.endDate)) ||
+        // New request completely contains an existing request
+        (newStart <= new Date(req.startDate) && newEnd >= new Date(req.endDate))
+      )
+    );
+    
+    if (overlappingRequest) {
+      throw new Error('You already have a leave request that overlaps with these dates');
+    }
+    
     const newLeaveRequest = {
       id: Date.now(), // Simple ID generation
       ...leaveData,
@@ -119,6 +140,36 @@ export const createLeaveRequest = async (leaveData) => {
     return { ...newLeaveRequest, user };
   } catch (error) {
     console.error("❌ Error creating leave request:", error);
+    throw error;
+  }
+};
+
+// Cancel leave request (employee can cancel their own pending request)
+export const cancelLeaveRequest = async (id, userId) => {
+  try {
+    const leaveRequests = readLeaveRequests();
+    const requestIndex = leaveRequests.findIndex(req => req.id === parseInt(id));
+
+    if (requestIndex === -1) return null;
+
+    const leave = leaveRequests[requestIndex];
+
+    if (leave.userId !== parseInt(userId)) {
+      throw new Error('Unauthorized: You can only cancel your own leave requests');
+    }
+
+    if (leave.status !== 'Pending') {
+      throw new Error('Only pending leave requests can be cancelled');
+    }
+
+    leaveRequests.splice(requestIndex, 1);
+    writeLeaveRequests(leaveRequests);
+
+    logDatabaseOperation('DELETE', 'leave_request', { leaveRequestId: parseInt(id), userId }, userId);
+
+    return leave;
+  } catch (error) {
+    console.error('❌ Error cancelling leave request:', error);
     throw error;
   }
 };

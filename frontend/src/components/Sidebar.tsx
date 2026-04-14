@@ -13,7 +13,8 @@ import {
   Building,
   User,
   Clock,
-  Target
+  Target,
+  Database
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -21,6 +22,7 @@ const Sidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const isAdmin = user?.role === 'admin';
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -124,6 +126,11 @@ const Sidebar: React.FC = () => {
     {
       title: 'SETTINGS',
       items: [
+        ...(isAdmin ? [{
+          name: 'Audit Logs', 
+          path: '/audit-logs',
+          icon: Database
+        } as NavItem] : []),
         { 
           name: 'Profile', 
           path: '/profile',

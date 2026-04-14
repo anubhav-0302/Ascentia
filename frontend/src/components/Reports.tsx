@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { StandardLayout } from './StandardLayout';
-import { FileText, TrendingUp, Download, Calendar, BarChart3, PieChart, Activity } from 'lucide-react';
+import { FileText, TrendingUp, Download, Calendar, BarChart3, PieChart, Activity, Users, Briefcase, AlertCircle } from 'lucide-react';
 import Card from './Card';
 import Filter from './Filter';
 import { useFilters } from '../contexts/FilterContext';
 import { PageTransition, FadeIn } from './PageTransition';
+import { useEmployeeStore } from '../store/useEmployeeStore';
+import { getMyLeaves, getAllLeaves, type LeaveRequest } from '../api/leaveApi';
+import { useIsAdmin } from '../store/useAuthStore';
 
 interface RecentReport {
   id: number;
@@ -36,100 +39,255 @@ interface ReportTemplate {
 
 const Reports: React.FC = () => {
   const { filters } = useFilters();
+  const { employees, fetchEmployees } = useEmployeeStore();
+  const isAdmin = useIsAdmin();
+  const [leaveData, setLeaveData] = useState<LeaveRequest[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const reportStats: ReportStat[] = [
-    {
-      title: 'Reports Generated',
-      value: '0',
-      change: 'No reports',
-      icon: FileText,
-      color: 'text-gray-400',
-      link: '/reports'
-    },
-    {
-      title: 'Automated Reports',
-      value: '0',
-      change: 'Not running',
-      icon: Calendar,
-      color: 'text-gray-400',
-      link: '/workflow-hub'
-    },
-    {
-      title: 'Data Processing',
-      value: '0%',
-      change: 'No data',
-      icon: TrendingUp,
-      color: 'text-gray-400',
-      link: '/payroll-benefits'
-    },
-    {
-      title: 'Storage Used',
-      value: '0 GB',
-      change: 'No data',
-      icon: Download,
-      color: 'text-gray-400',
-      link: '/settings'
+  // Load leave data on component mount
+  useEffect(() => {
+    const loadLeaveData = async () => {
+      try {
+        if (isAdmin) {
+          const response = await getAllLeaves();
+          setLeaveData(response && response.data ? response.data : (response || []));
+        } else {
+          const response = await getMyLeaves();
+          setLeaveData(response && response.data ? response.data : (response || []));
+        }
+      } catch (error) {
+        console.error('Failed to load leave data:', error);
+        setLeaveData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Load employees if not already loaded
+    if (employees.length === 0) {
+      fetchEmployees();
     }
-  ];
+    
+    loadLeaveData();
+  }, [isAdmin, employees.length, fetchEmployees]);
 
-  const recentReports: RecentReport[] = [];
+  // Calculate real report stats using useMemo for performance
+  const reportStats = useMemo(() => {
+    if (loading) {
+      return [
+        {
+          title: 'Total Employees',
+          value: '...',
+          change: 'Loading',
+          icon: Users,
+          color: 'text-gray-400',
+          link: '/directory'
+        },
+        {
+          title: 'Active Employees',
+          value: '...',
+          change: 'Loading',
+          icon: Briefcase,
+          color: 'text-gray-400',
+          link: '/directory'
+        },
+        {
+          title: 'Total Leave Requests',
+          value: '...',
+          change: 'Loading',
+          icon: Calendar,
+          color: 'text-gray-400',
+          link: '/leave-attendance'
+        },
+        {
+          title: 'Pending Approvals',
+          value: '...',
+          change: 'Loading',
+          icon: AlertCircle,
+          color: 'text-gray-400',
+          link: '/leave-attendance'
+        }
+      ];
+    }
+
+    const totalEmployees = employees.length;
+    const activeEmployees = employees.filter(emp => emp.status === 'Active').length;
+    const totalLeaves = leaveData.length;
+    const pendingLeaves = leaveData.filter(leave => leave.status === 'Pending').length;
+
+    return [
+      {
+        title: 'Total Employees',
+        value: totalEmployees.toString(),
+        change: activeEmployees > 0 ? `${activeEmployees} active` : 'No active employees',
+        icon: Users,
+        color: totalEmployees > 0 ? 'text-teal-400' : 'text-gray-400',
+        link: '/directory'
+      },
+      {
+        title: 'Active Employees',
+        value: activeEmployees.toString(),
+        change: totalEmployees > 0 ? `${Math.round((activeEmployees / totalEmployees) * 100)}% of total` : 'No employees',
+        icon: Briefcase,
+        color: activeEmployees > 0 ? 'text-green-400' : 'text-gray-400',
+        link: '/directory'
+      },
+      {
+        title: 'Total Leave Requests',
+        value: totalLeaves.toString(),
+        change: totalLeaves > 0 ? `${leaveData.filter(l => l.status === 'Approved').length} approved` : 'No requests',
+        icon: Calendar,
+        color: totalLeaves > 0 ? 'text-blue-400' : 'text-gray-400',
+        link: '/leave-attendance'
+      },
+      {
+        title: 'Pending Approvals',
+        value: pendingLeaves.toString(),
+        change: pendingLeaves > 0 ? 'Action needed' : 'All processed',
+        icon: AlertCircle,
+        color: pendingLeaves > 0 ? 'text-yellow-400' : 'text-green-400',
+        link: '/leave-attendance'
+      }
+    ];
+  }, [employees, leaveData, loading]);
+
+  // Create recent reports from actual leave data
+  const recentReports: RecentReport[] = useMemo(() => {
+    if (loading || leaveData.length === 0) return [];
+
+    return leaveData
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 10)
+      .map((leave, index) => ({
+        id: leave.id,
+        name: `${leave.type} Leave - ${leave.user?.name || 'Unknown User'}`,
+        type: leave.type || 'Unknown',
+        date: leave.createdAt ? new Date(leave.createdAt).toLocaleDateString() : 'Unknown Date',
+        status: leave.status || 'Unknown',
+        size: '~2 KB',
+        format: 'PDF'
+      }));
+  }, [leaveData, loading]);
+
+  // Calculate department distribution
+  const departmentDistribution = useMemo(() => {
+    if (loading || employees.length === 0) return [];
+
+    const deptCounts = employees.reduce((acc, emp) => {
+      const dept = emp.department || 'Unassigned';
+      acc[dept] = (acc[dept] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(deptCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [employees, loading]);
+
+  // Calculate leave statistics
+  const leaveStatistics = useMemo(() => {
+    if (loading || leaveData.length === 0) {
+      return { total: 0, approved: 0, pending: 0, rejected: 0 };
+    }
+
+    return {
+      total: leaveData.length,
+      approved: leaveData.filter(l => l.status === 'Approved').length,
+      pending: leaveData.filter(l => l.status === 'Pending').length,
+      rejected: leaveData.filter(l => l.status === 'Rejected').length
+    };
+  }, [leaveData, loading]);
 
   // Filter recent reports based on filter context
   const filteredReports = React.useMemo(() => {
+    if (!recentReports || recentReports.length === 0) return [];
+
     return recentReports.filter(report => {
-      const matchesSearch = !filters.search || 
-        report.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        report.type.toLowerCase().includes(filters.search.toLowerCase());
+      try {
+        const matchesSearch = !filters.search || 
+          report.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+          report.type.toLowerCase().includes(filters.search.toLowerCase());
 
-      const matchesReportType = !filters.reportType || filters.reportType === 'all' ||
-        report.type.toLowerCase() === filters.reportType.toLowerCase();
+        const matchesReportType = !filters.reportType || filters.reportType === 'all' ||
+          report.type.toLowerCase() === filters.reportType.toLowerCase();
 
-      const matchesStatus = !filters.status || filters.status === 'all' ||
-        report.status.toLowerCase() === filters.status.toLowerCase();
+        const matchesStatus = !filters.status || filters.status === 'all' ||
+          report.status.toLowerCase() === filters.status.toLowerCase();
 
-      // Date range filtering
-      let matchesDateRange = !filters.dateRange || filters.dateRange === 'all';
-      if (!matchesDateRange) {
-        const reportDate = new Date(report.date);
-        const now = new Date();
+        // Date range filtering with error handling
+        let matchesDateRange = !filters.dateRange || filters.dateRange === 'all';
+        if (!matchesDateRange) {
+          try {
+            const reportDate = new Date(report.date);
+            const now = new Date();
+            
+            // Check if date is valid
+            if (isNaN(reportDate.getTime())) {
+              matchesDateRange = true; // If invalid date, include in results
+            } else {
+              switch (filters.dateRange) {
+                case 'today':
+                  matchesDateRange = reportDate.toDateString() === now.toDateString();
+                  break;
+                case 'last-7-days':
+                  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                  matchesDateRange = reportDate >= weekAgo;
+                  break;
+                case 'last-30-days':
+                  const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                  matchesDateRange = reportDate >= monthAgo;
+                  break;
+                default:
+                  matchesDateRange = true;
+              }
+            }
+          } catch (error) {
+            console.error('Date filtering error:', error);
+            matchesDateRange = true; // Include on error
+          }
+        }
+
+        return matchesSearch && matchesReportType && matchesStatus && matchesDateRange;
+      } catch (error) {
+        console.error('Report filtering error:', error);
+        return true; // Include report on error
+      }
+    }).sort((a, b) => {
+      try {
+        const { sortBy, sortOrder } = filters;
+        let comparison = 0;
         
-        switch (filters.dateRange) {
-          case 'today':
-            matchesDateRange = reportDate.toDateString() === now.toDateString();
+        switch (sortBy) {
+          case 'name':
+            comparison = a.name.localeCompare(b.name);
             break;
-          case 'last-7-days':
-            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-            matchesDateRange = reportDate >= weekAgo;
+          case 'date':
+            try {
+              const dateA = new Date(a.date);
+              const dateB = new Date(b.date);
+              comparison = dateA.getTime() - dateB.getTime();
+            } catch (error) {
+              comparison = 0; //fallback
+            }
             break;
-          case 'last-30-days':
-            const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-            matchesDateRange = reportDate >= monthAgo;
+          case 'status':
+            comparison = a.status.localeCompare(b.status);
             break;
           default:
-            matchesDateRange = true;
+            try {
+              const dateA = new Date(a.date);
+              const dateB = new Date(b.date);
+              comparison = dateA.getTime() - dateB.getTime();
+            } catch (error) {
+              comparison = 0; //fallback
+            }
         }
+        
+        return sortOrder === 'desc' ? -comparison : comparison;
+      } catch (error) {
+        console.error('Report sorting error:', error);
+        return 0; // No change on error
       }
-
-      return matchesSearch && matchesReportType && matchesStatus && matchesDateRange;
-    }).sort((a, b) => {
-      const { sortBy, sortOrder } = filters;
-      let comparison = 0;
-      
-      switch (sortBy) {
-        case 'name':
-          comparison = a.name.localeCompare(b.name);
-          break;
-        case 'date':
-          comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
-          break;
-        case 'status':
-          comparison = a.status.localeCompare(b.status);
-          break;
-        default:
-          comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
-      }
-      
-      return sortOrder === 'desc' ? -comparison : comparison;
     });
   }, [recentReports, filters]);
 
@@ -331,6 +489,85 @@ const Reports: React.FC = () => {
                 </div>
               </Card>
             </div>
+          </div>
+
+          {/* Additional Report Sections */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            {/* Department Distribution */}
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold text-white mb-6 flex items-center">
+                <PieChart className="w-5 h-5 mr-2 text-yellow-400" />
+                Department Distribution
+              </h3>
+              {loading ? (
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-500 mx-auto"></div>
+                  <p className="text-gray-400 text-sm mt-2">Loading department data...</p>
+                </div>
+              ) : departmentDistribution.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-400">No department data available</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {departmentDistribution.map((dept, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-3 h-3 bg-teal-500 rounded-full"></div>
+                        <span className="text-white font-medium">{dept.name}</span>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <span className="text-gray-400 text-sm">
+                          {dept.count} employee{dept.count !== 1 ? 's' : ''}
+                        </span>
+                        <span className="text-teal-400 font-medium">
+                          {Math.round((dept.count / employees.length) * 100)}%
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            {/* Leave Statistics */}
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold text-white mb-6 flex items-center">
+                <Calendar className="w-5 h-5 mr-2 text-green-400" />
+                Leave Statistics
+              </h3>
+              {loading ? (
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-500 mx-auto"></div>
+                  <p className="text-gray-400 text-sm mt-2">Loading leave data...</p>
+                </div>
+              ) : leaveStatistics.total === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-400">No leave data available</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="text-center p-4 bg-slate-700/30 rounded-lg">
+                    <p className="text-3xl font-bold text-teal-400">{leaveStatistics.total}</p>
+                    <p className="text-gray-400 text-sm">Total Leave Requests</p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="text-center p-3 bg-green-500/10 rounded-lg">
+                      <p className="text-xl font-bold text-green-400">{leaveStatistics.approved}</p>
+                      <p className="text-gray-400 text-xs">Approved</p>
+                    </div>
+                    <div className="text-center p-3 bg-yellow-500/10 rounded-lg">
+                      <p className="text-xl font-bold text-yellow-400">{leaveStatistics.pending}</p>
+                      <p className="text-gray-400 text-xs">Pending</p>
+                    </div>
+                    <div className="text-center p-3 bg-red-500/10 rounded-lg">
+                      <p className="text-xl font-bold text-red-400">{leaveStatistics.rejected}</p>
+                      <p className="text-gray-400 text-xs">Rejected</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </Card>
           </div>
         </FadeIn>
       </StandardLayout>

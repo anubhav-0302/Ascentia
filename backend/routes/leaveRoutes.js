@@ -1,5 +1,5 @@
 import express from 'express';
-import { getMyLeaveRequests, getAllLeaveRequests, createLeaveRequest, updateLeaveRequestStatus } from '../leaveController.js';
+import { getMyLeaveRequests, getAllLeaveRequests, createLeaveRequest, updateLeaveRequestStatus, cancelLeaveRequest } from '../leaveController.js';
 import { requireAuth, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -21,5 +21,8 @@ router.post('/', requireAuth, createLeaveRequest);
 
 // PUT /api/leave/:id - Update leave request status (admin only)
 router.put('/:id', requireAuth, authorize('admin'), updateLeaveRequestStatus);
+
+// DELETE /api/leave/:id - Cancel leave request (employee only, pending only)
+router.delete('/:id', requireAuth, cancelLeaveRequest);
 
 export default router;

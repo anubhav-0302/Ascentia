@@ -30,10 +30,10 @@ const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ className = '', onDateSel
     }
   }, []);
 
-  // Fetch leaves on component mount and when month changes
+  // Fetch leaves only on component mount
   React.useEffect(() => {
     fetchLeaves();
-  }, [fetchLeaves, currentDate]);
+  }, [fetchLeaves]);
 
   // Memoize calendar calculations
   const calendarData = useMemo(() => {
