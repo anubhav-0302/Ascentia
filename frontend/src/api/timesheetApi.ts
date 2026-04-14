@@ -1,4 +1,39 @@
-import { apiClient } from './apiClient';
+import { apiClient, BASE_URL } from './apiClient';
+
+// Shared utility for authenticated fetch requests (used for CSV export)
+const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
+  // Get token from localStorage (same logic as apiClient)
+  const getToken = (): string | null => {
+    if (typeof window !== 'undefined') {
+      try {
+        const storage = localStorage.getItem('auth-storage');
+        if (storage) {
+          const parsed = JSON.parse(storage);
+          return parsed.state?.token || null;
+        }
+      } catch (error) {
+        console.error('Error parsing token from localStorage:', error);
+        return null;
+      }
+    }
+    return null;
+  };
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string>),
+  };
+
+  const token = getToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  return fetch(`${BASE_URL}${url}`, {
+    ...options,
+    headers,
+  });
+};
 
 export interface TimesheetEntry {
   id: number;
@@ -44,10 +79,14 @@ export interface ApproveTimesheetRequest {
 export const getMyTimesheet = async (params?: {
   startDate?: string;
   endDate?: string;
+  page?: number;
+  limit?: number;
 }) => {
   const queryString = new URLSearchParams();
   if (params?.startDate) queryString.append('startDate', params.startDate);
   if (params?.endDate) queryString.append('endDate', params.endDate);
+  if (params?.page) queryString.append('page', params.page.toString());
+  if (params?.limit) queryString.append('limit', params.limit.toString());
   
   const url = queryString.toString() 
     ? `/timesheet?${queryString.toString()}`
@@ -63,12 +102,16 @@ export const getAllTimesheets = async (params?: {
   endDate?: string;
   employeeId?: number;
   status?: string;
+  page?: number;
+  limit?: number;
 }) => {
   const queryString = new URLSearchParams();
   if (params?.startDate) queryString.append('startDate', params.startDate);
   if (params?.endDate) queryString.append('endDate', params.endDate);
   if (params?.employeeId) queryString.append('employeeId', params.employeeId.toString());
   if (params?.status) queryString.append('status', params.status);
+  if (params?.page) queryString.append('page', params.page.toString());
+  if (params?.limit) queryString.append('limit', params.limit.toString());
   
   const url = queryString.toString() 
     ? `/timesheet/all?${queryString.toString()}`
@@ -102,6 +145,16 @@ export const deleteTimesheetEntry = async (id: number) => {
   return response.data;
 };
 
+// Bulk approve/reject timesheet entries
+export const bulkApproveTimesheets = async (data: {
+  timesheetIds: number[];
+  status: 'Approved' | 'Rejected';
+  comments?: string;
+}) => {
+  const response = await apiClient.post('/timesheet/bulk-approve', data);
+  return response.data;
+};
+
 // Get timesheet history for export
 export const getTimesheetHistory = async (params?: {
   startDate?: string;
@@ -121,12 +174,8 @@ export const getTimesheetHistory = async (params?: {
   
   // For CSV export, we need to handle the response differently
   if (params?.format === 'csv') {
-    const response = await fetch(`http://localhost:5000/api${url}`, {
+    const response = await authenticatedFetch(url, {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('auth-storage') ? JSON.parse(localStorage.getItem('auth-storage')!).state?.token : ''}`,
-        'Content-Type': 'application/json',
-      },
     });
     
     if (!response.ok) {

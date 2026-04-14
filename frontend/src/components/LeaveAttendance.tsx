@@ -568,12 +568,6 @@ const LeaveAttendance = () => {
 
         {/* Unified Calendar with Leave Balance */}
         <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-xl overflow-hidden mb-8">
-          <div className="px-4 py-3 border-b border-slate-700/50 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-teal-400" /> Leave Calendar & Balance
-            </h2>
-            <span className="text-xs text-gray-500">Click dates to select</span>
-          </div>
           <div className="flex flex-col lg:flex-row">
             {/* Calendar Section */}
             <div className="flex-1 p-3 border-b lg:border-b-0 lg:border-r border-slate-700/30">
@@ -592,8 +586,8 @@ const LeaveAttendance = () => {
             
             {/* Leave Balance Section */}
             <div className="lg:w-80 p-3">
-              <h3 className="text-xs font-semibold text-white mb-3 flex items-center gap-2">
-                <Clock className="w-3 h-3 text-teal-400" /> Leave Balance
+              <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-teal-400" /> Leave Balance
               </h3>
               <div className="space-y-2">
                 {leaveBalance.map((balance) => (

@@ -237,3 +237,13 @@ export const useIsEmployee = () => {
   const user = useUser();
   return user?.role === 'employee';
 };
+
+export const useIsManager = () => {
+  const user = useUser();
+  return user?.role === 'manager';
+};
+
+export const useCanApproveTimesheet = () => {
+  const user = useUser();
+  return user?.role === 'admin' || user?.role === 'manager';
+};

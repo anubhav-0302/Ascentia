@@ -4,7 +4,7 @@ import { logDatabaseOperation } from './databaseLogger.js';
 // GET /api/timesheet - Get timesheet entries for current user
 const getMyTimesheet = async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, page = 1, limit = 50 } = req.query;
     
     const whereClause = {
       employeeId: req.user.id
@@ -17,9 +17,18 @@ const getMyTimesheet = async (req, res) => {
       };
     }
     
+    // Get total count for pagination
+    const total = await prisma.timesheet.count({ where: whereClause });
+    
+    // Calculate pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
+    
     const timesheets = await prisma.timesheet.findMany({
       where: whereClause,
       orderBy: { date: 'desc' },
+      skip,
+      take,
       include: {
         employee: {
           select: { id: true, name: true, email: true }
@@ -30,8 +39,19 @@ const getMyTimesheet = async (req, res) => {
       }
     });
     
-    console.log(`📊 getMyTimesheet: ${timesheets.length} entries for user ${req.user.id}`);
-    res.json({ success: true, data: timesheets });
+    console.log(`📊 getMyTimesheet: ${timesheets.length} entries for user ${req.user.id} (page ${page}, limit ${limit})`);
+    res.json({ 
+      success: true, 
+      data: timesheets,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit)),
+        hasNext: skip + take < total,
+        hasPrev: parseInt(page) > 1
+      }
+    });
   } catch (error) {
     console.error("❌ GET MY TIMESHEET ERROR:", error);
     res.status(500).json({ 
@@ -45,7 +65,7 @@ const getMyTimesheet = async (req, res) => {
 // GET /api/timesheet/all - Get all timesheet entries (admin only)
 const getAllTimesheets = async (req, res) => {
   try {
-    const { startDate, endDate, employeeId, status } = req.query;
+    const { startDate, endDate, employeeId, status, page = 1, limit = 50 } = req.query;
     
     const whereClause = {};
     
@@ -64,9 +84,18 @@ const getAllTimesheets = async (req, res) => {
       whereClause.status = status;
     }
     
+    // Get total count for pagination
+    const total = await prisma.timesheet.count({ where: whereClause });
+    
+    // Calculate pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
+    
     const timesheets = await prisma.timesheet.findMany({
       where: whereClause,
       orderBy: { date: 'desc' },
+      skip,
+      take,
       include: {
         employee: {
           select: { id: true, name: true, email: true, department: true }
@@ -77,8 +106,19 @@ const getAllTimesheets = async (req, res) => {
       }
     });
     
-    console.log(`📊 getAllTimesheets: ${timesheets.length} entries`);
-    res.json({ success: true, data: timesheets });
+    console.log(`📊 getAllTimesheets: ${timesheets.length} entries (page ${page}, limit ${limit})`);
+    res.json({ 
+      success: true, 
+      data: timesheets,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit)),
+        hasNext: skip + take < total,
+        hasPrev: parseInt(page) > 1
+      }
+    });
   } catch (error) {
     console.error("❌ GET ALL TIMESHEETS ERROR:", error);
     res.status(500).json({ 
@@ -104,7 +144,20 @@ const createTimesheetEntry = async (req, res) => {
     if (hours <= 0 || hours > 24) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Hours must be between 0 and 24' 
+        message: 'Hours must be greater than 0 and less than or equal to 24' 
+      });
+    }
+    
+    // Validate date is not in the future
+    const entryDate = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to start of day for fair comparison
+    entryDate.setHours(0, 0, 0, 0); // Set to start of day for fair comparison
+    
+    if (entryDate > today) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Date cannot be in the future' 
       });
     }
     
@@ -136,6 +189,11 @@ const createTimesheetEntry = async (req, res) => {
       
       await logDatabaseOperation('UPDATE', 'timesheet', timesheet.id, req.user.id);
       console.log(`✅ Updated timesheet entry: ${timesheet.id}`);
+      res.json({ 
+        success: true, 
+        data: timesheet,
+        message: 'Timesheet entry updated successfully (existing entry found for this date)'
+      });
     } else {
       // Create new entry
       timesheet = await prisma.timesheet.create({
@@ -154,8 +212,12 @@ const createTimesheetEntry = async (req, res) => {
       
       await logDatabaseOperation('CREATE', 'timesheet', timesheet.id, req.user.id);
       console.log(`✅ Created timesheet entry: ${timesheet.id}`);
+      res.json({ 
+        success: true, 
+        data: timesheet,
+        message: 'Timesheet entry created successfully'
+      });
     }
-    res.json({ success: true, data: timesheet });
   } catch (error) {
     console.error("❌ CREATE TIMESHEET ERROR:", error);
     res.status(500).json({ 
@@ -204,7 +266,7 @@ const updateTimesheetEntry = async (req, res) => {
       if (hours <= 0 || hours > 24) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Hours must be between 0 and 24' 
+          message: 'Hours must be greater than 0 and less than or equal to 24' 
         });
       }
       updateData.hours = parseFloat(hours);
@@ -408,6 +470,102 @@ const getTimesheetHistory = async (req, res) => {
   }
 };
 
+// Bulk approve/reject timesheet entries
+const bulkApproveTimesheets = async (req, res) => {
+  try {
+    const { timesheetIds, status, comments } = req.body;
+    
+    if (!timesheetIds || !Array.isArray(timesheetIds) || timesheetIds.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Timesheet IDs array is required' 
+      });
+    }
+    
+    if (!status || !['Approved', 'Rejected'].includes(status)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Valid status (Approved or Rejected) is required' 
+      });
+    }
+    
+    // Only admins and managers can approve
+    if (!['admin', 'manager'].includes(req.user.role)) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Not authorized to approve timesheet entries' 
+      });
+    }
+    
+    const results = [];
+    
+    for (const id of timesheetIds) {
+      try {
+        const existingEntry = await prisma.timesheet.findFirst({
+          where: { id: parseInt(id) }
+        });
+        
+        if (!existingEntry) {
+          results.push({ id, success: false, error: 'Timesheet entry not found' });
+          continue;
+        }
+        
+        if (existingEntry.status !== 'Pending') {
+          results.push({ id, success: false, error: 'Only pending entries can be approved/rejected' });
+          continue;
+        }
+        
+        const updatedEntry = await prisma.timesheet.update({
+          where: { id: parseInt(id) },
+          data: {
+            status,
+            approvedBy: req.user.id,
+            approvedAt: new Date(),
+            description: comments ? `${existingEntry.description || ''}\n\nBulk Approval Comments: ${comments}`.trim() : existingEntry.description
+          },
+          include: {
+            employee: {
+              select: { id: true, name: true, email: true }
+            },
+            approver: {
+              select: { id: true, name: true, email: true }
+            }
+          }
+        });
+        
+        await logDatabaseOperation('BULK_APPROVE', 'timesheet', updatedEntry.id, req.user.id);
+        results.push({ id, success: true, data: updatedEntry });
+        
+      } catch (error) {
+        results.push({ id, success: false, error: error.message });
+      }
+    }
+    
+    const successCount = results.filter(r => r.success).length;
+    const failureCount = results.filter(r => !r.success).length;
+    
+    console.log(`✅ Bulk ${status.toLowerCase()}: ${successCount} successful, ${failureCount} failed`);
+    
+    res.json({ 
+      success: true, 
+      message: `Successfully ${status.toLowerCase()} ${successCount} timesheet entries${failureCount > 0 ? ` (${failureCount} failed)` : ''}`,
+      results,
+      summary: {
+        total: timesheetIds.length,
+        successful: successCount,
+        failed: failureCount
+      }
+    });
+  } catch (error) {
+    console.error("❌ BULK APPROVE TIMESHEETS ERROR:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to bulk approve timesheet entries", 
+      error: error.message 
+    });
+  }
+};
+
 export {
   getMyTimesheet,
   getAllTimesheets,
@@ -415,5 +573,6 @@ export {
   updateTimesheetEntry,
   approveTimesheetEntry,
   deleteTimesheetEntry,
-  getTimesheetHistory
+  getTimesheetHistory,
+  bulkApproveTimesheets
 };
