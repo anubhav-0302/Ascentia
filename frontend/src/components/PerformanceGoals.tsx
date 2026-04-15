@@ -24,6 +24,7 @@ import Button from './Button';
 import Input from './Input';
 import StatusBadge from './StatusBadge';
 import Card from './Card';
+import UnifiedDropdown from './UnifiedDropdown';
 import { PageTransition, FadeIn } from './PageTransition';
 import { StandardLayout } from './StandardLayout';
 import { 
@@ -656,36 +657,36 @@ const PerformanceGoals: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Cycle *
                   </label>
-                  <select
-                    value={goalForm.cycleId}
-                    onChange={(e) => setGoalForm(prev => ({ ...prev, cycleId: parseInt(e.target.value) }))}
-                    className="w-full px-4 py-2 bg-slate-700/60 rounded-xl border border-slate-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                    required
+                  <UnifiedDropdown
+                    value={goalForm.cycleId || ''}
+                    onChange={(value) => setGoalForm(prev => ({ ...prev, cycleId: parseInt(value as string) }))}
+                    options={[
+                      { value: '', label: 'Select a cycle' },
+                      ...cycles.map(cycle => ({ value: cycle.id, label: cycle.name }))
+                    ]}
+                    showLabel={false}
+                    required={true}
                     disabled={!!editingGoal}
-                  >
-                    <option value="">Select a cycle</option>
-                    {cycles.map(cycle => (
-                      <option key={cycle.id} value={cycle.id}>{cycle.name}</option>
-                    ))}
-                  </select>
+                    size="md"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Employee *
                   </label>
-                  <select
-                    value={goalForm.employeeId}
-                    onChange={(e) => setGoalForm(prev => ({ ...prev, employeeId: parseInt(e.target.value) }))}
-                    className="w-full px-4 py-2 bg-slate-700/60 rounded-xl border border-slate-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                    required
+                  <UnifiedDropdown
+                    value={goalForm.employeeId || ''}
+                    onChange={(value) => setGoalForm(prev => ({ ...prev, employeeId: parseInt(value as string) }))}
+                    options={[
+                      { value: '', label: 'Select an employee' },
+                      ...employees.map(emp => ({ value: emp.id, label: emp.name }))
+                    ]}
+                    showLabel={false}
+                    required={true}
                     disabled={!!editingGoal}
-                  >
-                    <option value="">Select an employee</option>
-                    {employees.map(emp => (
-                      <option key={emp.id} value={emp.id}>{emp.name}</option>
-                    ))}
-                  </select>
+                    size="md"
+                  />
                 </div>
 
                 <div>

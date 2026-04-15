@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StandardLayout } from './StandardLayout';
 import { DollarSign, Calendar, Download, Users, Shield, FileText, Calculator, Plus, Edit, Trash2, CheckCircle } from 'lucide-react';
 import Card from './Card';
+import UnifiedDropdown from './UnifiedDropdown';
 import { PageTransition, FadeIn } from './PageTransition';
 import Button from './Button';
 import Input from './Input';
@@ -435,19 +436,22 @@ const PayrollBenefits: React.FC = () => {
               <Card className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold text-white flex items-center">
-                    <Calendar className="w-5 h-5 mr-2 text-blue-400" />
+                    <Calendar className="w-5 h-5 mr-2 text-green-400" />
                     Recent Payrolls
                   </h3>
                   <div className="flex space-x-2">
-                    <select 
+                    <UnifiedDropdown
                       value={selectedPayPeriod}
-                      onChange={(e) => setSelectedPayPeriod(e.target.value)}
-                      className="px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg text-sm"
-                    >
-                      <option value="current">Current Period</option>
-                      <option value="previous">Previous Period</option>
-                      <option value="ytd">Year to Date</option>
-                    </select>
+                      onChange={(value) => setSelectedPayPeriod(value as string)}
+                      options={[
+                        { value: 'current', label: 'Current Period' },
+                        { value: 'previous', label: 'Previous Period' },
+                        { value: 'ytd', label: 'Year to Date' }
+                      ]}
+                      size="sm"
+                      showLabel={false}
+                      className="w-48"
+                    />
                     <button 
                       onClick={handleExportPayroll}
                       className="px-3 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg text-sm transition-colors flex items-center"
@@ -786,36 +790,36 @@ const PayrollBenefits: React.FC = () => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Type *
-                      </label>
-                      <select
+                      <UnifiedDropdown
                         value={componentForm.type}
-                        onChange={(e) => setComponentForm(prev => ({ ...prev, type: e.target.value as 'Earning' | 'Deduction' }))}
-                        className="w-full px-4 py-2 bg-slate-700/60 rounded-xl border border-slate-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                        required
-                      >
-                        <option value="Earning">Earning</option>
-                        <option value="Deduction">Deduction</option>
-                      </select>
+                        onChange={(value) => setComponentForm(prev => ({ ...prev, type: value as 'Earning' | 'Deduction' }))}
+                        options={[
+                          { value: 'Earning', label: 'Earning' },
+                          { value: 'Deduction', label: 'Deduction' }
+                        ]}
+                        label="Type"
+                        showLabel={false}
+                        required={true}
+                        size="md"
+                      />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Category *
-                      </label>
-                      <select
+                      <UnifiedDropdown
                         value={componentForm.category}
-                        onChange={(e) => setComponentForm(prev => ({ ...prev, category: e.target.value }))}
-                        className="w-full px-4 py-2 bg-slate-700/60 rounded-xl border border-slate-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                        required
-                      >
-                        <option value="Basic">Basic</option>
-                        <option value="Allowance">Allowance</option>
-                        <option value="Deduction">Deduction</option>
-                        <option value="Bonus">Bonus</option>
-                        <option value="Other">Other</option>
-                      </select>
+                        onChange={(value) => setComponentForm(prev => ({ ...prev, category: value as string }))}
+                        options={[
+                          { value: 'Basic', label: 'Basic' },
+                          { value: 'Allowance', label: 'Allowance' },
+                          { value: 'Deduction', label: 'Deduction' },
+                          { value: 'Bonus', label: 'Bonus' },
+                          { value: 'Other', label: 'Other' }
+                        ]}
+                        label="Category"
+                        showLabel={false}
+                        required={true}
+                        size="md"
+                      />
                     </div>
                   </div>
 
@@ -901,37 +905,33 @@ const PayrollBenefits: React.FC = () => {
                 
                 <form onSubmit={handleAssignSalary} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Employee *
-                    </label>
-                    <select
-                      value={assignForm.employeeId}
-                      onChange={(e) => setAssignForm(prev => ({ ...prev, employeeId: parseInt(e.target.value) }))}
-                      className="w-full px-4 py-2 bg-slate-700/60 rounded-xl border border-slate-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                      required
-                    >
-                      <option value="">Select an employee</option>
-                      {employees.map(emp => (
-                        <option key={emp.id} value={emp.id}>{emp.name}</option>
-                      ))}
-                    </select>
+                    <UnifiedDropdown
+                      value={assignForm.employeeId || ''}
+                      onChange={(value) => setAssignForm(prev => ({ ...prev, employeeId: parseInt(value as string) }))}
+                      options={[
+                        { value: '', label: 'Select an employee' },
+                        ...employees.map(emp => ({ value: emp.id, label: emp.name }))
+                      ]}
+                      label="Employee"
+                      showLabel={false}
+                      required={true}
+                      size="md"
+                    />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Salary Component *
-                    </label>
-                    <select
-                      value={assignForm.componentId}
-                      onChange={(e) => setAssignForm(prev => ({ ...prev, componentId: parseInt(e.target.value) }))}
-                      className="w-full px-4 py-2 bg-slate-700/60 rounded-xl border border-slate-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                      required
-                    >
-                      <option value="">Select a component</option>
-                      {salaryComponents.map(comp => (
-                        <option key={comp.id} value={comp.id}>{comp.name}</option>
-                      ))}
-                    </select>
+                    <UnifiedDropdown
+                      value={assignForm.componentId || ''}
+                      onChange={(value) => setAssignForm(prev => ({ ...prev, componentId: parseInt(value as string) }))}
+                      options={[
+                        { value: '', label: 'Select a component' },
+                        ...salaryComponents.map(comp => ({ value: comp.id, label: comp.name }))
+                      ]}
+                      label="Salary Component"
+                      showLabel={false}
+                      required={true}
+                      size="md"
+                    />
                   </div>
 
                   <div>

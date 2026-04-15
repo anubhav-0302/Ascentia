@@ -8,8 +8,8 @@ export const getDashboardStats = async (req, res) => {
     const employees = await prisma.employee.findMany({ orderBy: { createdAt: 'desc' } });
 
     const totalEmployees = employees.length;
-    const activeEmployees = employees.filter(e => e.status === 'Active').length;
-    const remoteEmployees = employees.filter(e => e.status === 'Remote').length;
+    const activeEmployees = employees.filter(e => e.status?.toLowerCase() === 'active').length;
+    const remoteEmployees = employees.filter(e => e.status?.toLowerCase() === 'remote').length;
 
     const departmentNames = [...new Set(employees.map(e => e.department).filter(Boolean))];
 
@@ -27,7 +27,7 @@ export const getDashboardStats = async (req, res) => {
     const statusDistribution = [
       { name: 'Active', count: activeEmployees },
       { name: 'Remote', count: remoteEmployees },
-      { name: 'Onboarding', count: employees.filter(e => e.status === 'Onboarding').length }
+      { name: 'Onboarding', count: employees.filter(e => e.status?.toLowerCase() === 'onboarding').length }
     ];
 
     // Pull real leave data

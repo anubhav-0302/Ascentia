@@ -8,6 +8,7 @@ import Input from './Input';
 import StatusBadge from './StatusBadge';
 import Card from './Card';
 import LeaveCalendar from './LeaveCalendar';
+import UnifiedDropdown from './UnifiedDropdown';
 import { Calendar, CheckCircle, XCircle, Plus, XOctagon, CalendarX, AlertTriangle, Search, Filter, TrendingUp, Clock } from 'lucide-react';
 
 const LeaveAttendance = () => {
@@ -379,19 +380,18 @@ const LeaveAttendance = () => {
             {showFilters && (
               <div className="bg-slate-700/30 border border-slate-600/50 rounded-lg p-4">
                 <div className="flex items-center space-x-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="px-4 py-2 bg-slate-700/60 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                    >
-                      <option value="all">All Status</option>
-                      <option value="Pending">Pending</option>
-                      <option value="Approved">Approved</option>
-                      <option value="Rejected">Rejected</option>
-                    </select>
-                  </div>
+                  <UnifiedDropdown
+                    value={statusFilter}
+                    onChange={(value) => setStatusFilter(value as string)}
+                    options={[
+                      { value: 'all', label: 'All Status' },
+                      { value: 'Pending', label: 'Pending' },
+                      { value: 'Approved', label: 'Approved' },
+                      { value: 'Rejected', label: 'Rejected' }
+                    ]}
+                    showLabel={false}
+                    size="md"
+                  />
                 </div>
               </div>
             )}

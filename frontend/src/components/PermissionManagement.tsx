@@ -13,6 +13,8 @@ import Card from './Card';
 import Modal from './Modal';
 import UserForm from './UserForm';
 import EmployeeFormModal from './EmployeeFormModal';
+import UnifiedDropdown from './UnifiedDropdown';
+import StatusBadge from './StatusBadge';
 import { useEmployeeStore } from '../store/useEmployeeStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { 
@@ -285,14 +287,7 @@ const PermissionManagement = () => {
     return role === 'admin' ? 'text-yellow-400 bg-yellow-400/10' : 'text-blue-400 bg-blue-400/10';
   };
 
-  const getStatusIcon = (status: string) => {
-    return status === 'active' ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />;
-  };
-
-  const getStatusColor = (status: string) => {
-    return status === 'active' ? 'text-green-400 bg-green-400/10' : 'text-red-400 bg-red-400/10';
-  };
-
+  
   if (loading && users.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -420,10 +415,7 @@ const PermissionManagement = () => {
                       </span>
                     </td>
                     <td className="py-3 px-2">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(user.status)}`}>
-                        {getStatusIcon(user.status)}
-                        <span className="ml-1">{user.status}</span>
-                      </span>
+                      <StatusBadge status={user.status} size="sm" />
                     </td>
                     <td className="py-3 px-2">
                       <p className="text-gray-300 text-sm">
@@ -509,29 +501,33 @@ const PermissionManagement = () => {
           />
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">Role</label>
-            <select
+            <UnifiedDropdown
               value={editFormData.role}
-              onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as 'admin' | 'employee' })}
-              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+              onChange={(value) => setEditFormData({ ...editFormData, role: value as 'admin' | 'employee' })}
+              options={[
+                { value: 'employee', label: 'Employee' },
+                { value: 'admin', label: 'Admin' }
+              ]}
+              showLabel={false}
               disabled={selectedUser?.id === currentUser?.id}
-            >
-              <option value="employee">Employee</option>
-              <option value="admin">Admin</option>
-            </select>
+              size="md"
+            />
             {selectedUser?.id === currentUser?.id && (
               <p className="text-xs text-gray-500 mt-1">You cannot change your own role</p>
             )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
-            <select
+            <UnifiedDropdown
               value={editFormData.status}
-              onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value as 'active' | 'inactive' })}
-              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
+              onChange={(value) => setEditFormData({ ...editFormData, status: value as 'active' | 'inactive' })}
+              options={[
+                { value: 'active', label: 'Active' },
+                { value: 'inactive', label: 'Inactive' }
+              ]}
+              showLabel={false}
+              size="md"
+            />
           </div>
           <div className="flex justify-end space-x-3 pt-4">
             <Button

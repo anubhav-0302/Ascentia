@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StandardLayout } from './StandardLayout';
 import { Settings as SettingsIcon, Bell, Shield, Palette, Globe, Database } from 'lucide-react';
 import Card from './Card';
+import UnifiedDropdown from './UnifiedDropdown';
 import { PageTransition, FadeIn } from './PageTransition';
 import { useIsAdmin } from '../store/useAuthStore';
 
@@ -224,46 +225,52 @@ const Settings: React.FC = () => {
                     <div className="space-y-6">
                       <div>
                         <label className="block text-sm font-medium text-gray-400 mb-2">Application Language</label>
-                        <select 
+                        <UnifiedDropdown
                           value={language}
-                          onChange={(e) => setLanguage(e.target.value)}
-                          className="w-full px-4 py-2 bg-slate-700/60 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        >
-                          <option>English (US)</option>
-                          <option>Spanish</option>
-                          <option>French</option>
-                          <option>German</option>
-                          <option>Chinese</option>
-                        </select>
+                          onChange={(value) => setLanguage(value as string)}
+                          options={[
+                            { value: 'English (US)', label: 'English (US)' },
+                            { value: 'Spanish', label: 'Spanish' },
+                            { value: 'French', label: 'French' },
+                            { value: 'German', label: 'German' },
+                            { value: 'Chinese', label: 'Chinese' }
+                          ]}
+                          showLabel={false}
+                          size="md"
+                        />
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-400 mb-2">Timezone</label>
-                        <select 
+                        <UnifiedDropdown
                           value={timezone}
-                          onChange={(e) => setTimezone(e.target.value)}
-                          className="w-full px-4 py-2 bg-slate-700/60 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        >
-                          <option>UTC-5 (Eastern)</option>
-                          <option>UTC-6 (Central)</option>
-                          <option>UTC-7 (Mountain)</option>
-                          <option>UTC-8 (Pacific)</option>
-                          <option>UTC+0 (GMT)</option>
-                          <option>UTC+1 (CET)</option>
-                        </select>
+                          onChange={(value) => setTimezone(value as string)}
+                          options={[
+                            { value: 'UTC-5 (Eastern)', label: 'UTC-5 (Eastern)' },
+                            { value: 'UTC-6 (Central)', label: 'UTC-6 (Central)' },
+                            { value: 'UTC-7 (Mountain)', label: 'UTC-7 (Mountain)' },
+                            { value: 'UTC-8 (Pacific)', label: 'UTC-8 (Pacific)' },
+                            { value: 'UTC+0 (GMT)', label: 'UTC+0 (GMT)' },
+                            { value: 'UTC+1 (CET)', label: 'UTC+1 (CET)' }
+                          ]}
+                          showLabel={false}
+                          size="md"
+                        />
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-400 mb-2">Date Format</label>
-                        <select 
+                        <UnifiedDropdown
                           value={dateFormat}
-                          onChange={(e) => setDateFormat(e.target.value)}
-                          className="w-full px-4 py-2 bg-slate-700/60 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        >
-                          <option>MM/DD/YYYY</option>
-                          <option>DD/MM/YYYY</option>
-                          <option>YYYY-MM-DD</option>
-                        </select>
+                          onChange={(value) => setDateFormat(value as string)}
+                          options={[
+                            { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
+                            { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY' },
+                            { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' }
+                          ]}
+                          showLabel={false}
+                          size="md"
+                        />
                       </div>
                     </div>
                   </Card>

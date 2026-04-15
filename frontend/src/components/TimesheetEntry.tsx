@@ -20,6 +20,7 @@ import Button from './Button';
 import Input from './Input';
 import StatusBadge from './StatusBadge';
 import Card from './Card';
+import UnifiedDropdown from './UnifiedDropdown';
 import { PageTransition, FadeIn } from './PageTransition';
 import { StandardLayout } from './StandardLayout';
 import { TableSkeleton, CardSkeleton } from './LoadingSkeleton';
@@ -534,26 +535,30 @@ const TimesheetEntry: React.FC = () => {
             {activeTab === 'approvals' && (
               <div className="flex items-center gap-2">
                 <label className="text-sm text-gray-400">Filter:</label>
-                <select
-                  value={filters.employeeId}
-                  onChange={(e) => setFilters(prev => ({ ...prev, employeeId: e.target.value }))}
-                  className="px-3 py-1 bg-slate-700/60 rounded-lg border border-slate-600 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                >
-                  <option value="">All Employees</option>
-                  {employees.map(emp => (
-                    <option key={emp.id} value={emp.id}>{emp.name}</option>
-                  ))}
-                </select>
-                <select
-                  value={filters.status}
-                  onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                  className="px-3 py-1 bg-slate-700/60 rounded-lg border border-slate-600 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                >
-                  <option value="">All Status</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Approved">Approved</option>
-                  <option value="Rejected">Rejected</option>
-                </select>
+                <UnifiedDropdown
+                  value={filters.employeeId || ''}
+                  onChange={(value) => setFilters(prev => ({ ...prev, employeeId: value as string }))}
+                  options={[
+                    { value: '', label: 'All Employees' },
+                    ...employees.map(emp => ({ value: emp.id, label: emp.name }))
+                  ]}
+                  size="sm"
+                  showLabel={false}
+                  className="w-48"
+                />
+                <UnifiedDropdown
+                  value={filters.status || ''}
+                  onChange={(value) => setFilters(prev => ({ ...prev, status: value as string }))}
+                  options={[
+                    { value: '', label: 'All Status' },
+                    { value: 'Pending', label: 'Pending' },
+                    { value: 'Approved', label: 'Approved' },
+                    { value: 'Rejected', label: 'Rejected' }
+                  ]}
+                  size="sm"
+                  showLabel={false}
+                  className="w-32"
+                />
               </div>
             )}
           </div>

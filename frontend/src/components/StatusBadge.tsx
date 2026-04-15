@@ -15,6 +15,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
 }) => {
   const getStatusConfig = (status: string) => {
     const configs: { [key: string]: { bg: string; text: string; border: string; dot: string } } = {
+      // Leave request statuses
       pending: {
         bg: 'bg-yellow-400/20',
         text: 'text-yellow-400',
@@ -33,6 +34,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
         border: 'border-red-400/30',
         dot: 'bg-red-400'
       },
+      // Employee/User statuses
       active: {
         bg: 'bg-green-400/20',
         text: 'text-green-400',
@@ -46,10 +48,17 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
         dot: 'bg-yellow-400'
       },
       remote: {
-        bg: 'bg-blue-400/20',
-        text: 'text-blue-400',
-        border: 'border-blue-400/30',
-        dot: 'bg-blue-400'
+        bg: 'bg-purple-400/20',
+        text: 'text-purple-400',
+        border: 'border-purple-400/30',
+        dot: 'bg-purple-400'
+      },
+      // Additional statuses
+      inactive: {
+        bg: 'bg-red-400/20',
+        text: 'text-red-400',
+        border: 'border-red-400/30',
+        dot: 'bg-red-400'
       }
     };
 

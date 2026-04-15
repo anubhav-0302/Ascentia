@@ -90,7 +90,7 @@ const Dashboard = () => {
   };
 
   const handleNavigateToMyTeam = () => {
-    updateFilters({ search: '', department: 'all', status: 'active' });
+    updateFilters({ search: '', department: 'all', status: 'Active' });
   };
 
   const handleNavigateToLeaveAttendance = (filterType?: string) => {

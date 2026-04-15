@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Input from './Input';
 import Button from './Button';
 import Modal from './Modal';
+import UnifiedDropdown from './UnifiedDropdown';
 import type { CreateUserData } from '../api/userApi';
 
 interface UserFormProps {
@@ -142,20 +143,18 @@ const UserForm: React.FC<UserFormProps> = ({
             required
           />
         )}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Role</label>
-          <select
-            value={formData.role}
-            onChange={(e) => {
-              e.stopPropagation();
-              handleChange('role', e.target.value as 'admin' | 'employee');
-            }}
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-          >
-            <option value="employee">Employee</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
+        <UnifiedDropdown
+          value={formData.role || ''}
+          onChange={(value) => {
+            handleChange('role', value as 'admin' | 'employee');
+          }}
+          options={[
+            { value: 'employee', label: 'Employee' },
+            { value: 'admin', label: 'Admin' }
+          ]}
+          showLabel={false}
+          size="md"
+        />
         <Input
           label="Job Title"
           value={formData.jobTitle || ''}
@@ -182,27 +181,23 @@ const UserForm: React.FC<UserFormProps> = ({
           placeholder="Enter department"
           required
         />
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Manager (Optional)</label>
-          <select
-            value={formData.managerId || ''}
-            onChange={(e) => {
-              e.stopPropagation();
-              const value = e.target.value;
-              handleChange('managerId', value ? parseInt(value) : undefined);
-            }}
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-          >
-            <option value="">No Manager</option>
-            {employees
+        <UnifiedDropdown
+          value={formData.managerId || ''}
+          onChange={(value) => {
+            handleChange('managerId', value ? parseInt(value as string) : undefined);
+          }}
+          options={[
+            { value: '', label: 'No Manager' },
+            ...employees
               .filter(emp => currentUserId ? emp.id !== currentUserId : true) // Exclude current user
-              .map(employee => (
-                <option key={employee.id} value={employee.id}>
-                  {employee.name} - {employee.jobTitle}
-                </option>
-              ))}
-          </select>
-        </div>
+              .map(employee => ({
+                value: employee.id,
+                label: `${employee.name}`
+              }))
+          ]}
+          showLabel={false}
+          size="md"
+        />
         <div className="flex justify-end space-x-3 pt-4">
           <Button
             type="button"

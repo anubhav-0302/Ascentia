@@ -41,10 +41,9 @@ const Filter: React.FC<FilterProps> = ({
 
   const statuses = [
     { value: 'all', label: 'All Statuses' },
-    { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
-    { value: 'on-leave', label: 'On Leave' },
-    { value: 'pending', label: 'Pending' }
+    { value: 'Active', label: 'Active' },
+    { value: 'Onboarding', label: 'Onboarding' },
+    { value: 'Remote', label: 'Remote' }
   ];
 
   const employmentTypes = [

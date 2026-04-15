@@ -66,6 +66,7 @@ const UnifiedDropdown: React.FC<UnifiedDropdownProps> = ({
       
       <div ref={dropdownRef} className="relative">
         <button
+          type="button"
           onClick={() => !disabled && setIsOpen(!isOpen)}
           disabled={disabled}
           className={`w-full flex items-center justify-between ${sizeClasses[size]} bg-slate-700/60 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 ${
@@ -87,6 +88,7 @@ const UnifiedDropdown: React.FC<UnifiedDropdownProps> = ({
             <div className="max-h-60 overflow-y-auto">
               {options.map((option) => (
                 <button
+                  type="button"
                   key={option.value}
                   onClick={() => {
                     onChange(option.value);
