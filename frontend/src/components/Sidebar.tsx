@@ -22,7 +22,7 @@ const Sidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const isAdmin = user?.role === 'admin';
+  const userRole = user?.role?.toLowerCase() || 'employee';
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -34,28 +34,24 @@ const Sidebar: React.FC = () => {
     navigate('/settings');
   };
 
-  // Get user initials for avatar
-  const getUserInitials = (name: string) => {
-    if (!name) return 'U';
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   interface NavItem {
     name: string;
     path: string;
     icon: any;
     onClick?: () => void;
+    requiredRoles?: string[]; // 'admin', 'manager', 'employee'
   }
 
   interface NavSection {
     title: string;
     items: NavItem[];
   }
+
+  // Check if user has access to a nav item
+  const hasAccess = (item: NavItem): boolean => {
+    if (!item.requiredRoles) return true; // No role restriction
+    return item.requiredRoles.includes(userRole);
+  };
 
   const navSections: NavSection[] = [
     {
@@ -64,17 +60,20 @@ const Sidebar: React.FC = () => {
         { 
           name: 'Dashboard', 
           path: '/dashboard',
-          icon: LayoutDashboard
+          icon: LayoutDashboard,
+          requiredRoles: ['admin', 'manager', 'employee']
         },
         { 
           name: 'Command Center', 
           path: '/command-center',
-          icon: Command
+          icon: Command,
+          requiredRoles: ['admin', 'manager']
         },
         { 
           name: 'Workflow Hub', 
           path: '/workflow-hub',
-          icon: GitBranch
+          icon: GitBranch,
+          requiredRoles: ['admin', 'manager']
         }
       ]
     },
@@ -84,69 +83,81 @@ const Sidebar: React.FC = () => {
         { 
           name: 'My Team', 
           path: '/my-team',
-          icon: Users
+          icon: Users,
+          requiredRoles: ['admin', 'manager']
         },
         { 
           name: 'Directory', 
           path: '/directory',
-          icon: Building
+          icon: Building,
+          requiredRoles: ['admin']
         },
         { 
           name: 'Leave & Attendance', 
           path: '/leave-attendance',
-          icon: Calendar
+          icon: Calendar,
+          requiredRoles: ['admin', 'manager', 'employee']
         },
         { 
           name: 'Timesheet Entry', 
           path: '/timesheet-entry',
-          icon: Clock
+          icon: Clock,
+          requiredRoles: ['admin', 'manager', 'employee']
         },
         { 
           name: 'Performance Goals', 
           path: '/performance-goals',
-          icon: Target
+          icon: Target,
+          requiredRoles: ['admin', 'manager', 'employee']
         },
         { 
           name: 'Payroll & Benefits', 
           path: '/payroll-benefits',
-          icon: DollarSign
+          icon: DollarSign,
+          requiredRoles: ['admin', 'employee']
         },
         { 
           name: 'Recruiting', 
           path: '/recruiting',
-          icon: UserCheck
+          icon: UserCheck,
+          requiredRoles: ['admin']
         },
         { 
           name: 'Reports', 
           path: '/reports',
-          icon: FileText
+          icon: FileText,
+          requiredRoles: ['admin', 'manager']
         }
       ]
     },
     {
       title: 'CONFIGURE',
       items: [
-        ...(isAdmin ? [{
+        { 
           name: 'Audit Logs', 
           path: '/audit-logs',
-          icon: Database
-        } as NavItem] : []),
-        ...(isAdmin ? [{
+          icon: Database,
+          requiredRoles: ['admin']
+        },
+        { 
           name: 'Permission Management', 
           path: '/permission-management',
-          icon: Users
-        } as NavItem] : []),
+          icon: Users,
+          requiredRoles: ['admin']
+        },
         { 
           name: 'Profile', 
           path: '/profile',
           icon: User,
-          onClick: handleProfileClick
+          onClick: handleProfileClick,
+          requiredRoles: ['admin', 'manager', 'employee']
         },
         { 
           name: 'Settings', 
           path: '/settings',
           icon: Settings,
-          onClick: handleSettingsClick
+          onClick: handleSettingsClick,
+          requiredRoles: ['admin', 'manager', 'employee']
         }
       ]
     }
@@ -166,57 +177,65 @@ const Sidebar: React.FC = () => {
 
       {/* Navigation */}
       <nav className="flex-1 py-4 overflow-y-auto scrollbar-hide">
-        {navSections.map((section, index) => (
-          <div key={index} className="mb-8">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-3">
-              {section.title}
-            </h3>
-            <ul className="space-y-1">
-              {section.items.map((item) => {
-                const Icon = item.icon;
-                const active = isActive(item.path);
-                
-                return (
-                  <li key={item.path}>
-                    {item.onClick ? (
-                      <button
-                        onClick={item.onClick}
-                        className={`w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
-                          active
-                            ? 'bg-teal-500/10 text-teal-400 border-l-4 border-teal-500'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-                        }`}
-                      >
-                        <Icon 
-                          className={`w-5 h-5 mr-3 transition-colors duration-200 ${
-                            active ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-400'
-                          }`} 
-                        />
-                        <span>{item.name}</span>
-                      </button>
-                    ) : (
-                      <Link
-                        to={item.path}
-                        className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
-                          active
-                            ? 'bg-teal-500/10 text-teal-400 border-l-4 border-teal-500'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-                        }`}
-                      >
-                        <Icon 
-                          className={`w-5 h-5 mr-3 transition-colors duration-200 ${
-                            active ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-400'
-                          }`} 
-                        />
-                        <span>{item.name}</span>
-                      </Link>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
+        {navSections.map((section, index) => {
+          // Filter items based on user role access
+          const accessibleItems = section.items.filter(hasAccess);
+          
+          // Don't render section if no items are accessible
+          if (accessibleItems.length === 0) return null;
+          
+          return (
+            <div key={index} className="mb-8">
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-3">
+                {section.title}
+              </h3>
+              <ul className="space-y-1">
+                {accessibleItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.path);
+                  
+                  return (
+                    <li key={item.path}>
+                      {item.onClick ? (
+                        <button
+                          onClick={item.onClick}
+                          className={`w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                            active
+                              ? 'bg-teal-500/10 text-teal-400 border-l-4 border-teal-500'
+                              : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                          }`}
+                        >
+                          <Icon 
+                            className={`w-5 h-5 mr-3 transition-colors duration-200 ${
+                              active ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-400'
+                            }`} 
+                          />
+                          <span>{item.name}</span>
+                        </button>
+                      ) : (
+                        <Link
+                          to={item.path}
+                          className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                            active
+                              ? 'bg-teal-500/10 text-teal-400 border-l-4 border-teal-500'
+                              : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                          }`}
+                        >
+                          <Icon 
+                            className={`w-5 h-5 mr-3 transition-colors duration-200 ${
+                              active ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-400'
+                            }`} 
+                          />
+                          <span>{item.name}</span>
+                        </Link>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
       </nav>
 
           </div>

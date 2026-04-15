@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getDashboardStats, type DashboardStats } from "../api/dashboardApi";
 import { useFilters } from "../contexts/FilterContext";
-import { useIsAdmin } from "../store/useAuthStore";
+import { useIsAdmin, useAuthStore } from "../store/useAuthStore";
 import {
   PieChart,
   Pie,
@@ -45,6 +45,11 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const { updateFilters } = useFilters();
   const isAdmin = useIsAdmin();
+  const { user } = useAuthStore();
+  
+  // Determine user role for dashboard customization
+  const userRole = user?.role?.toLowerCase() || 'employee';
+  const isManager = userRole === 'manager';
 
   const fetchStats = async () => {
     try {
@@ -171,78 +176,206 @@ const Dashboard = () => {
       {/* Header */}
       <div className="mb-8 animate-fadeIn">
         <h1 className="text-3xl font-bold text-white mb-2">
-          Dashboard
+          {isAdmin ? 'Admin Dashboard' : isManager ? 'Manager Dashboard' : 'My Dashboard'}
         </h1>
         <p className="text-gray-400">
-          Overview of your HR metrics and employee data
+          {isAdmin 
+            ? 'System overview and organization-wide metrics'
+            : isManager
+            ? 'Team performance and management overview'
+            : 'Your personal information and leave summary'
+          }
         </p>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Role-Based View */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Link 
-          to="/directory"
-          onClick={() => handleNavigateToDirectory('total-employees')}
-          className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
-          style={{ animationDelay: '0.1s' }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-500/20 rounded-xl">
-              <i className="fas fa-users text-blue-400 text-xl"></i>
-            </div>
-            <span className="text-sm text-gray-400">Total</span>
-          </div>
-          <h3 className="text-2xl font-bold text-white mb-1">{stats?.totalEmployees || 0}</h3>
-          <p className="text-gray-400 text-sm">Total Employees</p>
-        </Link>
+        {/* ADMIN VIEW - Full Organization Metrics */}
+        {isAdmin && (
+          <>
+            <Link 
+              to="/directory"
+              onClick={() => handleNavigateToDirectory('total-employees')}
+              className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
+              style={{ animationDelay: '0.1s' }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-blue-500/20 rounded-xl">
+                  <i className="fas fa-users text-blue-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400">Total</span>
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-1">{stats?.totalEmployees || 0}</h3>
+              <p className="text-gray-400 text-sm">Total Employees</p>
+            </Link>
 
-        <Link 
-          to="/my-team"
-          onClick={() => handleNavigateToMyTeam()}
-          className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
-          style={{ animationDelay: '0.2s' }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-green-500/20 rounded-xl">
-              <i className="fas fa-user-check text-green-400 text-xl"></i>
-            </div>
-            <span className="text-sm text-gray-400">Active</span>
-          </div>
-          <h3 className="text-2xl font-bold text-white mb-1">{stats?.activeEmployees || 0}</h3>
-          <p className="text-gray-400 text-sm">Active Employees</p>
-        </Link>
+            <Link 
+              to="/my-team"
+              onClick={() => handleNavigateToMyTeam()}
+              className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
+              style={{ animationDelay: '0.2s' }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-green-500/20 rounded-xl">
+                  <i className="fas fa-user-check text-green-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400">Active</span>
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-1">{stats?.activeEmployees || 0}</h3>
+              <p className="text-gray-400 text-sm">Active Employees</p>
+            </Link>
 
-        <Link 
-          to="/directory"
-          onClick={() => handleNavigateToDirectory('remote-workers')}
-          className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
-          style={{ animationDelay: '0.3s' }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-purple-500/20 rounded-xl">
-              <i className="fas fa-home text-purple-400 text-xl"></i>
-            </div>
-            <span className="text-sm text-gray-400">Remote</span>
-          </div>
-          <h3 className="text-2xl font-bold text-white mb-1">{stats?.remoteEmployees || 0}</h3>
-          <p className="text-gray-400 text-sm">Remote Workers</p>
-        </Link>
+            <Link 
+              to="/directory"
+              onClick={() => handleNavigateToDirectory('remote-workers')}
+              className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
+              style={{ animationDelay: '0.3s' }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-purple-500/20 rounded-xl">
+                  <i className="fas fa-home text-purple-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400">Remote</span>
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-1">{stats?.remoteEmployees || 0}</h3>
+              <p className="text-gray-400 text-sm">Remote Workers</p>
+            </Link>
 
-        <Link 
-          to="/directory"
-          onClick={() => handleNavigateToDirectory('departments')}
-          className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
-          style={{ animationDelay: '0.4s' }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-orange-500/20 rounded-xl">
-              <i className="fas fa-building text-orange-400 text-xl"></i>
+            <Link 
+              to="/directory"
+              onClick={() => handleNavigateToDirectory('departments')}
+              className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
+              style={{ animationDelay: '0.4s' }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-orange-500/20 rounded-xl">
+                  <i className="fas fa-building text-orange-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400">Departments</span>
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-1">{stats?.departments || 0}</h3>
+              <p className="text-gray-400 text-sm">Total Departments</p>
+            </Link>
+          </>
+        )}
+
+        {/* MANAGER VIEW - Team Focused Metrics */}
+        {isManager && (
+          <>
+            <Link 
+              to="/my-team"
+              onClick={() => handleNavigateToMyTeam()}
+              className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
+              style={{ animationDelay: '0.1s' }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-green-500/20 rounded-xl">
+                  <i className="fas fa-users text-green-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400">Team</span>
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-1">{stats?.activeEmployees || 0}</h3>
+              <p className="text-gray-400 text-sm">Team Members</p>
+            </Link>
+
+            <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn"
+              style={{ animationDelay: '0.2s' }}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-blue-500/20 rounded-xl">
+                  <i className="fas fa-calendar text-blue-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400">Pending</span>
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-1">3</h3>
+              <p className="text-gray-400 text-sm">Leave Approvals</p>
             </div>
-            <span className="text-sm text-gray-400">Departments</span>
-          </div>
-          <h3 className="text-2xl font-bold text-white mb-1">{stats?.departments || 0}</h3>
-          <p className="text-gray-400 text-sm">Total Departments</p>
-        </Link>
+
+            <Link 
+              to="/leave-attendance"
+              onClick={() => handleNavigateToLeaveAttendance('leave-status')}
+              className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
+              style={{ animationDelay: '0.3s' }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-purple-500/20 rounded-xl">
+                  <i className="fas fa-chart-pie text-purple-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400">Status</span>
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-1">85%</h3>
+              <p className="text-gray-400 text-sm">Team Attendance</p>
+            </Link>
+
+            <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn"
+              style={{ animationDelay: '0.4s' }}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-orange-500/20 rounded-xl">
+                  <i className="fas fa-star text-orange-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400">Avg</span>
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-1">4.2/5</h3>
+              <p className="text-gray-400 text-sm">Team Performance</p>
+            </div>
+          </>
+        )}
+
+        {/* EMPLOYEE VIEW - Personal Focused Metrics */}
+        {!isAdmin && !isManager && (
+          <>
+            <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn"
+              style={{ animationDelay: '0.1s' }}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-blue-500/20 rounded-xl">
+                  <i className="fas fa-user text-blue-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400">Status</span>
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-1">{user?.name || 'Employee'}</h3>
+              <p className="text-gray-400 text-sm">Your Profile</p>
+            </div>
+
+            <Link 
+              to="/leave-attendance"
+              onClick={() => handleNavigateToLeaveAttendance('leave-status')}
+              className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
+              style={{ animationDelay: '0.2s' }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-green-500/20 rounded-xl">
+                  <i className="fas fa-calendar-check text-green-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400">Available</span>
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-1">12</h3>
+              <p className="text-gray-400 text-sm">Leave Days Remaining</p>
+            </Link>
+
+            <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn"
+              style={{ animationDelay: '0.3s' }}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-purple-500/20 rounded-xl">
+                  <i className="fas fa-clock text-purple-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400">This Month</span>
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-1">160</h3>
+              <p className="text-gray-400 text-sm">Hours Logged</p>
+            </div>
+
+            <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn"
+              style={{ animationDelay: '0.4s' }}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-orange-500/20 rounded-xl">
+                  <i className="fas fa-chart-line text-orange-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400">Current</span>
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-1">4.5/5</h3>
+              <p className="text-gray-400 text-sm">Performance Rating</p>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Insights & Alerts Section */}

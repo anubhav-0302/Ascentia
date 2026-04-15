@@ -1,0 +1,112 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { ChevronDown } from 'lucide-react';
+
+interface DropdownOption {
+  value: string | number;
+  label: string;
+}
+
+interface UnifiedDropdownProps {
+  value: string | number;
+  onChange: (value: string | number) => void;
+  options: DropdownOption[];
+  placeholder?: string;
+  label?: string;
+  disabled?: boolean;
+  className?: string;
+  showLabel?: boolean;
+  required?: boolean;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+const UnifiedDropdown: React.FC<UnifiedDropdownProps> = ({
+  value,
+  onChange,
+  options,
+  placeholder = 'Select an option',
+  label,
+  disabled = false,
+  className = '',
+  showLabel = true,
+  required = false,
+  size = 'md'
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(opt => opt.value === value);
+  const displayLabel = selectedOption?.label || placeholder;
+
+  const sizeClasses = {
+    sm: 'px-3 py-1 text-sm',
+    md: 'px-4 py-2 text-sm',
+    lg: 'px-4 py-3 text-base'
+  };
+
+  return (
+    <div className={`w-full ${className}`}>
+      {showLabel && label && (
+        <label className="block text-sm font-medium text-gray-300 mb-2">
+          {label}
+          {required && <span className="text-red-400 ml-1">*</span>}
+        </label>
+      )}
+      
+      <div ref={dropdownRef} className="relative">
+        <button
+          onClick={() => !disabled && setIsOpen(!isOpen)}
+          disabled={disabled}
+          className={`w-full flex items-center justify-between ${sizeClasses[size]} bg-slate-700/60 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 ${
+            disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-slate-500'
+          }`}
+        >
+          <span className={selectedOption ? 'text-white' : 'text-gray-400'}>
+            {displayLabel}
+          </span>
+          <ChevronDown 
+            className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+              isOpen ? 'transform rotate-180' : ''
+            }`}
+          />
+        </button>
+
+        {isOpen && !disabled && (
+          <div className="absolute top-full mt-1 left-0 right-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl overflow-hidden">
+            <div className="max-h-60 overflow-y-auto">
+              {options.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => {
+                    onChange(option.value);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full px-4 py-2 text-left text-sm transition-colors ${
+                    value === option.value
+                      ? 'bg-teal-500/20 text-teal-300'
+                      : 'text-gray-300 hover:bg-slate-700/50 hover:text-white'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default UnifiedDropdown;

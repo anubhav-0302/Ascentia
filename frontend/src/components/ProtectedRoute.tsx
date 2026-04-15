@@ -1,16 +1,17 @@
 import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useIsAuthenticated, useAuthLoading, useAuthInitialized } from '../store/useAuthStore';
+import { useIsAuthenticated, useAuthLoading, useAuthInitialized, useAuthStore } from '../store/useAuthStore';
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  requiredRole?: 'admin' | 'employee';
+  requiredRoles?: string[]; // e.g., ['admin', 'manager']
 }
 
-const ProtectedRoute = ({ children, requiredRole: _requiredRole }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, requiredRoles }: ProtectedRouteProps) => {
   const isAuthenticated = useIsAuthenticated();
   const loading = useAuthLoading();
   const authInitialized = useAuthInitialized();
+  const { user } = useAuthStore();
 
   // Show loading spinner while checking authentication
   if (!authInitialized || loading) {
@@ -31,10 +32,16 @@ const ProtectedRoute = ({ children, requiredRole: _requiredRole }: ProtectedRout
     return <Navigate to="/login" replace />;
   }
 
-  // TODO: Add role-based checking when needed
-  // For now, all authenticated users can access all routes
+  // Check role-based access if requiredRoles is specified
+  if (requiredRoles && requiredRoles.length > 0) {
+    const userRole = user?.role?.toLowerCase() || 'employee';
+    if (!requiredRoles.includes(userRole)) {
+      // User doesn't have required role - redirect to dashboard
+      return <Navigate to="/dashboard" replace />;
+    }
+  }
 
-  // Render children if authenticated
+  // Render children if authenticated and authorized
   return <>{children}</>;
 };
 

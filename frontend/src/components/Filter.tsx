@@ -220,8 +220,8 @@ const Filter: React.FC<FilterProps> = ({
 
   if (compact) {
     return (
-      <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-4 mb-6">
-        <div className="flex flex-col space-y-4">
+      <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-4 mb-6 relative z-10">
+        <div className="flex flex-col space-y-4 overflow-visible">
           {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -255,7 +255,7 @@ const Filter: React.FC<FilterProps> = ({
           )}
 
           {/* Filter Header Pills with Dropdowns */}
-          <div className="flex flex-wrap gap-2 relative" style={{ overflow: 'visible' }}>
+          <div className="flex flex-wrap gap-2 relative overflow-visible">
             {showDepartment && (
               <div
                 ref={(el) => { dropdownRefs.current['department'] = el; }}
@@ -274,7 +274,7 @@ const Filter: React.FC<FilterProps> = ({
                 </button>
 
                 {openDropdown === 'department' && (
-                  <div className="absolute top-full mt-1 left-0 z-[9999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl min-w-max">
+                  <div className="absolute top-full mt-1 left-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl min-w-max">
                     <div className="max-h-60 overflow-y-auto">
                       {departments.map((dept) => (
                         <button
@@ -313,7 +313,7 @@ const Filter: React.FC<FilterProps> = ({
                 </button>
 
                 {openDropdown === 'status' && (
-                  <div className="absolute top-full mt-1 left-0 z-[9999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl min-w-max">
+                  <div className="absolute top-full mt-1 left-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl min-w-max">
                     <div className="max-h-60 overflow-y-auto">
                       {statuses.map((status) => (
                         <button
@@ -352,7 +352,7 @@ const Filter: React.FC<FilterProps> = ({
                 </button>
 
                 {openDropdown === 'employmentType' && (
-                  <div className="absolute top-full mt-1 left-0 z-[9999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl min-w-max">
+                  <div className="absolute top-full mt-1 left-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl min-w-max">
                     <div className="max-h-60 overflow-y-auto">
                       {employmentTypes.map((type) => (
                         <button
@@ -391,7 +391,7 @@ const Filter: React.FC<FilterProps> = ({
                 </button>
 
                 {openDropdown === 'location' && (
-                  <div className="absolute top-full mt-1 left-0 z-[9999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl min-w-max">
+                  <div className="absolute top-full mt-1 left-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl min-w-max">
                     <div className="max-h-60 overflow-y-auto">
                       {locations.map((location) => (
                         <button
@@ -430,7 +430,7 @@ const Filter: React.FC<FilterProps> = ({
                 </button>
 
                 {openDropdown === 'dateRange' && (
-                  <div className="absolute top-full mt-1 left-0 z-[9999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl min-w-max">
+                  <div className="absolute top-full mt-1 left-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl min-w-max">
                     <div className="max-h-60 overflow-y-auto">
                       {dateRanges.map((range) => (
                         <button
@@ -469,7 +469,7 @@ const Filter: React.FC<FilterProps> = ({
                 </button>
 
                 {openDropdown === 'reportType' && (
-                  <div className="absolute top-full mt-1 left-0 z-[9999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl min-w-max">
+                  <div className="absolute top-full mt-1 left-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl min-w-max">
                     <div className="max-h-60 overflow-y-auto">
                       {reportTypes.map((type) => (
                         <button
@@ -508,7 +508,7 @@ const Filter: React.FC<FilterProps> = ({
                 </button>
 
                 {openDropdown === 'sortBy' && (
-                  <div className="absolute top-full mt-1 left-0 z-[9999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl min-w-max">
+                  <div className="absolute top-full mt-1 left-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl min-w-max">
                     <div className="max-h-60 overflow-y-auto">
                       {sortOptions.map((option) => (
                         <button
