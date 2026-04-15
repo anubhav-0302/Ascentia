@@ -7,49 +7,49 @@ datasource db {
 }
 
 model Employee {
-  id                 Int                 @id @default(autoincrement())
-  name               String
-  email              String              @unique
-  password           String?
-  jobTitle           String
-  department         String
-  location           String
-  status             String              @default("active")
-  role               String              @default("employee")
-  lastLogin          DateTime?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  createdBy          Int?
-  needsPasswordChange Boolean             @default(false)
-  profilePicture     String?             // URL to profile picture
-  phone              String?             // Phone number
-  address            String?             // Address
-  twoFactorEnabled   Boolean             @default(false)
-  twoFactorSecret    String?             // TOTP secret
-  managerId          Int?
-  manager            Employee?           @relation("EmployeeManager", fields: [managerId], references: [id])
-  directReports      Employee[]          @relation("EmployeeManager")
-  salaries           EmployeeSalary[]
-  leaveRequests      LeaveRequest[]
-  goals              PerformanceGoal[]
-  writtenReviews     PerformanceReview[] @relation("PerformanceReviewer")
-  reviews            PerformanceReview[]
-  approvedTimesheets Timesheet[]         @relation("TimesheetApprover")
-  timesheets         Timesheet[]
-  passwordChanges    PasswordChangeHistory[]
+  id                  Int                     @id @default(autoincrement())
+  name                String
+  email               String                  @unique
+  password            String?
+  jobTitle            String
+  department          String
+  location            String
+  status              String                  @default("active")
+  role                String                  @default("employee")
+  lastLogin           DateTime?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  createdBy           Int?
+  needsPasswordChange Boolean                 @default(false)
+  profilePicture      String?
+  phone               String?
+  address             String?
+  twoFactorEnabled    Boolean                 @default(false)
+  twoFactorSecret     String?
+  managerId           Int?
+  settings            Json?
+  manager             Employee?               @relation("EmployeeManager", fields: [managerId], references: [id])
+  directReports       Employee[]              @relation("EmployeeManager")
+  salaries            EmployeeSalary[]
+  leaveRequests       LeaveRequest[]
   passwordChangesMade PasswordChangeHistory[] @relation("PasswordChanger")
+  passwordChanges     PasswordChangeHistory[]
+  goals               PerformanceGoal[]
+  writtenReviews      PerformanceReview[]     @relation("PerformanceReviewer")
+  reviews             PerformanceReview[]
+  approvedTimesheets  Timesheet[]             @relation("TimesheetApprover")
+  timesheets          Timesheet[]
 }
 
 model PasswordChangeHistory {
   id         Int      @id @default(autoincrement())
   employeeId Int
   changedAt  DateTime @default(now())
-  changedBy  Int      // User who changed the password (can be self or admin)
-  reason     String?  // Optional reason for password change
-  
-  employee   Employee @relation(fields: [employeeId], references: [id])
+  changedBy  Int
+  reason     String?
   changer    Employee @relation("PasswordChanger", fields: [changedBy], references: [id])
-  
+  employee   Employee @relation(fields: [employeeId], references: [id])
+
   @@index([employeeId])
   @@index([changedAt])
 }

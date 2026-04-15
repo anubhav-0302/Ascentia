@@ -32,7 +32,9 @@ const UnifiedDropdown: React.FC<UnifiedDropdownProps> = ({
   size = 'md'
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropUp, setDropUp] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownListRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -45,6 +47,23 @@ const UnifiedDropdown: React.FC<UnifiedDropdownProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Check if dropdown should drop up
+  useEffect(() => {
+    if (isOpen && dropdownRef.current && dropdownListRef.current) {
+      const rect = dropdownRef.current.getBoundingClientRect();
+      const dropdownHeight = 240; // Approximate max height (max-h-60)
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+
+      // If not enough space below, drop up
+      if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+        setDropUp(true);
+      } else {
+        setDropUp(false);
+      }
+    }
+  }, [isOpen]);
 
   const selectedOption = options.find(opt => opt.value === value);
   const displayLabel = selectedOption?.label || placeholder;
@@ -78,13 +97,18 @@ const UnifiedDropdown: React.FC<UnifiedDropdownProps> = ({
           </span>
           <ChevronDown 
             className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
-              isOpen ? 'transform rotate-180' : ''
+              isOpen ? `transform ${dropUp ? 'rotate-0' : 'rotate-180'}` : ''
             }`}
           />
         </button>
 
         {isOpen && !disabled && (
-          <div className="absolute top-full mt-1 left-0 right-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl overflow-hidden">
+          <div 
+            ref={dropdownListRef}
+            className={`absolute left-0 right-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl overflow-hidden ${
+              dropUp ? 'bottom-full mb-1' : 'top-full mt-1'
+            }`}
+          >
             <div className="max-h-60 overflow-y-auto">
               {options.map((option) => (
                 <button

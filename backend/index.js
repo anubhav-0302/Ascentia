@@ -11,8 +11,10 @@ import timesheetRoutes from './routes/timesheetRoutes.js';
 import performanceRoutes from './routes/performanceRoutes.js';
 import payrollRoutes from './routes/payrollRoutes.js';
 import logsRoutes from './routes/logsRoutes.js';
+import settingsRoutes from './routes/settingsRoutes.js';
 import { requireAuth } from './middleware/auth.js';
 import { initializeLeaveData } from './leaveStoreDB.js';
+// import { setupScheduledBackups } from './scripts/backup-system.js';
 import prisma from './lib/prisma.js';
 
 const app = express();
@@ -77,7 +79,8 @@ app.get('/', (req, res) => {
       dashboard: '/api/dashboard',
       leave: '/api/leave',
       notifications: '/api/notifications',
-      users: '/api/users'
+      users: '/api/users',
+      settings: '/api/settings'
     }
   });
 });
@@ -95,10 +98,17 @@ app.use('/api/timesheet', requireAuth, timesheetRoutes);
 app.use('/api/performance', requireAuth, performanceRoutes);
 app.use('/api/payroll', requireAuth, payrollRoutes);
 app.use('/api/logs', requireAuth, logsRoutes);
+app.use('/api/settings', requireAuth, settingsRoutes);
 
 // Start server
 app.listen(PORT, async () => {
   await initializeDatabase();
+  
+  // Start automatic backup system (temporarily disabled)
+  // console.log('🔄 Starting automatic backup system...');
+  // setupScheduledBackups();
+  // console.log('✅ Automatic backups scheduled (daily at 2:00 AM)');
+  
   console.log(`🚀 Ascentia API running on http://localhost:${PORT}`);
   console.log('🔧 Complete API mode with database persistence - all routes available');
   console.log('📊 Available endpoints:');

@@ -24,8 +24,11 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import GlobalSearch from './components/GlobalSearch';
 import { FilterProvider } from './contexts/FilterContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { CompactViewProvider } from './contexts/CompactViewContext';
 import { useAuthStore, useAuthInitialized, useIsAuthenticated } from './store/useAuthStore';
 import './styles/globals.css';
+import './styles/theme.css';
 
 function App() {
   const { initializeAuth } = useAuthStore();
@@ -64,47 +67,51 @@ function App() {
 
   // If authenticated, show main app with protected routes
   return (
-    <FilterProvider>
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
-        <Sidebar />
-        <Header />
-        
-        {/* Main Content Area */}
-        <main className="ml-64 mt-16 px-6 py-6 h-[calc(100vh-4rem)] overflow-y-auto scrollbar-hide">
-          <div className="max-w-7xl mx-auto">
-            <ErrorBoundary>
-              <ProtectedRoute>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/directory" element={<Directory />} />
-                  <Route path="/command-center" element={<CommandCenter />} />
-                  <Route path="/workflow-hub" element={<WorkflowHub />} />
-                  <Route path="/timesheet-entry" element={<TimesheetEntry />} />
-                  <Route path="/performance-goals" element={<PerformanceGoals />} />
-                  <Route path="/my-team" element={<MyTeam />} />
-                  <Route path="/leave-attendance" element={<LeaveAttendance />} />
-                  <Route path="/payroll-benefits" element={<PayrollBenefits />} />
-                  <Route path="/recruiting" element={<Recruiting />} />
-                  <Route path="/reports" element={<Reports />} />
-                  <Route path="/audit-logs" element={<AuditLogs />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/employee/:id" element={<EmployeeProfile />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/permission-management" element={<PermissionManagement />} />
-                  <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                </Routes>
-              </ProtectedRoute>
-            </ErrorBoundary>
-          </div>
-        </main>
-        <Toaster position="top-right" />
-        
-        {/* Global Command Palette */}
-        <GlobalSearch />
-      </div>
-    </FilterProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <CompactViewProvider>
+          <FilterProvider>
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
+              <Sidebar />
+              <Header />
+              
+              {/* Main Content Area */}
+              <main className="ml-64 mt-16 px-6 py-6 h-[calc(100vh-4rem)] overflow-y-auto scrollbar-hide">
+                <div className="max-w-7xl mx-auto">
+                  <ProtectedRoute>
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/directory" element={<Directory />} />
+                      <Route path="/command-center" element={<CommandCenter />} />
+                      <Route path="/workflow-hub" element={<WorkflowHub />} />
+                      <Route path="/timesheet-entry" element={<TimesheetEntry />} />
+                      <Route path="/performance-goals" element={<PerformanceGoals />} />
+                      <Route path="/my-team" element={<MyTeam />} />
+                      <Route path="/leave-attendance" element={<LeaveAttendance />} />
+                      <Route path="/payroll-benefits" element={<PayrollBenefits />} />
+                      <Route path="/recruiting" element={<Recruiting />} />
+                      <Route path="/reports" element={<Reports />} />
+                      <Route path="/audit-logs" element={<AuditLogs />} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/employee/:id" element={<EmployeeProfile />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/permission-management" element={<PermissionManagement />} />
+                      <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+                      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                    </Routes>
+                  </ProtectedRoute>
+                </div>
+              </main>
+              <Toaster position="top-right" />
+              
+              {/* Global Command Palette */}
+              <GlobalSearch />
+            </div>
+          </FilterProvider>
+        </CompactViewProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
