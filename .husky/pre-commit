@@ -1,20 +1,26 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-echo "🔍 Running regression tests before commit..."
+echo ""
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║         REGRESSION TEST SUITE - PRE-COMMIT CHECK           ║"
+echo "╚════════════════════════════════════════════════════════════╝"
 echo ""
 
 # Run the regression test script
 node scripts/regression-test.js
+TEST_RESULT=$?
+
+echo ""
 
 # Check if regression tests passed
-if [ $? -ne 0 ]; then
-  echo ""
-  echo "❌ Regression tests failed! Commit aborted."
+if [ $TEST_RESULT -ne 0 ]; then
+  echo "❌ REGRESSION TESTS FAILED! Commit aborted."
   echo "Please fix the issues and try again."
+  echo ""
   exit 1
 fi
 
-echo ""
-echo "✅ All regression tests passed!"
+echo "✅ ALL REGRESSION TESTS PASSED!"
 echo "Proceeding with commit..."
+echo ""

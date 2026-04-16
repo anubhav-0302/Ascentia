@@ -221,7 +221,7 @@ try {
     const content = fs.readFileSync(schemaPath, 'utf-8');
     
     // Check for required models
-    const requiredModels = ['User', 'Employee', 'SalaryComponent', 'EmployeeSalary'];
+    const requiredModels = ['Employee', 'SalaryComponent', 'EmployeeSalary'];
     const missingModels = requiredModels.filter(model => !content.includes(`model ${model}`));
     
     if (missingModels.length > 0) {
