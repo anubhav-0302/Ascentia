@@ -12,9 +12,6 @@ export const getRoles = async (req, res) => {
             action: true,
             isEnabled: true
           }
-        },
-        _count: {
-          select: { permissions: true }
         }
       },
       orderBy: { createdAt: 'asc' }
@@ -30,7 +27,7 @@ export const getRoles = async (req, res) => {
         description: role.description,
         isCustom: role.isCustom,
         isActive: role.isActive,
-        permissionCount: role._count.permissions,
+        permissionCount: role.permissions.length,
         createdAt: role.createdAt,
         updatedAt: role.updatedAt
       }))
