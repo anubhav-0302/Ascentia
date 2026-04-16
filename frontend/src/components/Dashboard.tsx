@@ -190,72 +190,88 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Cards - Role-Based View */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
         {/* ADMIN VIEW - Full Organization Metrics */}
         {isAdmin && (
           <>
             <Link 
               to="/directory"
               onClick={() => handleNavigateToDirectory('total-employees')}
-              className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-teal-500/40 hover:shadow-teal-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.1s' }}
             >
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-blue-500/20 rounded-xl">
+                <div className="p-3 bg-blue-500/20 rounded-xl group-hover:bg-blue-500/30 transition-colors duration-300">
                   <i className="fas fa-users text-blue-400 text-xl"></i>
                 </div>
-                <span className="text-sm text-gray-400">Total</span>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Total</span>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-1">{stats?.totalEmployees || 0}</h3>
-              <p className="text-gray-400 text-sm">Total Employees</p>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-blue-100 transition-colors duration-300">{stats?.totalEmployees || 0}</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Total Employees</p>
+              <div className="mt-4 flex items-center text-xs text-teal-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>View Directory</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
             </Link>
 
             <Link 
               to="/my-team"
               onClick={() => handleNavigateToMyTeam()}
-              className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-green-500/40 hover:shadow-green-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.2s' }}
             >
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-green-500/20 rounded-xl">
+                <div className="p-3 bg-green-500/20 rounded-xl group-hover:bg-green-500/30 transition-colors duration-300">
                   <i className="fas fa-user-check text-green-400 text-xl"></i>
                 </div>
-                <span className="text-sm text-gray-400">Active</span>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Active</span>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-1">{stats?.activeEmployees || 0}</h3>
-              <p className="text-gray-400 text-sm">Active Employees</p>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-green-100 transition-colors duration-300">{stats?.activeEmployees || 0}</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Active Employees</p>
+              <div className="mt-4 flex items-center text-xs text-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>View Team</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
             </Link>
 
             <Link 
               to="/directory"
               onClick={() => handleNavigateToDirectory('remote-workers')}
-              className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-purple-500/40 hover:shadow-purple-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.3s' }}
             >
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-purple-500/20 rounded-xl">
+                <div className="p-3 bg-purple-500/20 rounded-xl group-hover:bg-purple-500/30 transition-colors duration-300">
                   <i className="fas fa-home text-purple-400 text-xl"></i>
                 </div>
-                <span className="text-sm text-gray-400">Remote</span>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Remote</span>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-1">{stats?.remoteEmployees || 0}</h3>
-              <p className="text-gray-400 text-sm">Remote Workers</p>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-purple-100 transition-colors duration-300">{stats?.remoteEmployees || 0}</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Remote Workers</p>
+              <div className="mt-4 flex items-center text-xs text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>View Remote</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
             </Link>
 
             <Link 
               to="/directory"
               onClick={() => handleNavigateToDirectory('departments')}
-              className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-orange-500/40 hover:shadow-orange-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.4s' }}
             >
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-orange-500/20 rounded-xl">
+                <div className="p-3 bg-orange-500/20 rounded-xl group-hover:bg-orange-500/30 transition-colors duration-300">
                   <i className="fas fa-building text-orange-400 text-xl"></i>
                 </div>
-                <span className="text-sm text-gray-400">Departments</span>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Departments</span>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-1">{stats?.departments || 0}</h3>
-              <p className="text-gray-400 text-sm">Total Departments</p>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-orange-100 transition-colors duration-300">{stats?.departments || 0}</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Total Departments</p>
+              <div className="mt-4 flex items-center text-xs text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>View Departments</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
             </Link>
           </>
         )}
@@ -266,57 +282,73 @@ const Dashboard = () => {
             <Link 
               to="/my-team"
               onClick={() => handleNavigateToMyTeam()}
-              className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-green-500/40 hover:shadow-green-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.1s' }}
             >
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-green-500/20 rounded-xl">
+                <div className="p-3 bg-green-500/20 rounded-xl group-hover:bg-green-500/30 transition-colors duration-300">
                   <i className="fas fa-users text-green-400 text-xl"></i>
                 </div>
-                <span className="text-sm text-gray-400">Team</span>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Team</span>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-1">{stats?.activeEmployees || 0}</h3>
-              <p className="text-gray-400 text-sm">Team Members</p>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-green-100 transition-colors duration-300">{stats?.activeEmployees || 0}</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Team Members</p>
+              <div className="mt-4 flex items-center text-xs text-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>View Team</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
             </Link>
 
-            <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn"
+            <div className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn hover:border-blue-500/40 hover:shadow-blue-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.2s' }}>
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-blue-500/20 rounded-xl">
+                <div className="p-3 bg-blue-500/20 rounded-xl group-hover:bg-blue-500/30 transition-colors duration-300">
                   <i className="fas fa-calendar text-blue-400 text-xl"></i>
                 </div>
-                <span className="text-sm text-gray-400">Pending</span>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Pending</span>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-1">3</h3>
-              <p className="text-gray-400 text-sm">Leave Approvals</p>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-blue-100 transition-colors duration-300">3</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Leave Approvals</p>
+              <div className="mt-4 flex items-center text-xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>Review Requests</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
             </div>
 
             <Link 
               to="/leave-attendance"
               onClick={() => handleNavigateToLeaveAttendance('leave-status')}
-              className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-purple-500/40 hover:shadow-purple-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.3s' }}
             >
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-purple-500/20 rounded-xl">
+                <div className="p-3 bg-purple-500/20 rounded-xl group-hover:bg-purple-500/30 transition-colors duration-300">
                   <i className="fas fa-chart-pie text-purple-400 text-xl"></i>
                 </div>
-                <span className="text-sm text-gray-400">Status</span>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Status</span>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-1">85%</h3>
-              <p className="text-gray-400 text-sm">Team Attendance</p>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-purple-100 transition-colors duration-300">85%</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Team Attendance</p>
+              <div className="mt-4 flex items-center text-xs text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>View Attendance</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
             </Link>
 
-            <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn"
+            <div className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn hover:border-orange-500/40 hover:shadow-orange-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.4s' }}>
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-orange-500/20 rounded-xl">
+                <div className="p-3 bg-orange-500/20 rounded-xl group-hover:bg-orange-500/30 transition-colors duration-300">
                   <i className="fas fa-star text-orange-400 text-xl"></i>
                 </div>
-                <span className="text-sm text-gray-400">Avg</span>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Avg</span>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-1">4.2/5</h3>
-              <p className="text-gray-400 text-sm">Team Performance</p>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-orange-100 transition-colors duration-300">4.2/5</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Team Performance</p>
+              <div className="mt-4 flex items-center text-xs text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>View Reviews</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
             </div>
           </>
         )}
@@ -324,56 +356,72 @@ const Dashboard = () => {
         {/* EMPLOYEE VIEW - Personal Focused Metrics */}
         {!isAdmin && !isManager && (
           <>
-            <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn"
+            <div className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn hover:border-blue-500/40 hover:shadow-blue-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.1s' }}>
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-blue-500/20 rounded-xl">
+                <div className="p-3 bg-blue-500/20 rounded-xl group-hover:bg-blue-500/30 transition-colors duration-300">
                   <i className="fas fa-user text-blue-400 text-xl"></i>
                 </div>
-                <span className="text-sm text-gray-400">Status</span>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Status</span>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-1">{user?.name || 'Employee'}</h3>
-              <p className="text-gray-400 text-sm">Your Profile</p>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-blue-100 transition-colors duration-300">{user?.name || 'Employee'}</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Your Profile</p>
+              <div className="mt-4 flex items-center text-xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>View Profile</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
             </div>
 
             <Link 
               to="/leave-attendance"
               onClick={() => handleNavigateToLeaveAttendance('leave-status')}
-              className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200"
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-green-500/40 hover:shadow-green-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.2s' }}
             >
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-green-500/20 rounded-xl">
+                <div className="p-3 bg-green-500/20 rounded-xl group-hover:bg-green-500/30 transition-colors duration-300">
                   <i className="fas fa-calendar-check text-green-400 text-xl"></i>
                 </div>
-                <span className="text-sm text-gray-400">Available</span>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Available</span>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-1">12</h3>
-              <p className="text-gray-400 text-sm">Leave Days Remaining</p>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-green-100 transition-colors duration-300">12</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Leave Days Remaining</p>
+              <div className="mt-4 flex items-center text-xs text-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>Request Leave</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
             </Link>
 
-            <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn"
+            <div className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn hover:border-purple-500/40 hover:shadow-purple-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.3s' }}>
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-purple-500/20 rounded-xl">
+                <div className="p-3 bg-purple-500/20 rounded-xl group-hover:bg-purple-500/30 transition-colors duration-300">
                   <i className="fas fa-clock text-purple-400 text-xl"></i>
                 </div>
-                <span className="text-sm text-gray-400">This Month</span>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">This Month</span>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-1">160</h3>
-              <p className="text-gray-400 text-sm">Hours Logged</p>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-purple-100 transition-colors duration-300">160</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Hours Logged</p>
+              <div className="mt-4 flex items-center text-xs text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>View Timesheet</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
             </div>
 
-            <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn"
+            <div className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn hover:border-orange-500/40 hover:shadow-orange-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.4s' }}>
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-orange-500/20 rounded-xl">
+                <div className="p-3 bg-orange-500/20 rounded-xl group-hover:bg-orange-500/30 transition-colors duration-300">
                   <i className="fas fa-chart-line text-orange-400 text-xl"></i>
                 </div>
-                <span className="text-sm text-gray-400">Current</span>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Current</span>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-1">4.5/5</h3>
-              <p className="text-gray-400 text-sm">Performance Rating</p>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-orange-100 transition-colors duration-300">4.5/5</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Performance Rating</p>
+              <div className="mt-4 flex items-center text-xs text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>View Reviews</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
             </div>
           </>
         )}
@@ -392,9 +440,9 @@ const Dashboard = () => {
           </div>
           
           <div className="space-y-4">
-            <div className="p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-lg">
+            <div className="p-4 bg-gradient-to-r from-blue-500/5 to-transparent rounded-lg">
               <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
                   <i className="fas fa-chart-line text-blue-400 text-sm"></i>
                 </div>
                 <div>
@@ -410,9 +458,9 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="p-4 bg-gradient-to-r from-green-500/10 to-teal-500/10 border border-green-500/30 rounded-lg">
+            <div className="p-4 bg-gradient-to-r from-green-500/5 to-transparent rounded-lg">
               <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
                   <i className="fas fa-users text-green-400 text-sm"></i>
                 </div>
                 <div>
@@ -435,9 +483,9 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-lg">
+            <div className="p-4 bg-gradient-to-r from-yellow-500/5 to-transparent rounded-lg">
               <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 bg-yellow-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 bg-yellow-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
                   <i className="fas fa-lightbulb text-yellow-400 text-sm"></i>
                 </div>
                 <div>

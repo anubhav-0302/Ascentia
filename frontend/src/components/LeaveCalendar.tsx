@@ -270,14 +270,14 @@ const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ className = '', onDateSel
                         onMouseEnter={() => setHoveredLeave(leave)}
                         onMouseLeave={() => setHoveredLeave(null)}
                       >
-                        {leave.user.name}
+                        {leave.user?.name || 'Unknown'}
                         
                         {/* Hover tooltip */}
                         {hoveredLeave?.id === leave.id && (
                           <div className="absolute z-50 bottom-full left-0 mb-2 w-48 p-3 bg-slate-900/95 backdrop-blur-lg border border-slate-700/50 rounded-lg shadow-xl">
                             <div className="flex items-center justify-between mb-2">
                               <span className="font-medium text-white text-sm">
-                                {leave.user.name}
+                                {leave.user?.name || 'Unknown'}
                               </span>
                               <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(leave.status)}`}>
                                 {leave.status}

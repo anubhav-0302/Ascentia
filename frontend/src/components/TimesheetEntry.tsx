@@ -36,7 +36,8 @@ import {
   Download, 
   Filter as FilterIcon,
   TrendingUp,
-  Users
+  Users,
+  Info
 } from 'lucide-react';
 
 const TimesheetEntry: React.FC = () => {

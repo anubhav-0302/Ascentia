@@ -430,57 +430,67 @@ const PayrollBenefits: React.FC = () => {
           )}
 
           {/* Tab Navigation */}
-          <div className="border-b border-slate-700 mb-6">
-            <nav className="flex space-x-8">
+          <div className="bg-slate-800/30 backdrop-blur-lg border border-slate-700/50 rounded-xl p-1 mb-6">
+            <nav className="flex space-x-1 overflow-x-auto scrollbar-hide lg:overflow-visible">
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`flex-shrink-0 px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-300 min-w-fit ${
                   activeTab === 'overview'
-                    ? 'border-teal-500 text-teal-400'
-                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                    ? 'bg-gradient-to-r from-teal-600 to-teal-500 text-white shadow-lg shadow-teal-500/30'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                Overview
+                <DollarSign className="w-4 h-4 inline mr-2" />
+                <span className="hidden sm:inline">Overview</span>
+                <span className="sm:hidden">Overview</span>
               </button>
               <button
                 onClick={() => setActiveTab('payroll')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`flex-shrink-0 px-4 py-2.5 rounded-lg font-medium transition-all duration-300 min-w-fit ${
                   activeTab === 'payroll'
-                    ? 'border-teal-500 text-teal-400'
-                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                Payroll Processing
+                <Calculator className="w-4 h-4 inline mr-2" />
+                <span className="hidden sm:inline">Payroll Processing</span>
+                <span className="sm:hidden">Payroll</span>
               </button>
               <button
                 onClick={() => setActiveTab('benefits')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`flex-shrink-0 px-4 py-2.5 rounded-lg font-medium transition-all duration-300 min-w-fit ${
                   activeTab === 'benefits'
-                    ? 'border-teal-500 text-teal-400'
-                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                    ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-lg shadow-purple-500/30'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                Benefits Management
+                <Shield className="w-4 h-4 inline mr-2" />
+                <span className="hidden sm:inline">Benefits Management</span>
+                <span className="sm:hidden">Benefits</span>
               </button>
               <button
                 onClick={() => setActiveTab('salary-components')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`flex-shrink-0 px-4 py-2.5 rounded-lg font-medium transition-all duration-300 min-w-fit ${
                   activeTab === 'salary-components'
-                    ? 'border-teal-500 text-teal-400'
-                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                    ? 'bg-gradient-to-r from-green-600 to-green-500 text-white shadow-lg shadow-green-500/30'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                Salary Components
+                <FileText className="w-4 h-4 inline mr-2" />
+                <span className="hidden sm:inline">Salary Components</span>
+                <span className="sm:hidden">Salary</span>
               </button>
               <button
                 onClick={() => setActiveTab('reports')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`flex-shrink-0 px-4 py-2.5 rounded-lg font-medium transition-all duration-300 min-w-fit ${
                   activeTab === 'reports'
-                    ? 'border-teal-500 text-teal-400'
-                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                    ? 'bg-gradient-to-r from-orange-600 to-orange-500 text-white shadow-lg shadow-orange-500/30'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                Reports & Analytics
+                <Download className="w-4 h-4 inline mr-2" />
+                <span className="hidden sm:inline">Reports & Analytics</span>
+                <span className="sm:hidden">Reports</span>
               </button>
             </nav>
           </div>
@@ -489,62 +499,70 @@ const PayrollBenefits: React.FC = () => {
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {/* Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
                 {payrollStats.map((stat, index) => (
-                  <Card key={index} className="p-6">
+                  <div key={index} className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-4 lg:p-6 hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 transform hover:-translate-y-1">
                     <div className="flex items-center justify-between mb-4">
-                      <stat.icon className={`w-8 h-8 ${stat.color}`} />
-                      <span className="text-sm text-gray-400">{stat.change}</span>
+                      <div className={`bg-blue-500/20 p-3 rounded-xl group-hover:bg-blue-500/30 transition-colors duration-300`}>
+                        <stat.icon className={`w-6 h-6 text-blue-400`} />
+                      </div>
+                      <span className="text-xs sm:text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">{stat.change}</span>
                     </div>
-                    <h3 className="text-2xl font-bold text-white mb-1">{stat.value}</h3>
-                    <p className="text-gray-400 text-sm">{stat.title}</p>
-                  </Card>
+                    <h3 className="text-2xl sm:text-3xl font-bold text-white mb-1 group-hover:text-blue-100 transition-colors duration-300">{stat.value}</h3>
+                    <p className="text-xs sm:text-sm text-gray-400">{stat.title}</p>
+                  </div>
                 ))}
               </div>
 
               {/* Quick Actions */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+                <div className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-4 lg:p-6 hover:border-green-500/40 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-300 transform hover:-translate-y-1">
                   <div className="flex items-center space-x-3 mb-4">
-                    <DollarSign className="w-6 h-6 text-green-400" />
-                    <h3 className="text-lg font-semibold text-white">Process Payroll</h3>
+                    <div className="bg-green-500/20 p-3 rounded-xl group-hover:bg-green-500/30 transition-colors duration-300">
+                      <DollarSign className="w-6 h-6 text-green-400" />
+                    </div>
+                    <h3 className="text-base lg:text-lg font-semibold text-white group-hover:text-green-100 transition-colors duration-300">Process Payroll</h3>
                   </div>
-                  <p className="text-gray-400 mb-4">Run payroll for current pay period</p>
+                  <p className="text-sm text-gray-400 mb-4 group-hover:text-gray-300 transition-colors duration-300">Run payroll for current pay period</p>
                   <button 
                     onClick={handleProcessPayroll}
-                    className="w-full px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors"
+                    className="w-full px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white rounded-lg font-medium shadow-lg hover:shadow-green-500/25 transition-all duration-300 transform hover:scale-[1.02]"
                   >
                     Process Now
                   </button>
-                </Card>
+                </div>
 
-                <Card className="p-6">
+                <div className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-4 lg:p-6 hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 transform hover:-translate-y-1">
                   <div className="flex items-center space-x-3 mb-4">
-                    <Calculator className="w-6 h-6 text-blue-400" />
-                    <h3 className="text-lg font-semibold text-white">Payroll Calculator</h3>
+                    <div className="bg-blue-500/20 p-3 rounded-xl group-hover:bg-blue-500/30 transition-colors duration-300">
+                      <Calculator className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <h3 className="text-base lg:text-lg font-semibold text-white group-hover:text-blue-100 transition-colors duration-300">Payroll Calculator</h3>
                   </div>
-                  <p className="text-gray-400 mb-4">Calculate salaries and deductions</p>
+                  <p className="text-sm text-gray-400 mb-4 group-hover:text-gray-300 transition-colors duration-300">Calculate salaries and deductions</p>
                   <button 
                     onClick={handleRunPayroll}
-                    className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
+                    className="w-full px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-lg font-medium shadow-lg hover:shadow-blue-500/25 transition-all duration-300 transform hover:scale-[1.02]"
                   >
                     Open Calculator
                   </button>
-                </Card>
+                </div>
 
-                <Card className="p-6">
+                <div className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-4 lg:p-6 hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300 transform hover:-translate-y-1">
                   <div className="flex items-center space-x-3 mb-4">
-                    <Shield className="w-6 h-6 text-purple-400" />
-                    <h3 className="text-lg font-semibold text-white">Benefits Portal</h3>
+                    <div className="bg-purple-500/20 p-3 rounded-xl group-hover:bg-purple-500/30 transition-colors duration-300">
+                      <Shield className="w-6 h-6 text-purple-400" />
+                    </div>
+                    <h3 className="text-base lg:text-lg font-semibold text-white group-hover:text-purple-100 transition-colors duration-300">Benefits Portal</h3>
                   </div>
-                  <p className="text-gray-400 mb-4">Manage employee benefits enrollment</p>
+                  <p className="text-sm text-gray-400 mb-4 group-hover:text-gray-300 transition-colors duration-300">Manage employee benefits enrollment</p>
                   <button 
                     onClick={handleManageBenefits}
-                    className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors"
+                    className="w-full px-4 py-2.5 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white rounded-lg font-medium shadow-lg hover:shadow-purple-500/25 transition-all duration-300 transform hover:scale-[1.02]"
                   >
                     Manage Benefits
                   </button>
-                </Card>
+                </div>
               </div>
             </div>
           )}

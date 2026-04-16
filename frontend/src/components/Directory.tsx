@@ -151,14 +151,20 @@ function Directory() {
           <FadeIn delay={100}>
             <div className="mb-8 flex justify-between items-start">
               <div>
-                <h1 className="text-4xl font-bold text-white mb-2">
+                <h1 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
                   {isAdmin ? "Employee Directory" : "Team Directory"}
                 </h1>
-                <p className="text-gray-400 text-sm">
+                <p className="text-gray-400 text-sm flex items-center">
+                  <span className="inline-block w-2 h-2 bg-teal-400 rounded-full mr-2 animate-pulse"></span>
                   {isAdmin 
                     ? "Manage your team members and their information"
                     : "View your team members and their information"
                   }
+                  {filteredEmployees?.length > 0 && (
+                    <span className="ml-2 text-teal-400 font-medium">
+                      ({filteredEmployees.length} {filteredEmployees.length === 1 ? 'member' : 'members'})
+                    </span>
+                  )}
                 </p>
               </div>
               {isAdmin && (
@@ -168,6 +174,7 @@ function Directory() {
                     setIsModalOpen(true);
                   }}
                   icon={<UserPlus className="w-4 h-4" />}
+                  className="shadow-lg hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300 transform hover:-translate-y-0.5"
                 >
                   Add Employee
                 </Button>
@@ -212,31 +219,35 @@ function Directory() {
               )
             ) : (
               <StaggerContainer staggerDelay={100} initialDelay={300}>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
                   {filteredEmployees.map((emp: Employee) => (
-                    <Card key={emp.id} hover className="group">
-                      <div className="flex items-center mb-3">
-                        <img
-                          src={`https://picsum.photos/seed/${emp.id}/40/40.jpg`}
-                          alt={emp.name}
-                          className="w-10 h-10 rounded-full mr-3 group-hover:scale-110 transition-transform duration-300"
-                        />
-                        <div className="flex-1">
+                    <Card key={emp.id} className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-500/5 transition-all duration-300 transform hover:-translate-y-1">
+                      <div className="flex items-center mb-4">
+                        <div className="relative">
+                          <img
+                            src={`https://picsum.photos/seed/${emp.id}/40/40.jpg`}
+                            alt={emp.name}
+                            className="w-12 h-12 rounded-full mr-3 ring-2 ring-slate-700 group-hover:ring-teal-500/50 transition-all duration-300 group-hover:scale-110"
+                          />
+                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-slate-800"></div>
+                        </div>
+                        <div className="flex-1 min-w-0">
                           <h3 
-                            className="text-white font-medium group-hover:text-teal-400 transition-colors duration-200 cursor-pointer hover:underline"
+                            className="text-white font-semibold text-base group-hover:text-teal-400 transition-colors duration-200 cursor-pointer hover:underline truncate"
                             onClick={() => navigate(`/employee/${emp.id}`)}
                           >
                             {emp.name}
                           </h3>
-                          <p className="text-gray-400 text-sm">{emp.jobTitle}</p>
+                          <p className="text-gray-400 text-sm truncate">{emp.jobTitle}</p>
                         </div>
                         {isAdmin && (
-                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
                             <Button
                               size="sm"
                               variant="secondary"
                               onClick={() => handleEditEmployee(emp)}
                               icon={<Edit className="w-3 h-3" />}
+                              className="hover:bg-teal-500/10 hover:text-teal-400 transition-colors duration-200"
                             >
                               Edit
                             </Button>
@@ -245,6 +256,7 @@ function Directory() {
                               variant="danger"
                               onClick={() => handleDeleteEmployee(emp)}
                               icon={<Trash2 className="w-3 h-3" />}
+                              className="hover:bg-red-500/20 transition-colors duration-200"
                             >
                               Delete
                             </Button>
@@ -252,30 +264,43 @@ function Directory() {
                         )}
                       </div>
                       
-                      <div className="space-y-2 text-sm">
-                        <p className="text-gray-300 flex items-center">
-                          <svg className="w-4 h-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                          </svg>
-                          {emp.email}
-                        </p>
-                        <p className="text-gray-300 flex items-center">
-                          <svg className="w-4 h-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                          </svg>
-                          {emp.department}
-                        </p>
-                        <p className="text-gray-300 flex items-center">
-                          <svg className="w-4 h-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                          {emp.location || "Remote"}
-                        </p>
+                      <div className="space-y-3 text-sm">
+                        <div className="flex items-center text-gray-300 hover:text-white transition-colors duration-200">
+                          <div className="w-8 h-8 bg-slate-700/50 rounded-lg flex items-center justify-center mr-3 group-hover:bg-blue-500/20 transition-colors duration-300">
+                            <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                          <span className="truncate">{emp.email}</span>
+                        </div>
+                        <div className="flex items-center text-gray-300 hover:text-white transition-colors duration-200">
+                          <div className="w-8 h-8 bg-slate-700/50 rounded-lg flex items-center justify-center mr-3 group-hover:bg-purple-500/20 transition-colors duration-300">
+                            <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                          </div>
+                          <span className="truncate">{emp.department}</span>
+                        </div>
+                        <div className="flex items-center text-gray-300 hover:text-white transition-colors duration-200">
+                          <div className="w-8 h-8 bg-slate-700/50 rounded-lg flex items-center justify-center mr-3 group-hover:bg-green-500/20 transition-colors duration-300">
+                            <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                          </div>
+                          <span className="truncate">{emp.location || "Remote"}</span>
+                        </div>
                       </div>
 
-                      <div className="mt-4 pt-4 border-t border-slate-700">
+                      <div className="mt-4 pt-4 border-t border-slate-700/50 flex items-center justify-between">
                         <StatusBadge status={emp.status} />
+                        <button 
+                          onClick={() => navigate(`/employee/${emp.id}`)}
+                          className="text-xs text-teal-400 hover:text-teal-300 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center"
+                        >
+                          View Profile
+                          <i className="fas fa-arrow-right ml-1"></i>
+                        </button>
                       </div>
                     </Card>
                   ))}

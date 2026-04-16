@@ -206,34 +206,50 @@ const Sidebar: React.FC = () => {
                       {item.onClick ? (
                         <button
                           onClick={item.onClick}
-                          className={`w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                          className={`w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative ${
                             active
-                              ? 'bg-teal-500/10 text-teal-400 border-l-4 border-teal-500'
-                              : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                              ? 'bg-teal-500/10 text-teal-400 border-l-4 border-teal-500 shadow-lg shadow-teal-500/10'
+                              : 'text-slate-400 hover:text-white hover:bg-slate-800/50 hover:translate-x-1'
                           }`}
                         >
+                          <div className={`absolute inset-0 bg-gradient-to-r from-transparent to-teal-500/5 rounded-lg transition-opacity duration-300 ${
+                            active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                          }`} />
                           <Icon 
-                            className={`w-5 h-5 mr-3 transition-colors duration-200 ${
-                              active ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-400'
+                            className={`w-5 h-5 mr-3 transition-all duration-200 relative z-10 ${
+                              active ? 'text-teal-400 scale-110' : 'text-slate-500 group-hover:text-slate-400 group-hover:scale-110'
                             }`} 
                           />
-                          <span>{item.name}</span>
+                          <span className="relative z-10">{item.name}</span>
+                          <div className={`absolute right-3 opacity-0 transition-all duration-300 ${
+                            active ? 'opacity-100' : 'group-hover:opacity-30'
+                          }`}>
+                            <div className="w-1 h-1 bg-teal-400 rounded-full" />
+                          </div>
                         </button>
                       ) : (
                         <Link
                           to={item.path}
-                          className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                          className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative ${
                             active
-                              ? 'bg-teal-500/10 text-teal-400 border-l-4 border-teal-500'
-                              : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                              ? 'bg-teal-500/10 text-teal-400 border-l-4 border-teal-500 shadow-lg shadow-teal-500/10'
+                              : 'text-slate-400 hover:text-white hover:bg-slate-800/50 hover:translate-x-1'
                           }`}
                         >
+                          <div className={`absolute inset-0 bg-gradient-to-r from-transparent to-teal-500/5 rounded-lg transition-opacity duration-300 ${
+                            active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                          }`} />
                           <Icon 
-                            className={`w-5 h-5 mr-3 transition-colors duration-200 ${
-                              active ? 'text-teal-400' : 'text-slate-500 group-hover:text-slate-400'
+                            className={`w-5 h-5 mr-3 transition-all duration-200 relative z-10 ${
+                              active ? 'text-teal-400 scale-110' : 'text-slate-500 group-hover:text-slate-400 group-hover:scale-110'
                             }`} 
                           />
-                          <span>{item.name}</span>
+                          <span className="relative z-10">{item.name}</span>
+                          <div className={`absolute right-3 opacity-0 transition-all duration-300 ${
+                            active ? 'opacity-100' : 'group-hover:opacity-30'
+                          }`}>
+                            <div className="w-1 h-1 bg-teal-400 rounded-full" />
+                          </div>
                         </Link>
                       )}
                     </li>

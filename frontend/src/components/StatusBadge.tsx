@@ -1,18 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface StatusBadgeProps {
   status: 'pending' | 'approved' | 'rejected' | 'active' | 'onboarding' | 'remote' | string;
   variant?: 'default' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  clickable?: boolean;
+  onClick?: () => void;
 }
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({
   status,
   variant = 'default',
   size = 'md',
-  className = ''
+  className = '',
+  clickable = false,
+  onClick
 }) => {
+  const [isHovered, setIsHovered] = useState(false);
   const getStatusConfig = (status: string) => {
     const configs: { [key: string]: { bg: string; text: string; border: string; dot: string } } = {
       // Leave request statuses
@@ -84,17 +89,42 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
     lg: 'w-2.5 h-2.5'
   };
 
-  const baseClasses = 'inline-flex items-center font-medium rounded-full transition-all duration-200';
+  const baseClasses = 'inline-flex items-center font-medium rounded-full transition-all duration-200 relative';
   const variantClasses = variant === 'outline' 
     ? `border ${config.border} ${config.text} bg-transparent`
     : `${config.bg} ${config.text} ${config.border}`;
+  
+  const hoverClasses = clickable ? [
+    'cursor-pointer',
+    'hover:scale-105',
+    'active:scale-95',
+    'hover:shadow-lg'
+  ].join(' ') : '';
 
-  const classes = `${baseClasses} ${variantClasses} ${sizeClasses[size]} ${className}`;
+  const classes = `${baseClasses} ${variantClasses} ${sizeClasses[size]} ${hoverClasses} ${className}`;
+
+  const handleClick = () => {
+    if (clickable && onClick) {
+      onClick();
+    }
+  };
 
   return (
-    <span className={classes}>
-      <span className={`${dotSizes[size]} ${config.dot} rounded-full mr-2`}></span>
+    <span 
+      className={classes}
+      onClick={handleClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <span className={`${dotSizes[size]} ${config.dot} rounded-full mr-2 transition-all duration-300 ${isHovered ? 'animate-pulse' : ''}`}></span>
       {status.charAt(0).toUpperCase() + status.slice(1)}
+      {clickable && (
+        <span className="ml-1 opacity-60">
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </span>
+      )}
     </span>
   );
 };

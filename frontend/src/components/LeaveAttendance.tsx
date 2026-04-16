@@ -287,55 +287,66 @@ const LeaveAttendance = () => {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-4xl font-bold text-white mb-2">Leave Management</h1>
-            <p className="text-gray-400 text-sm">
+            <h1 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Leave Management</h1>
+            <p className="text-gray-400 text-sm flex items-center">
+              <span className="inline-block w-2 h-2 bg-teal-400 rounded-full mr-2 animate-pulse"></span>
               Review and manage all employee leave requests.
+              {stats.pending > 0 && (
+                <span className="ml-3 text-yellow-400 font-medium">
+                  {stats.pending} pending {stats.pending === 1 ? 'request' : 'requests'}
+                </span>
+              )}
             </p>
           </div>
 
           {/* Statistics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-xl p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
+            <div className="group bg-gradient-to-br from-slate-800/40 to-slate-800/20 backdrop-blur-lg border border-slate-700/30 rounded-2xl p-4 lg:p-6 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300 transform hover:-translate-y-1">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">Total Requests</p>
-                  <p className="text-2xl font-bold text-white">{stats.total}</p>
+                  <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Total Requests</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-white group-hover:text-blue-100 transition-colors duration-300">{stats.total}</p>
                 </div>
-                <div className="bg-blue-500/20 p-3 rounded-lg">
-                  <Calendar className="w-6 h-6 text-blue-400" />
+                <div className="bg-blue-500/20 p-4 rounded-xl group-hover:bg-blue-500/30 transition-colors duration-300">
+                  <Calendar className="w-6 h-6 lg:w-8 lg:h-8 text-blue-400" />
                 </div>
               </div>
             </div>
-            <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-xl p-4">
+            <div className="group bg-gradient-to-br from-slate-800/40 to-slate-800/20 backdrop-blur-lg border border-slate-700/30 rounded-2xl p-4 lg:p-6 hover:border-yellow-500/30 hover:shadow-lg hover:shadow-yellow-500/5 transition-all duration-300 transform hover:-translate-y-1">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">Pending</p>
-                  <p className="text-2xl font-bold text-yellow-400">{stats.pending}</p>
+                  <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Pending</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-yellow-400 group-hover:text-yellow-300 transition-colors duration-300">{stats.pending}</p>
                 </div>
-                <div className="bg-yellow-500/20 p-3 rounded-lg">
-                  <AlertTriangle className="w-6 h-6 text-yellow-400" />
+                <div className="bg-yellow-500/20 p-4 rounded-xl group-hover:bg-yellow-500/30 transition-colors duration-300">
+                  <AlertTriangle className="w-6 h-6 lg:w-8 lg:h-8 text-yellow-400" />
+                </div>
+              </div>
+              {stats.pending > 0 && (
+                <div className="mt-3 text-xs text-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <span>Action required</span>
+                </div>
+              )}
+            </div>
+            <div className="group bg-gradient-to-br from-slate-800/40 to-slate-800/20 backdrop-blur-lg border border-slate-700/30 rounded-2xl p-4 lg:p-6 hover:border-green-500/30 hover:shadow-lg hover:shadow-green-500/5 transition-all duration-300 transform hover:-translate-y-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Approved</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-green-400 group-hover:text-green-300 transition-colors duration-300">{stats.approved}</p>
+                </div>
+                <div className="bg-green-500/20 p-4 rounded-xl group-hover:bg-green-500/30 transition-colors duration-300">
+                  <CheckCircle className="w-6 h-6 lg:w-8 lg:h-8 text-green-400" />
                 </div>
               </div>
             </div>
-            <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-xl p-4">
+            <div className="group bg-gradient-to-br from-slate-800/40 to-slate-800/20 backdrop-blur-lg border border-slate-700/30 rounded-2xl p-4 lg:p-6 hover:border-red-500/30 hover:shadow-lg hover:shadow-red-500/5 transition-all duration-300 transform hover:-translate-y-1">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">Approved</p>
-                  <p className="text-2xl font-bold text-green-400">{stats.approved}</p>
+                  <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Rejected</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-red-400 group-hover:text-red-300 transition-colors duration-300">{stats.rejected}</p>
                 </div>
-                <div className="bg-green-500/20 p-3 rounded-lg">
-                  <CheckCircle className="w-6 h-6 text-green-400" />
-                </div>
-              </div>
-            </div>
-            <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm">Rejected</p>
-                  <p className="text-2xl font-bold text-red-400">{stats.rejected}</p>
-                </div>
-                <div className="bg-red-500/20 p-3 rounded-lg">
-                  <XCircle className="w-6 h-6 text-red-400" />
+                <div className="bg-red-500/20 p-4 rounded-xl group-hover:bg-red-500/30 transition-colors duration-300">
+                  <XCircle className="w-6 h-6 lg:w-8 lg:h-8 text-red-400" />
                 </div>
               </div>
             </div>
@@ -343,22 +354,23 @@ const LeaveAttendance = () => {
 
           {/* Filters */}
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-4">
-                <div className="relative">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                <div className="relative flex-1 sm:flex-initial">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
                     type="text"
                     placeholder="Search by employee, type, or reason..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 bg-slate-700/60 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 w-80"
+                    className="pl-10 pr-4 py-2.5 bg-slate-700/40 border border-slate-600/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 w-full sm:w-80 transition-all duration-200"
                   />
                 </div>
                 <Button
                   onClick={() => setShowFilters(!showFilters)}
                   variant="secondary"
                   icon={<Filter className="w-4 h-4" />}
+                  className="hover:bg-teal-500/10 hover:border-teal-500/30 transition-all duration-200 w-full sm:w-auto justify-center"
                 >
                   Filters {statusFilter !== 'all' || searchTerm ? `(${filteredLeaves.length})` : ''}
                 </Button>
@@ -371,6 +383,7 @@ const LeaveAttendance = () => {
                   }}
                   variant="secondary"
                   size="sm"
+                  className="hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-all duration-200 w-full sm:w-auto justify-center"
                 >
                   Clear Filters
                 </Button>
@@ -378,7 +391,7 @@ const LeaveAttendance = () => {
             </div>
             
             {showFilters && (
-              <div className="bg-slate-700/30 border border-slate-600/50 rounded-lg p-4">
+              <div className="bg-slate-700/20 border border-slate-600/30 rounded-lg p-4 animate-fadeIn">
                 <div className="flex items-center space-x-4">
                   <UnifiedDropdown
                     value={statusFilter}
@@ -433,9 +446,15 @@ const LeaveAttendance = () => {
           )}
 
           {/* Leave Requests Table */}
-          <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-700/50">
-              <h2 className="text-2xl font-semibold text-white">All Leave Requests</h2>
+          <div className="bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-700/50 bg-slate-800/30">
+              <h2 className="text-2xl font-semibold text-white flex items-center">
+                <Calendar className="w-6 h-6 mr-2 text-teal-400" />
+                All Leave Requests
+                <span className="ml-3 text-sm text-gray-400 font-normal">
+                  ({filteredLeaves.length} {filteredLeaves.length === 1 ? 'request' : 'requests'})
+                </span>
+              </h2>
             </div>
             
             {loading ? (
@@ -458,52 +477,62 @@ const LeaveAttendance = () => {
                 <table className="w-full">
                   <thead className="bg-slate-700/50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Employee
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Type
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Dates
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Reason
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/50">
                     {filteredLeaves.map((leave) => (
-                      <tr key={leave.id} className="hover:bg-slate-700/40 transition-all duration-200 hover:scale-[1.01]">
+                      <tr key={leave.id} className="hover:bg-slate-700/30 transition-all duration-300 hover:scale-[1.01]">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="text-sm font-medium text-white">
-                              {leave.user?.name || 'Unknown Employee'}
-                            </div>
-                            <div className="text-sm text-gray-400">
-                              {leave.user?.email || 'No email'}
+                          <div className="flex items-center">
+                            <img
+                              src={`https://picsum.photos/seed/${leave.user?.id || leave.id}/32/32.jpg`}
+                              alt={leave.user?.name || 'Employee'}
+                              className="w-8 h-8 rounded-full mr-3 ring-2 ring-slate-700"
+                            />
+                            <div>
+                              <div className="text-sm font-medium text-white hover:text-teal-400 transition-colors duration-200">
+                                {leave.user?.name || 'Unknown Employee'}
+                              </div>
+                              <div className="text-sm text-gray-400">
+                                {leave.user?.email || 'No email'}
+                              </div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-white">{leave.type}</div>
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-700/50 text-gray-300">
+                            {leave.type}
+                          </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-300">
                             {formatDate(leave.startDate)} - {formatDate(leave.endDate)}
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-500 flex items-center mt-1">
+                            <Clock className="w-3 h-3 mr-1" />
                             {calculateDuration(leave.startDate, leave.endDate)} days
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-sm text-gray-300 max-w-xs">
+                          <div className="text-sm text-gray-300 max-w-xs hover:text-white transition-colors duration-200">
                             {leave.reason}
                           </div>
                         </td>
@@ -520,6 +549,7 @@ const LeaveAttendance = () => {
                                   loading={actionLoading === leave.id}
                                   size="sm"
                                   icon={<CheckCircle className="w-3 h-3" />}
+                                  className="hover:bg-green-500/10 hover:border-green-500/30 transition-all duration-200"
                                 >
                                   Approve
                                 </Button>
@@ -530,6 +560,7 @@ const LeaveAttendance = () => {
                                   variant="danger"
                                   size="sm"
                                   icon={<XCircle className="w-3 h-3" />}
+                                  className="hover:bg-red-500/20 transition-all duration-200"
                                 >
                                   Reject
                                 </Button>
@@ -560,17 +591,18 @@ const LeaveAttendance = () => {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Leave & Attendance</h1>
-          <p className="text-gray-400 text-sm">
+          <h1 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Leave & Attendance</h1>
+          <p className="text-gray-400 text-sm flex items-center">
+            <span className="inline-block w-2 h-2 bg-teal-400 rounded-full mr-2 animate-pulse"></span>
             Manage your leave requests and track your attendance history.
           </p>
         </div>
 
         {/* Unified Calendar with Leave Balance */}
-        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-xl overflow-hidden mb-8">
+        <div className="bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl overflow-hidden mb-8 shadow-lg hover:shadow-xl transition-all duration-300">
           <div className="flex flex-col lg:flex-row">
             {/* Calendar Section */}
-            <div className="flex-1 p-3 border-b lg:border-b-0 lg:border-r border-slate-700/30">
+            <div className="flex-1 p-4 border-b lg:border-b-0 lg:border-r border-slate-700/30">
               <LeaveCalendar 
                 compact={true}
                 small={true}
@@ -585,33 +617,33 @@ const LeaveAttendance = () => {
             </div>
             
             {/* Leave Balance Section */}
-            <div className="lg:w-80 p-3">
-              <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+            <div className="lg:w-80 p-4 bg-slate-800/20">
+              <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                 <Clock className="w-4 h-4 text-teal-400" /> Leave Balance
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {leaveBalance.map((balance) => (
-                  <div key={balance.type} className="flex items-center gap-2">
-                    <span className="text-xs text-white w-24 shrink-0">{balance.type}</span>
-                    <div className="flex-1">
-                      <div className="w-full bg-slate-700/50 rounded-full h-1">
-                        <div
-                          className={`h-1 rounded-full transition-all duration-300 ${
-                            (balance.used / balance.total) >= 0.9 ? 'bg-red-500' :
-                            (balance.used / balance.total) >= 0.7 ? 'bg-yellow-500' :
-                            'bg-teal-500'
-                          }`}
-                          style={{ width: `${Math.min((balance.used / balance.total) * 100, 100)}%` }}
-                        />
+                  <div key={balance.type} className="group">
+                    <div className="flex items-center gap-3 mb-1">
+                      <span className="text-xs text-white font-medium w-28 shrink-0 group-hover:text-teal-400 transition-colors duration-200">{balance.type}</span>
+                      <div className="flex items-center gap-1 text-xs shrink-0">
+                        <span className="text-gray-400">{balance.used}/{balance.total}</span>
+                        <span className={`font-semibold px-2 py-0.5 rounded-full ${
+                          balance.remaining <= 2 ? 'bg-red-500/20 text-red-400' :
+                          balance.remaining <= 5 ? 'bg-yellow-500/20 text-yellow-400' :
+                          'bg-green-500/20 text-green-400'
+                        }`}>{balance.remaining}d</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 text-xs shrink-0">
-                      <span className="text-gray-400">{balance.used}/{balance.total}</span>
-                      <span className={`font-semibold ${
-                        balance.remaining <= 2 ? 'text-red-400' :
-                        balance.remaining <= 5 ? 'text-yellow-400' :
-                        'text-green-400'
-                      }`}>{balance.remaining}d</span>
+                    <div className="w-full bg-slate-700/50 rounded-full h-2 overflow-hidden">
+                      <div
+                        className={`h-2 rounded-full transition-all duration-500 hover:opacity-80 ${
+                          (balance.used / balance.total) >= 0.9 ? 'bg-red-500' :
+                          (balance.used / balance.total) >= 0.7 ? 'bg-yellow-500' :
+                          'bg-teal-500'
+                        }`}
+                        style={{ width: `${Math.min((balance.used / balance.total) * 100, 100)}%` }}
+                      />
                     </div>
                   </div>
                 ))}
@@ -658,38 +690,41 @@ const LeaveAttendance = () => {
         {/* Leave Request Form */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-semibold text-white">Request Leave</h2>
+            <h2 className="text-2xl font-semibold text-white flex items-center">
+              <Calendar className="w-6 h-6 mr-2 text-teal-400" />
+              Request Leave
+            </h2>
             <Button
               onClick={() => setShowForm(!showForm)}
               icon={<Plus className="w-4 h-4" />}
+              className="shadow-lg hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300 transform hover:-translate-y-0.5"
             >
               {showForm ? 'Hide Form' : 'New Request'}
             </Button>
           </div>
 
           {showForm && (
-            <Card>
+            <Card className="bg-gradient-to-br from-slate-800/60 to-slate-800/40 border border-slate-700/50">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="type" className="block text-sm font-medium text-gray-300 mb-2">
                       Leave Type *
                     </label>
-                    <select
-                      id="type"
-                      name="type"
+                    <UnifiedDropdown
                       value={formData.type}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 bg-slate-700/60 rounded-xl border border-slate-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
-                      required
-                    >
-                      <option value="">Select leave type</option>
-                      <option value="Annual Leave">Annual Leave</option>
-                      <option value="Sick Leave">Sick Leave</option>
-                      <option value="Personal Leave">Personal Leave</option>
-                      <option value="Maternity Leave">Maternity Leave</option>
-                      <option value="Paternity Leave">Paternity Leave</option>
-                    </select>
+                      onChange={(value) => setFormData(prev => ({ ...prev, type: value }))}
+                      options={[
+                        { value: '', label: 'Select leave type' },
+                        { value: 'Annual Leave', label: 'Annual Leave' },
+                        { value: 'Sick Leave', label: 'Sick Leave' },
+                        { value: 'Personal Leave', label: 'Personal Leave' },
+                        { value: 'Maternity Leave', label: 'Maternity Leave' },
+                        { value: 'Paternity Leave', label: 'Paternity Leave' }
+                      ]}
+                      placeholder="Select leave type"
+                      required={true}
+                    />
                   </div>
 
                   <div>
