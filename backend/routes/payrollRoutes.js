@@ -8,7 +8,8 @@ import {
   assignSalaryToEmployee,
   updateEmployeeSalary
 } from '../payrollController.js';
-import { requireAuth, authorize } from '../middleware/auth.js';
+import { requireAuth } from '../middleware/auth.js';
+import { checkPermission } from '../middleware/permissions.js';
 
 const router = express.Router();
 
@@ -18,15 +19,15 @@ router.use((req, res, next) => {
   next();
 });
 
-// Salary Components - Admin/HR only
-router.get('/salary-components', requireAuth, authorize('admin', 'hr'), getSalaryComponents);
-router.post('/salary-components', requireAuth, authorize('admin', 'hr'), createSalaryComponent);
-router.put('/salary-components/:id', requireAuth, authorize('admin', 'hr'), updateSalaryComponent);
-router.delete('/salary-components/:id', requireAuth, authorize('admin', 'hr'), deleteSalaryComponent);
+// Salary Components - Use granular permissions
+router.get('/salary-components', requireAuth, checkPermission('payroll', 'view'), getSalaryComponents);
+router.post('/salary-components', requireAuth, checkPermission('payroll', 'create'), createSalaryComponent);
+router.put('/salary-components/:id', requireAuth, checkPermission('payroll', 'edit'), updateSalaryComponent);
+router.delete('/salary-components/:id', requireAuth, checkPermission('payroll', 'delete'), deleteSalaryComponent);
 
-// Employee Salaries - Admin/HR can view all, employees see own
-router.get('/employee-salaries', requireAuth, getEmployeeSalaries);
-router.post('/employee-salaries', requireAuth, authorize('admin', 'hr'), assignSalaryToEmployee);
-router.put('/employee-salaries/:id', requireAuth, authorize('admin', 'hr'), updateEmployeeSalary);
+// Employee Salaries - Use granular permissions
+router.get('/employee-salaries', requireAuth, checkPermission('payroll', 'view'), getEmployeeSalaries);
+router.post('/employee-salaries', requireAuth, checkPermission('payroll', 'create'), assignSalaryToEmployee);
+router.put('/employee-salaries/:id', requireAuth, checkPermission('payroll', 'edit'), updateEmployeeSalary);
 
 export default router;

@@ -25,7 +25,17 @@ router.get('/', requireAuth, authorize('admin'), getRoles);
 router.get('/:id', requireAuth, authorize('admin'), getRolePermissions);
 
 // PUT /api/admin/roles/:id/permissions - Update role permissions (admin only)
-router.put('/:id/permissions', requireAuth, authorize('admin'), updateRolePermissions);
+router.put('/:id/permissions', (req, res, next) => {
+  console.log('🎯 PERMISSION UPDATE ROUTE HIT:', req.method, req.url, 'Params:', req.params);
+  console.log('🔑 Auth Header:', req.headers.authorization ? 'Present' : 'Missing');
+  next();
+}, requireAuth, (req, res, next) => {
+  console.log('✅ Auth middleware passed');
+  next();
+}, authorize('admin'), (req, res, next) => {
+  console.log('✅ Admin authorization passed');
+  next();
+}, updateRolePermissions);
 
 // POST /api/admin/roles - Create custom role (admin only)
 router.post('/', requireAuth, authorize('admin'), createCustomRole);

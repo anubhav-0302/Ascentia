@@ -18,6 +18,7 @@ import AuditLogs from './components/AuditLogs';
 import EmployeeProfile from './components/EmployeeProfile';
 import Settings from './components/Settings';
 import PermissionManagement from './components/PermissionManagement';
+import RoleManagementPage from './components/RoleManagementPage';
 import Login from './components/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -96,6 +97,7 @@ function App() {
                       <Route path="/employee/:id" element={<EmployeeProfile />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/permission-management" element={<PermissionManagement />} />
+                      <Route path="/role-management" element={<RoleManagementPage />} />
                       <Route path="/login" element={<Navigate to="/dashboard" replace />} />
                       <Route path="*" element={<Navigate to="/dashboard" replace />} />
                     </Routes>

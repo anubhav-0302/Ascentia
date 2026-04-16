@@ -243,7 +243,7 @@ const Settings: React.FC = () => {
                       }`}
                     >
                       <Shield className="w-4 h-4 mr-3" />
-                      Configure
+                      Role Management
                     </button>
                   )}
                                   </nav>
@@ -557,10 +557,10 @@ const Settings: React.FC = () => {
                   </FadeIn>
                 )}
 
-                {/* Configure Section - Admin Only */}
+                {/* Role Management Section - Admin Only */}
                 {activeSection === 'configure' && isAdmin && (
                   <FadeIn>
-                    <RoleManagement token={useAuthStore.getState().token || ''} />
+                    <RoleManagement token={useAuthStore.getState().token || ''} showHeader={true} />
                   </FadeIn>
                 )}
               </div>

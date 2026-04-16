@@ -12,7 +12,8 @@ import {
   getEmployeeReviews,
   updatePerformanceReview
 } from '../performanceController.js';
-import { requireAuth, authorize } from '../middleware/auth.js';
+import { requireAuth } from '../middleware/auth.js';
+import { checkPermission } from '../middleware/permissions.js';
 
 const router = express.Router();
 
@@ -22,21 +23,21 @@ router.use((req, res, next) => {
   next();
 });
 
-// Performance Cycles - Admin/Manager only
-router.get('/cycles', requireAuth, getPerformanceCycles);
-router.post('/cycles', requireAuth, authorize('admin', 'manager'), createPerformanceCycle);
-router.delete('/cycles/:id', requireAuth, authorize('admin', 'manager'), deletePerformanceCycle);
+// Performance Cycles
+router.get('/cycles', requireAuth, checkPermission('performance', 'view'), getPerformanceCycles);
+router.post('/cycles', requireAuth, checkPermission('performance', 'create'), createPerformanceCycle);
+router.delete('/cycles/:id', requireAuth, checkPermission('performance', 'delete'), deletePerformanceCycle);
 
-// Performance Goals - Admin/Manager can create, employees view own
-router.get('/goals', requireAuth, getPerformanceGoals);
-router.post('/goals', requireAuth, authorize('admin', 'manager'), createPerformanceGoal);
-router.put('/goals/:id', requireAuth, authorize('admin', 'manager'), updatePerformanceGoal);
+// Performance Goals
+router.get('/goals', requireAuth, checkPermission('performance', 'view'), getPerformanceGoals);
+router.post('/goals', requireAuth, checkPermission('performance', 'create'), createPerformanceGoal);
+router.put('/goals/:id', requireAuth, checkPermission('performance', 'edit'), updatePerformanceGoal);
 
-// Performance Reviews - Authenticated users
-router.get('/reviews', requireAuth, getPerformanceReviews);
-router.post('/reviews', requireAuth, authorize('admin', 'manager'), createPerformanceReview);
+// Performance Reviews
+router.get('/reviews', requireAuth, checkPermission('performance', 'view'), getPerformanceReviews);
+router.post('/reviews', requireAuth, checkPermission('performance', 'create'), createPerformanceReview);
 router.post('/reviews/simple', requireAuth, createSimpleReview);
 router.get('/reviews/employee/:employeeId', requireAuth, getEmployeeReviews);
-router.put('/reviews/:id', requireAuth, authorize('admin', 'manager'), updatePerformanceReview);
+router.put('/reviews/:id', requireAuth, checkPermission('performance', 'edit'), updatePerformanceReview);
 
 export default router;

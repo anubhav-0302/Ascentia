@@ -144,7 +144,7 @@ export const getPermissionAuditLog = async (
   token?: string
 ): Promise<AuditLogResponse> => {
   try {
-    let url = `${API_BASE_URL}/admin/permissions/audit?page=${page}&limit=${limit}`;
+    let url = `${API_BASE_URL}/admin/roles/audit/logs?page=${page}&limit=${limit}`;
     if (roleId) {
       url += `&roleId=${roleId}`;
     }

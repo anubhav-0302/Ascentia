@@ -14,7 +14,8 @@ import {
   User,
   Clock,
   Target,
-  Database
+  Database,
+  Shield
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -143,6 +144,12 @@ const Sidebar: React.FC = () => {
           name: 'Permission Management', 
           path: '/permission-management',
           icon: Users,
+          requiredRoles: ['admin']
+        },
+        { 
+          name: 'Role Management', 
+          path: '/role-management',
+          icon: Shield,
           requiredRoles: ['admin']
         },
         { 

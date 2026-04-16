@@ -10,6 +10,7 @@ import {
   exportUserData
 } from '../controllers/settingsController.js';
 import { requireAuth } from '../middleware/auth.js';
+import { checkPermission } from '../middleware/permissions.js';
 
 const router = express.Router();
 
@@ -19,9 +20,9 @@ router.use((req, res, next) => {
   next();
 });
 
-// Settings CRUD - Authenticated users only
-router.get('/', requireAuth, getUserSettings);
-router.put('/', requireAuth, updateUserSettings);
+// Settings CRUD
+router.get('/', requireAuth, checkPermission('settings', 'view'), getUserSettings);
+router.put('/', requireAuth, checkPermission('settings', 'edit'), updateUserSettings);
 
 // Password management - Authenticated users only
 router.post('/change-password', requireAuth, changePassword);

@@ -6,11 +6,12 @@ import PermissionAuditLog from './PermissionAuditLog';
 
 interface RoleManagementProps {
   token: string;
+  showHeader?: boolean;
 }
 
 type TabType = 'roles' | 'audit';
 
-const RoleManagement: React.FC<RoleManagementProps> = ({ token }) => {
+const RoleManagement: React.FC<RoleManagementProps> = ({ token, showHeader = true }) => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [loading, setLoading] = useState(false);
@@ -93,20 +94,22 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ token }) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-white">Role Management</h2>
-          <p className="text-slate-400 mt-1">Configure roles and permissions for your organization</p>
+      {/* Header - Only show if not in standalone page */}
+      {showHeader && (
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-white">Role Management</h2>
+            <p className="text-slate-400 mt-1">Configure roles and permissions for your organization</p>
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition"
+          >
+            <Plus size={18} />
+            New Role
+          </button>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition"
-        >
-          <Plus size={18} />
-          New Role
-        </button>
-      </div>
+      )}
 
       {/* Alerts */}
       {error && (
@@ -145,6 +148,16 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ token }) => {
         >
           Audit Log
         </button>
+        {/* New Role button when header is hidden */}
+        {!showHeader && activeTab === 'roles' && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="ml-auto flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition"
+          >
+            <Plus size={18} />
+            New Role
+          </button>
+        )}
       </div>
 
       {/* Content */}

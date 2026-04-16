@@ -14,21 +14,23 @@ interface PermissionState {
   };
 }
 
-const MODULES = [
-  'payroll',
-  'performance',
-  'timesheet',
-  'leave',
-  'employees',
-  'documents',
-  'reports',
-  'audit',
-  'settings',
-  'users',
-  'kra'
-];
+// Define which actions apply to each module based on actual implementation
+const MODULE_ACTIONS: { [module: string]: string[] } = {
+  payroll: ['view', 'create', 'edit', 'delete'],
+  performance: ['view', 'create', 'edit', 'delete'],
+  timesheet: ['view', 'create', 'edit', 'delete', 'approve'],
+  leave: ['view', 'create', 'edit', 'delete', 'approve'],
+  employees: ['view', 'create', 'edit', 'delete'],
+  documents: ['view', 'create', 'delete'],
+  reports: ['view', 'export'],
+  audit: ['view'],
+  settings: ['view', 'edit'],
+  users: ['view', 'create', 'edit', 'delete'],
+  kra: ['view', 'create', 'edit', 'delete']
+};
 
-const ACTIONS = ['view', 'create', 'edit', 'delete', 'approve'];
+const MODULES = Object.keys(MODULE_ACTIONS);
+const ALL_ACTIONS = Array.from(new Set(Object.values(MODULE_ACTIONS).flat()));
 
 const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ role, token, onSuccess }) => {
   const [permissions, setPermissions] = useState<PermissionState>({});
@@ -55,7 +57,7 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ role, token, onSucc
       const permState: PermissionState = {};
       MODULES.forEach(module => {
         permState[module] = {};
-        ACTIONS.forEach(action => {
+        MODULE_ACTIONS[module].forEach(action => {
           const perm = data.permissionsByModule[module]?.find(p => p.action === action);
           permState[module][action] = perm?.isEnabled ?? false;
         });
@@ -93,7 +95,7 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ role, token, onSucc
       // Build permission updates
       const updates: PermissionUpdate[] = [];
       MODULES.forEach(module => {
-        ACTIONS.forEach(action => {
+        MODULE_ACTIONS[module].forEach(action => {
           if (permissions[module][action] !== originalPermissions[module][action]) {
             updates.push({
               module,
@@ -114,6 +116,8 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ role, token, onSucc
       setOriginalPermissions(JSON.parse(JSON.stringify(permissions)));
       setHasChanges(false);
       setChangeReason('');
+      // Refetch permissions to ensure we have the latest state
+      await fetchPermissions();
       onSuccess();
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
@@ -214,7 +218,7 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ role, token, onSucc
           <thead>
             <tr className="border-b border-slate-700 bg-slate-700/50">
               <th className="px-4 py-3 text-left font-semibold text-white">Module</th>
-              {ACTIONS.map(action => (
+              {ALL_ACTIONS.map(action => (
                 <th key={action} className="px-3 py-3 text-center font-semibold text-white capitalize">
                   {action}
                 </th>
@@ -225,18 +229,32 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ role, token, onSucc
             {MODULES.map(module => (
               <tr key={module} className="hover:bg-slate-700/30 transition">
                 <td className="px-4 py-3 font-medium text-white capitalize">{module}</td>
-                {ACTIONS.map(action => (
-                  <td key={`${module}-${action}`} className="px-3 py-3 text-center">
-                    <label className="inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={permissions[module]?.[action] ?? false}
-                        onChange={() => handleToggle(module, action)}
-                        className="w-4 h-4 rounded border-slate-600 bg-slate-700 accent-teal-500 cursor-pointer"
-                      />
-                    </label>
-                  </td>
-                ))}
+                {ALL_ACTIONS.map(action => {
+                  const hasAction = MODULE_ACTIONS[module].includes(action);
+                  return (
+                    <td key={action} className="px-3 py-3 text-center">
+                      {hasAction ? (
+                        <button
+                          onClick={() => handleToggle(module, action)}
+                          disabled={saving}
+                          className={`w-5 h-5 rounded border-2 transition ${
+                            permissions[module]?.[action]
+                              ? 'bg-teal-500 border-teal-500'
+                              : 'bg-slate-600 border-slate-500 hover:border-slate-400'
+                          } ${saving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        >
+                          {permissions[module]?.[action] && (
+                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </button>
+                      ) : (
+                        <span className="text-slate-600">—</span>
+                      )}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>

@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { uploadDocument, getEmployeeDocuments, deleteDocument, downloadDocument } from '../controllers/documentController.js';
 import { requireAuth } from '../middleware/auth.js';
+import { checkPermission } from '../middleware/permissions.js';
 
 const router = express.Router();
 
@@ -49,13 +50,13 @@ const upload = multer({
 });
 
 // POST /api/documents/upload - Upload a document
-router.post('/upload', requireAuth, upload.single('document'), uploadDocument);
+router.post('/upload', requireAuth, checkPermission('documents', 'create'), upload.single('document'), uploadDocument);
 
 // GET /api/documents/:employeeId - Get all documents for an employee
-router.get('/:employeeId', requireAuth, getEmployeeDocuments);
+router.get('/:employeeId', requireAuth, checkPermission('documents', 'view'), getEmployeeDocuments);
 
 // DELETE /api/documents/:id - Delete a document
-router.delete('/:id', requireAuth, deleteDocument);
+router.delete('/:id', requireAuth, checkPermission('documents', 'delete'), deleteDocument);
 
 // GET /api/documents/:id/download - Download a document
 router.get('/:id/download', requireAuth, downloadDocument);

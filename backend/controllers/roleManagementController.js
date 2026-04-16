@@ -102,9 +102,17 @@ export const getRolePermissions = async (req, res) => {
 // PUT /api/admin/roles/:id/permissions - Update permissions for a role
 export const updateRolePermissions = async (req, res) => {
   try {
+    console.log('🔥 UPDATE ROLE PERMISSIONS REQUEST RECEIVED');
     const { id } = req.params;
     const { permissions, reason } = req.body;
     const adminId = req.user.id;
+    
+    console.log(`📋 Request details:`, {
+      roleId: id,
+      permissionsCount: permissions?.length || 0,
+      reason: reason,
+      adminId: adminId
+    });
 
     // Verify role exists
     const role = await prisma.roleConfig.findUnique({
@@ -136,6 +144,7 @@ export const updateRolePermissions = async (req, res) => {
     const auditLogs = [];
 
     // Update permissions
+    console.log(`🔍 Processing ${permissions.length} permission updates for role ${role.name}`);
     for (const permission of permissions) {
       const existingPerm = role.permissions.find(
         p => p.module === permission.module && p.action === permission.action
@@ -143,6 +152,8 @@ export const updateRolePermissions = async (req, res) => {
 
       if (existingPerm) {
         if (existingPerm.isEnabled !== permission.isEnabled) {
+          console.log(`📝 Updating permission: ${permission.module}.${permission.action} from ${existingPerm.isEnabled} to ${permission.isEnabled}`);
+          
           // Log the change
           auditLogs.push({
             roleId: parseInt(id),
@@ -155,11 +166,14 @@ export const updateRolePermissions = async (req, res) => {
           });
 
           // Update permission
-          await prisma.permission.update({
+          const result = await prisma.permission.update({
             where: { id: existingPerm.id },
             data: { isEnabled: permission.isEnabled }
           });
+          console.log(`✅ Permission updated in DB: ID ${result.id}, isEnabled: ${result.isEnabled}`);
         }
+      } else {
+        console.log(`⚠️ Permission not found: ${permission.module}.${permission.action}`);
       }
     }
 
