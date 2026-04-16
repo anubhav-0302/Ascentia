@@ -9,23 +9,30 @@ import {
   deleteAccount,
   exportUserData
 } from '../controllers/settingsController.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Settings CRUD
-router.get('/', getUserSettings);
-router.put('/', updateUserSettings);
+// Debug logging
+router.use((req, res, next) => {
+  console.log("🔍 SETTINGS ROUTE:", req.method, req.url);
+  next();
+});
 
-// Password management
-router.post('/change-password', changePassword);
+// Settings CRUD - Authenticated users only
+router.get('/', requireAuth, getUserSettings);
+router.put('/', requireAuth, updateUserSettings);
 
-// 2FA management
-router.post('/2fa/setup', setup2FA);
-router.post('/2fa/verify', verifyAndEnable2FA);
-router.delete('/2fa', disable2FA);
+// Password management - Authenticated users only
+router.post('/change-password', requireAuth, changePassword);
 
-// Account management
-router.delete('/account', deleteAccount);
-router.get('/export', exportUserData);
+// 2FA management - Authenticated users only
+router.post('/2fa/setup', requireAuth, setup2FA);
+router.post('/2fa/verify', requireAuth, verifyAndEnable2FA);
+router.delete('/2fa', requireAuth, disable2FA);
+
+// Account management - Authenticated users only
+router.delete('/account', requireAuth, deleteAccount);
+router.get('/export', requireAuth, exportUserData);
 
 export default router;

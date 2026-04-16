@@ -1,11 +1,17 @@
 import express from 'express';
 import { getAllLogs } from '../databaseLogger.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Get all audit logs with pagination
-router.get('/', requireAuth, async (req, res) => {
+// Debug logging
+router.use((req, res, next) => {
+  console.log("🔍 LOGS ROUTE:", req.method, req.url);
+  next();
+});
+
+// Get all audit logs with pagination (admin only)
+router.get('/', requireAuth, authorize('admin'), async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 50;
@@ -104,8 +110,8 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
-// Get log statistics
-router.get('/statistics', requireAuth, async (req, res) => {
+// Get log statistics (admin only)
+router.get('/statistics', requireAuth, authorize('admin'), async (req, res) => {
   try {
     // Get all logs first
     const allLogsResult = await getAllLogs(1, 10000); // Get all logs with high limit

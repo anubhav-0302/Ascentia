@@ -8,18 +8,25 @@ import {
   assignSalaryToEmployee,
   updateEmployeeSalary
 } from '../payrollController.js';
+import { requireAuth, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Salary Components
-router.get('/salary-components', getSalaryComponents);
-router.post('/salary-components', createSalaryComponent);
-router.put('/salary-components/:id', updateSalaryComponent);
-router.delete('/salary-components/:id', deleteSalaryComponent);
+// Debug logging
+router.use((req, res, next) => {
+  console.log("🔍 PAYROLL ROUTE:", req.method, req.url);
+  next();
+});
 
-// Employee Salaries
-router.get('/employee-salaries', getEmployeeSalaries);
-router.post('/employee-salaries', assignSalaryToEmployee);
-router.put('/employee-salaries/:id', updateEmployeeSalary);
+// Salary Components - Admin/HR only
+router.get('/salary-components', requireAuth, authorize('admin', 'hr'), getSalaryComponents);
+router.post('/salary-components', requireAuth, authorize('admin', 'hr'), createSalaryComponent);
+router.put('/salary-components/:id', requireAuth, authorize('admin', 'hr'), updateSalaryComponent);
+router.delete('/salary-components/:id', requireAuth, authorize('admin', 'hr'), deleteSalaryComponent);
+
+// Employee Salaries - Admin/HR can view all, employees see own
+router.get('/employee-salaries', requireAuth, getEmployeeSalaries);
+router.post('/employee-salaries', requireAuth, authorize('admin', 'hr'), assignSalaryToEmployee);
+router.put('/employee-salaries/:id', requireAuth, authorize('admin', 'hr'), updateEmployeeSalary);
 
 export default router;

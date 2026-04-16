@@ -6,22 +6,29 @@ import {
   markAllAsReadController,
   clearNotificationsController
 } from '../notificationController.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// GET /api/notifications - Get user notifications
-router.get('/', getUserNotificationsController);
+// Debug logging
+router.use((req, res, next) => {
+  console.log("🔍 NOTIFICATION ROUTE:", req.method, req.url);
+  next();
+});
 
-// GET /api/notifications/unread-count - Get unread notification count
-router.get('/unread-count', getUnreadCountController);
+// GET /api/notifications - Get user notifications (authenticated users only)
+router.get('/', requireAuth, getUserNotificationsController);
 
-// PUT /api/notifications/:id/read - Mark notification as read
-router.put('/:id/read', markAsReadController);
+// GET /api/notifications/unread-count - Get unread notification count (authenticated users only)
+router.get('/unread-count', requireAuth, getUnreadCountController);
 
-// PUT /api/notifications/read-all - Mark all notifications as read
-router.put('/read-all', markAllAsReadController);
+// PUT /api/notifications/:id/read - Mark notification as read (authenticated users only)
+router.put('/:id/read', requireAuth, markAsReadController);
 
-// DELETE /api/notifications - Clear all notifications
-router.delete('/', clearNotificationsController);
+// PUT /api/notifications/read-all - Mark all notifications as read (authenticated users only)
+router.put('/read-all', requireAuth, markAllAsReadController);
+
+// DELETE /api/notifications - Clear all notifications (authenticated users only)
+router.delete('/', requireAuth, clearNotificationsController);
 
 export default router;

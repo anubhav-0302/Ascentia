@@ -12,24 +12,31 @@ import {
   getEmployeeReviews,
   updatePerformanceReview
 } from '../performanceController.js';
+import { requireAuth, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Performance Cycles
-router.get('/cycles', getPerformanceCycles);
-router.post('/cycles', createPerformanceCycle);
-router.delete('/cycles/:id', deletePerformanceCycle);
+// Debug logging
+router.use((req, res, next) => {
+  console.log("🔍 PERFORMANCE ROUTE:", req.method, req.url);
+  next();
+});
 
-// Performance Goals
-router.get('/goals', getPerformanceGoals);
-router.post('/goals', createPerformanceGoal);
-router.put('/goals/:id', updatePerformanceGoal);
+// Performance Cycles - Admin/Manager only
+router.get('/cycles', requireAuth, getPerformanceCycles);
+router.post('/cycles', requireAuth, authorize('admin', 'manager'), createPerformanceCycle);
+router.delete('/cycles/:id', requireAuth, authorize('admin', 'manager'), deletePerformanceCycle);
 
-// Performance Reviews
-router.get('/reviews', getPerformanceReviews);
-router.post('/reviews', createPerformanceReview);
-router.post('/reviews/simple', createSimpleReview);
-router.get('/reviews/employee/:employeeId', getEmployeeReviews);
-router.put('/reviews/:id', updatePerformanceReview);
+// Performance Goals - Admin/Manager can create, employees view own
+router.get('/goals', requireAuth, getPerformanceGoals);
+router.post('/goals', requireAuth, authorize('admin', 'manager'), createPerformanceGoal);
+router.put('/goals/:id', requireAuth, authorize('admin', 'manager'), updatePerformanceGoal);
+
+// Performance Reviews - Authenticated users
+router.get('/reviews', requireAuth, getPerformanceReviews);
+router.post('/reviews', requireAuth, authorize('admin', 'manager'), createPerformanceReview);
+router.post('/reviews/simple', requireAuth, createSimpleReview);
+router.get('/reviews/employee/:employeeId', requireAuth, getEmployeeReviews);
+router.put('/reviews/:id', requireAuth, authorize('admin', 'manager'), updatePerformanceReview);
 
 export default router;
