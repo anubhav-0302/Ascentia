@@ -79,62 +79,6 @@ const initializeDatabase = async () => {
       console.log("✅ Created default employee:", employeeEmail);
     }
     
-    // Seed sample employees if none exist
-    const employeeCount = await prisma.employee.count();
-    if (employeeCount <= 2) {
-      const sampleEmployees = [
-        {
-          name: 'Sarah Johnson',
-          email: 'sarah.johnson@ascentia.com',
-          role: 'hr',
-          jobTitle: 'HR Manager',
-          department: 'Human Resources',
-          location: 'Main Office'
-        },
-        {
-          name: 'Mike Chen',
-          email: 'mike.chen@ascentia.com',
-          role: 'manager',
-          jobTitle: 'Engineering Manager',
-          department: 'Engineering',
-          location: 'Main Office'
-        },
-        {
-          name: 'Emily Davis',
-          email: 'emily.davis@ascentia.com',
-          role: 'employee',
-          jobTitle: 'Product Designer',
-          department: 'Design',
-          location: 'Remote'
-        },
-        {
-          name: 'James Wilson',
-          email: 'james.wilson@ascentia.com',
-          role: 'employee',
-          jobTitle: 'QA Engineer',
-          department: 'Quality Assurance',
-          location: 'Main Office'
-        }
-      ];
-      
-      for (const emp of sampleEmployees) {
-        const exists = await prisma.employee.findFirst({
-          where: { email: emp.email }
-        });
-        
-        if (!exists) {
-          const hashedPassword = await bcrypt.hash('password123', 10);
-          await prisma.employee.create({
-            data: {
-              ...emp,
-              password: hashedPassword,
-              status: 'active'
-            }
-          });
-          console.log(`✅ Created sample employee: ${emp.name}`);
-        }
-      }
-    }
     
     console.log("✅ Database initialized successfully");
   } catch (error) {
