@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { StandardLayout } from './StandardLayout';
-import { User, Mail, Calendar, MapPin, Briefcase, Building, Edit, Trash2, Clock, AlertCircle } from 'lucide-react';
+import { User, Mail, Calendar, MapPin, Briefcase, Building, Edit, Trash2, Clock, AlertCircle, FileText, Download, Upload, X } from 'lucide-react';
 import Card from './Card';
 import { PageTransition, FadeIn } from './PageTransition';
 import { useEmployeeStore } from '../store/useEmployeeStore';
@@ -12,6 +12,8 @@ import Button from './Button';
 import StatusBadge from './StatusBadge';
 import { EnhancedModal } from './EnhancedModal';
 import { employeeApi, type Employee, type UpdateEmployeeRequest } from '../api/employeeApi';
+import { documentsApi } from '../api/documentsApi';
+import { changePassword, uploadProfilePicture, setupTwoFactor, disableTwoFactor } from '../api/userApi';
 import toast from 'react-hot-toast';
 
 const EmployeeProfile: React.FC = () => {
@@ -22,6 +24,10 @@ const EmployeeProfile: React.FC = () => {
   const isAdmin = useIsAdmin();
   const { employees, fetchEmployees } = useEmployeeStore();
   
+  // If no ID provided (e.g., /profile route), use current user's ID
+  const employeeId = id || user?.id?.toString();
+  const isOwnProfile = !id || (user && parseInt(id) === user.id);
+  
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,15 +35,29 @@ const EmployeeProfile: React.FC = () => {
   const [leaveLoading, setLeaveLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [uploadingDocument, setUploadingDocument] = useState(false);
+  
+  // Password change and 2FA states (only for own profile)
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [authLoading, setAuthLoading] = useState(false);
+  const [twoFactorSetupData, setTwoFactorSetupData] = useState<any>(null);
 
   // Find employee from store or fetch if not available
   useEffect(() => {
     const loadEmployee = async () => {
-      if (!id) return;
+      if (!employeeId) return;
       
       setError(null); // Reset error state
-      const employeeId = parseInt(id);
-      if (isNaN(employeeId)) {
+      const empId = parseInt(employeeId);
+      if (isNaN(empId)) {
         setError('Invalid employee ID');
         setLoading(false);
         return;
@@ -90,7 +110,7 @@ const EmployeeProfile: React.FC = () => {
     };
 
     loadEmployee();
-  }, [id, location.key]); // Add location.key to handle browser back/forward navigation
+  }, [employeeId, employees, fetchEmployees]); // Add location.key to handle browser back/forward navigation
 
   // Handle browser navigation (back/forward buttons)
   useEffect(() => {
@@ -189,11 +209,194 @@ const EmployeeProfile: React.FC = () => {
       await employeeApi.updateEmployee(employee.id, data);
       toast.success('Employee updated successfully');
       setShowEditModal(false);
-      await fetchEmployees(); // Refresh employee data
+      // Refresh employee data
+      const response = await employeeApi.getEmployee(employee.id);
+      if (response && response.data) {
+        setEmployee(response.data);
+      }
     } catch (error: any) {
       toast.error(error.message || 'Failed to update employee');
     } finally {
       setEditLoading(false);
+    }
+  };
+
+  // Fetch documents
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      if (!employee) return;
+      
+      setDocumentsLoading(true);
+      try {
+        const response = await documentsApi.getEmployeeDocuments(employee.id);
+        if (response.success) {
+          setDocuments(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch documents:', error);
+      } finally {
+        setDocumentsLoading(false);
+      }
+    };
+
+    fetchDocuments();
+  }, [employee]);
+
+  // Handle document upload
+  const handleDocumentUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !employee) return;
+
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size must be less than 10MB');
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'jpg', 'jpeg', 'png', 'gif'];
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    if (!fileExtension || !allowedTypes.includes(fileExtension)) {
+      toast.error('Invalid file type. Allowed types: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, JPG, PNG, GIF');
+      return;
+    }
+
+    setUploadingDocument(true);
+    try {
+      const response = await documentsApi.upload(employee.id, file);
+      if (response.success) {
+        toast.success('Document uploaded successfully');
+        // Refresh documents list
+        const docsResponse = await documentsApi.getEmployeeDocuments(employee.id);
+        if (docsResponse.success) {
+          setDocuments(docsResponse.data);
+        }
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to upload document');
+    } finally {
+      setUploadingDocument(false);
+      // Clear the input
+      event.target.value = '';
+    }
+  };
+
+  // Handle document delete
+  const handleDeleteDocument = async (documentId: number) => {
+    if (!employee) return;
+
+    if (!window.confirm('Are you sure you want to delete this document?')) {
+      return;
+    }
+
+    try {
+      const response = await documentsApi.delete(documentId);
+      if (response.success) {
+        toast.success('Document deleted successfully');
+        // Refresh documents list
+        const docsResponse = await documentsApi.getEmployeeDocuments(employee.id);
+        if (docsResponse.success) {
+          setDocuments(docsResponse.data);
+        }
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to delete document');
+    }
+  };
+
+  // Handle document download
+  const handleDownloadDocument = async (documentId: number, fileName: string) => {
+    try {
+      await documentsApi.download(documentId, fileName);
+    } catch (error: any) {
+      toast.error('Failed to download document');
+    }
+  };
+
+  // Password change handler (only for own profile)
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    
+    if (passwordForm.newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return;
+    }
+    
+    if (!passwordForm.currentPassword) {
+      toast.error('Current password is required');
+      return;
+    }
+    
+    setAuthLoading(true);
+    try {
+      await changePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword
+      });
+      toast.success('Password changed successfully');
+      setShowPasswordModal(false);
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to change password');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // 2FA setup handler (only for own profile)
+  const handle2FASetup = async () => {
+    if (employee?.twoFactorEnabled) {
+      // Disable 2FA
+      setAuthLoading(true);
+      try {
+        await disableTwoFactor();
+        toast.success('2FA disabled successfully');
+        if (employee) {
+          const updatedEmployee = { ...employee, twoFactorEnabled: false };
+          setEmployee(updatedEmployee);
+        }
+      } catch (error: any) {
+        toast.error(error.message || 'Failed to disable 2FA');
+      } finally {
+        setAuthLoading(false);
+      }
+    } else {
+      // Enable 2FA
+      setAuthLoading(true);
+      try {
+        const response = await setupTwoFactor();
+        setTwoFactorSetupData(response);
+        setShow2FAModal(true);
+      } catch (error: any) {
+        toast.error(error.message || 'Failed to setup 2FA');
+      } finally {
+        setAuthLoading(false);
+      }
+    }
+  };
+
+  // Profile picture upload handler (only for own profile)
+  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !employee) return;
+
+    setAuthLoading(true);
+    try {
+      const response = await uploadProfilePicture(employee.id, file);
+      if (response.profilePicture) {
+        const updatedEmployee = { ...employee, profilePicture: response.profilePicture };
+        setEmployee(updatedEmployee);
+        toast.success('Profile picture updated successfully');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to upload profile picture');
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -248,8 +451,7 @@ const EmployeeProfile: React.FC = () => {
     );
   }
 
-  const isOwnProfile = user?.id === employee.id;
-
+  
   return (
     <PageTransition>
       <StandardLayout 
@@ -420,6 +622,55 @@ const EmployeeProfile: React.FC = () => {
                     </div>
                   </Card>
                 )}
+
+                {/* Account Security Section - Only for own profile */}
+                {isOwnProfile && (
+                  <Card className="bg-slate-800/60 rounded-2xl p-6 shadow-lg">
+                    <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
+                      <User className="w-5 h-5 mr-2 text-teal-400" />
+                      Account Security
+                    </h2>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
+                        <div>
+                          <p className="text-white font-medium">Password</p>
+                          <p className="text-gray-400 text-sm">
+                            {employee?.lastPasswordChange 
+                              ? `Last changed ${new Date(employee.lastPasswordChange).toLocaleDateString()}`
+                              : 'Never changed'
+                            }
+                          </p>
+                        </div>
+                        <button 
+                          onClick={() => setShowPasswordModal(true)}
+                          className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg text-sm transition-colors"
+                        >
+                          Change
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
+                        <div>
+                          <p className="text-white font-medium">Two-Factor Authentication</p>
+                          <p className="text-gray-400 text-sm">
+                            {employee?.twoFactorEnabled ? 'Enabled - Extra security active' : 'Add an extra layer of security'}
+                          </p>
+                        </div>
+                        <button 
+                          onClick={handle2FASetup}
+                          disabled={authLoading}
+                          className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+                            employee?.twoFactorEnabled 
+                              ? 'bg-red-600 hover:bg-red-500 text-white' 
+                              : 'bg-teal-600 hover:bg-teal-500 text-white'
+                          } ${authLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          {authLoading ? 'Processing...' : (employee?.twoFactorEnabled ? 'Disable' : 'Enable')}
+                        </button>
+                      </div>
+                    </div>
+                  </Card>
+                )}
               </div>
 
               {/* Leave Summary Section */}
@@ -480,6 +731,96 @@ const EmployeeProfile: React.FC = () => {
                     </div>
                   </Card>
                 )}
+
+                {/* Documents Section */}
+                <Card className="bg-slate-800/60 rounded-2xl p-6 shadow-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-white flex items-center">
+                      <FileText className="w-5 h-5 mr-2 text-teal-400" />
+                      Documents
+                    </h3>
+                    {(isAdmin || isOwnProfile) && (
+                      <>
+                        <input
+                          ref={(input) => {
+                            if (input) {
+                              window.documentUploadInput = input;
+                            }
+                          }}
+                          type="file"
+                          onChange={handleDocumentUpload}
+                          accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif"
+                          className="hidden"
+                          disabled={uploadingDocument}
+                        />
+                        <Button
+                          size="sm"
+                          disabled={uploadingDocument}
+                          className="flex items-center"
+                          onClick={() => {
+                            const input = window.documentUploadInput;
+                            if (input) {
+                              input.click();
+                            }
+                          }}
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          {uploadingDocument ? 'Uploading...' : 'Upload'}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+
+                  {documentsLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-500 mx-auto"></div>
+                      <p className="text-gray-400 text-sm mt-2">Loading documents...</p>
+                    </div>
+                  ) : documents.length === 0 ? (
+                    <div className="text-center py-8">
+                      <FileText className="w-12 h-12 text-gray-500 mx-auto mb-3" />
+                      <p className="text-gray-400">No documents uploaded</p>
+                      {(isAdmin || isOwnProfile) && (
+                        <p className="text-gray-500 text-sm mt-2">Click the Upload button to add documents</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {documents.map((doc) => (
+                        <div key={doc.id} className="p-3 bg-slate-700/30 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white font-medium truncate">{doc.originalName}</p>
+                              <p className="text-gray-400 text-sm">
+                                {new Date(doc.uploadedAt).toLocaleDateString()} • {(doc.fileSize / 1024).toFixed(1)} KB
+                              </p>
+                            </div>
+                            <div className="flex items-center space-x-2 ml-4">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => handleDownloadDocument(doc.id, doc.originalName)}
+                                className="p-2"
+                              >
+                                <Download className="w-4 h-4" />
+                              </Button>
+                              {(isAdmin || isOwnProfile) && (
+                                <Button
+                                  size="sm"
+                                  variant="danger"
+                                  onClick={() => handleDeleteDocument(doc.id)}
+                                  className="p-2"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
               </div>
             </div>
           </div>
@@ -499,6 +840,117 @@ const EmployeeProfile: React.FC = () => {
           loading={editLoading}
         />
       </EnhancedModal>
+
+      {/* Password Change Modal - Only for own profile */}
+      {isOwnProfile && (
+        <EnhancedModal
+          isOpen={showPasswordModal}
+          onClose={() => setShowPasswordModal(false)}
+          title="Change Password"
+        >
+          <form onSubmit={handlePasswordChange} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Current Password</label>
+              <input
+                type="password"
+                value={passwordForm.currentPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">New Password</label>
+              <input
+                type="password"
+                value={passwordForm.newPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                required
+                minLength={6}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Confirm New Password</label>
+              <input
+                type="password"
+                value={passwordForm.confirmPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                required
+                minLength={6}
+              />
+            </div>
+            <div className="flex space-x-3 pt-4">
+              <Button 
+                type="button" 
+                onClick={() => setShowPasswordModal(false)}
+                variant="secondary"
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                loading={authLoading}
+                className="flex-1"
+                loadingText="Changing..."
+              >
+                Change Password
+              </Button>
+            </div>
+          </form>
+        </EnhancedModal>
+      )}
+
+      {/* 2FA Setup Modal - Only for own profile */}
+      {isOwnProfile && twoFactorSetupData && (
+        <EnhancedModal
+          isOpen={show2FAModal}
+          onClose={() => setShow2FAModal(false)}
+          title="Setup Two-Factor Authentication"
+        >
+          <div className="space-y-4">
+            <div className="text-center">
+              <div className="w-32 h-32 mx-auto mb-4">
+                {/* QR Code would go here - for now showing placeholder */}
+                <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
+                  <span className="text-gray-500">QR Code</span>
+                </div>
+              </div>
+              <p className="text-gray-300 mb-2">Scan this QR code with your authenticator app</p>
+              <p className="text-gray-400 text-sm">Or enter this code manually:</p>
+              <code className="block bg-slate-700 px-3 py-2 rounded mt-2 text-teal-400">
+                {twoFactorSetupData.secret || 'ABC123DEF456'}
+              </code>
+            </div>
+            <div className="flex space-x-3 pt-4">
+              <Button 
+                onClick={() => setShow2FAModal(false)}
+                variant="secondary"
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  // Complete 2FA setup
+                  setShow2FAModal(false);
+                  setTwoFactorSetupData(null);
+                  if (employee) {
+                    const updatedEmployee = { ...employee, twoFactorEnabled: true };
+                    setEmployee(updatedEmployee);
+                  }
+                  toast.success('2FA enabled successfully');
+                }}
+                className="flex-1"
+              >
+                Complete Setup
+              </Button>
+            </div>
+          </div>
+        </EnhancedModal>
+      )}
     </PageTransition>
   );
 };

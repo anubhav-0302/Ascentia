@@ -9,6 +9,21 @@ interface User {
   email: string;
   role: string;
   createdAt: string;
+  phone?: string;
+  address?: string;
+  department?: string;
+  jobTitle?: string;
+  manager?: {
+    id: number;
+    name: string;
+    role: string;
+    department: string;
+  };
+  profilePicture?: string;
+  twoFactorEnabled?: boolean;
+  lastPasswordChange?: string;
+  location?: string;
+  status?: string;
 }
 
 // Auth store interface

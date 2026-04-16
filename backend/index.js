@@ -12,6 +12,7 @@ import performanceRoutes from './routes/performanceRoutes.js';
 import payrollRoutes from './routes/payrollRoutes.js';
 import logsRoutes from './routes/logsRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
+import documentRoutes from './routes/documentRoutes.js';
 import { requireAuth } from './middleware/auth.js';
 import { initializeLeaveData } from './leaveStoreDB.js';
 // import { setupScheduledBackups } from './scripts/backup-system.js';
@@ -99,6 +100,7 @@ app.use('/api/performance', requireAuth, performanceRoutes);
 app.use('/api/payroll', requireAuth, payrollRoutes);
 app.use('/api/logs', requireAuth, logsRoutes);
 app.use('/api/settings', requireAuth, settingsRoutes);
+app.use('/api/documents', requireAuth, documentRoutes);
 
 // Start server
 app.listen(PORT, async () => {

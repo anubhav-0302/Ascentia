@@ -15,7 +15,6 @@ import PayrollBenefits from './components/PayrollBenefits';
 import Recruiting from './components/Recruiting';
 import Reports from './components/Reports';
 import AuditLogs from './components/AuditLogs';
-import Profile from './components/Profile';
 import EmployeeProfile from './components/EmployeeProfile';
 import Settings from './components/Settings';
 import PermissionManagement from './components/PermissionManagement';
@@ -93,7 +92,7 @@ function App() {
                       <Route path="/recruiting" element={<Recruiting />} />
                       <Route path="/reports" element={<Reports />} />
                       <Route path="/audit-logs" element={<AuditLogs />} />
-                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/profile" element={<EmployeeProfile />} />
                       <Route path="/employee/:id" element={<EmployeeProfile />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/permission-management" element={<PermissionManagement />} />

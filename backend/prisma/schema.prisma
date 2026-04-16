@@ -39,6 +39,7 @@ model Employee {
   reviews             PerformanceReview[]
   approvedTimesheets  Timesheet[]             @relation("TimesheetApprover")
   timesheets          Timesheet[]
+  documents           Document[]
 }
 
 model PasswordChangeHistory {
@@ -153,4 +154,17 @@ model EmployeeSalary {
   updatedAt     DateTime        @updatedAt
   component     SalaryComponent @relation(fields: [componentId], references: [id])
   employee      Employee        @relation(fields: [employeeId], references: [id])
+}
+
+model Document {
+  id          Int      @id @default(autoincrement())
+  employeeId  Int
+  fileName    String
+  originalName String
+  fileUrl     String
+  fileSize    Int
+  uploadedAt  DateTime @default(now())
+  employee    Employee @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
 }
