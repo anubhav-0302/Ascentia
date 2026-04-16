@@ -20,13 +20,21 @@ import {
   type AssignSalaryRequest
 } from '../api/payrollApi';
 import { useEmployeeStore } from '../store/useEmployeeStore';
+import { useModalWithUnsavedChanges } from '../hooks/useModalWithUnsavedChanges';
 
 const PayrollBenefits: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('overview');
+  // Initialize activeTab from localStorage, default to 'overview'
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('payroll-active-tab') || 'overview';
+    }
+    return 'overview';
+  });
   const [selectedPayPeriod, setSelectedPayPeriod] = useState('current');
   const isAdmin = useIsAdmin();
-  const { employees } = useEmployeeStore();
-  
+  const { employees: storeEmployees, fetchEmployees } = useEmployeeStore();
+  const [employees, setEmployees] = useState(storeEmployees || []);
+
   // Salary components state
   const [salaryComponents, setSalaryComponents] = useState<SalaryComponent[]>([]);
   const [employeeSalaries, setEmployeeSalaries] = useState<any[]>([]);
@@ -57,19 +65,112 @@ const PayrollBenefits: React.FC = () => {
     endDate: ''
   });
 
-  // Fetch salary components on component mount
+  // Persist activeTab to localStorage
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('payroll-active-tab', activeTab);
+    }
+  }, [activeTab]);
+
+  // Fetch employees on component mount
+  useEffect(() => {
+    fetchEmployees();
+  }, [fetchEmployees]);
+
+  // Sync store employees with local state
+  useEffect(() => {
+    if (storeEmployees && storeEmployees.length > 0) {
+      setEmployees(storeEmployees);
+      console.log('👥 Employees synced from store:', storeEmployees.length);
+    }
+  }, [storeEmployees]);
+
+  // Fetch salary components on component mount and when tabs change
+  useEffect(() => {
+    fetchSalaryComponents();
     if (activeTab === 'salary-components') {
-      fetchSalaryComponents();
       fetchEmployeeSalaries();
     }
   }, [activeTab]);
+
+  // Fetch components and ensure employees are loaded when assign modal opens
+  useEffect(() => {
+    if (showAssignModal) {
+      fetchSalaryComponents();
+      console.log('📋 Employees available:', employees.length);
+      if (employees.length === 0) {
+        console.warn('⚠️ No employees loaded - they should be available from useEmployeeStore');
+      }
+    }
+  }, [showAssignModal, employees]);
+
+  // Detect unsaved changes in component form
+  const isComponentFormChanged = () => {
+    if (editingComponent) {
+      return (
+        componentForm.name !== editingComponent.name ||
+        componentForm.type !== editingComponent.type ||
+        componentForm.category !== editingComponent.category ||
+        componentForm.amount !== editingComponent.amount ||
+        componentForm.isPercentage !== editingComponent.isPercentage ||
+        componentForm.isTaxable !== editingComponent.isTaxable
+      );
+    }
+    // For new component, check if any field has been filled
+    return (
+      componentForm.name.trim() !== '' ||
+      componentForm.amount !== 0
+    );
+  };
+
+  // Detect unsaved changes in assign form
+  const isAssignFormChanged = () => {
+    return (
+      assignForm.employeeId !== 0 ||
+      assignForm.componentId !== 0 ||
+      assignForm.amount !== 0 ||
+      assignForm.effectiveDate.trim() !== ''
+    );
+  };
+
+  // Modal close handlers with unsaved changes warning
+  const { handleClose: handleCloseComponentModal } = useModalWithUnsavedChanges({
+    isOpen: showComponentModal,
+    onClose: () => {
+      setShowComponentModal(false);
+      setEditingComponent(null);
+      setComponentForm({
+        name: '',
+        type: 'Earning',
+        category: 'Basic',
+        amount: 0,
+        isPercentage: false,
+        isTaxable: true
+      });
+    },
+    hasUnsavedChanges: isComponentFormChanged()
+  });
+
+  const { handleClose: handleCloseAssignModal } = useModalWithUnsavedChanges({
+    isOpen: showAssignModal,
+    onClose: () => {
+      setShowAssignModal(false);
+      setAssignForm({
+        employeeId: 0,
+        componentId: 0,
+        amount: 0,
+        effectiveDate: '',
+        endDate: ''
+      });
+    },
+    hasUnsavedChanges: isAssignFormChanged()
+  });
 
   const fetchSalaryComponents = async () => {
     try {
       setLoading(true);
       const response = await getSalaryComponents();
-      setSalaryComponents(response.data || []);
+      setSalaryComponents(Array.isArray(response) ? response : response?.data || []);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch salary components');
     } finally {
@@ -80,7 +181,7 @@ const PayrollBenefits: React.FC = () => {
   const fetchEmployeeSalaries = async () => {
     try {
       const response = await getEmployeeSalaries();
-      setEmployeeSalaries(response.data || []);
+      setEmployeeSalaries(Array.isArray(response) ? response : response?.data || []);
     } catch (err: any) {
       console.error('Failed to fetch employee salaries:', err);
     }
@@ -91,6 +192,7 @@ const PayrollBenefits: React.FC = () => {
     
     try {
       setLoading(true);
+      setError(null);
       await createSalaryComponent(componentForm);
       setSuccess('Salary component created successfully');
       setShowComponentModal(false);
@@ -102,9 +204,26 @@ const PayrollBenefits: React.FC = () => {
         isPercentage: false,
         isTaxable: true
       });
-      fetchSalaryComponents();
+      
+      // Close modal first, then switch tab and fetch
+      setTimeout(() => {
+        setActiveTab('salary-components');
+        // Fetch directly without relying on useEffect
+        (async () => {
+          try {
+            const response = await getSalaryComponents();
+            // getSalaryComponents returns the array directly (response.data from API)
+            const componentsArray = response;
+            setSalaryComponents(componentsArray);
+            console.log('✅ Components loaded after creation:', componentsArray.length);
+          } catch (err: any) {
+            console.error('Failed to fetch components:', err);
+          }
+        })();
+      }, 100);
     } catch (err: any) {
       setError(err.message || 'Failed to create salary component');
+      console.error('Create component error:', err);
     } finally {
       setLoading(false);
     }
@@ -825,17 +944,21 @@ const PayrollBenefits: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Amount *
+                      Amount {componentForm.isPercentage && '(0-100)'} *
                     </label>
                     <Input
                       type="number"
                       step="0.01"
                       min="0"
+                      max={componentForm.isPercentage ? 100 : undefined}
                       value={componentForm.amount}
                       onChange={(e) => setComponentForm(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
-                      placeholder="Amount or percentage"
+                      placeholder={componentForm.isPercentage ? "Enter percentage (0-100)" : "Enter amount"}
                       required
                     />
+                    {componentForm.isPercentage && componentForm.amount > 100 && (
+                      <p className="text-red-400 text-sm mt-1">Percentage must be between 0 and 100</p>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -869,18 +992,7 @@ const PayrollBenefits: React.FC = () => {
                   <div className="flex justify-end space-x-4">
                     <Button
                       type="button"
-                      onClick={() => {
-                        setShowComponentModal(false);
-                        setEditingComponent(null);
-                        setComponentForm({
-                          name: '',
-                          type: 'Earning',
-                          category: 'Basic',
-                          amount: 0,
-                          isPercentage: false,
-                          isTaxable: true
-                        });
-                      }}
+                      onClick={handleCloseComponentModal}
                       variant="secondary"
                     >
                       Cancel
@@ -978,16 +1090,7 @@ const PayrollBenefits: React.FC = () => {
                   <div className="flex justify-end space-x-4">
                     <Button
                       type="button"
-                      onClick={() => {
-                        setShowAssignModal(false);
-                        setAssignForm({
-                          employeeId: 0,
-                          componentId: 0,
-                          amount: 0,
-                          effectiveDate: '',
-                          endDate: ''
-                        });
-                      }}
+                      onClick={handleCloseAssignModal}
                       variant="secondary"
                     >
                       Cancel

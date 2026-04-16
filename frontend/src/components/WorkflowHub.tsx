@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StandardLayout } from './StandardLayout';
 import { GitBranch, Plus, Play, Pause, Edit, Trash2, Settings, BarChart3, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 import Card from './Card';
@@ -16,7 +16,20 @@ interface Workflow {
 }
 
 const WorkflowHub: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('workflows');
+  // Initialize activeTab from localStorage, default to 'workflows'
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('workflow-active-tab') || 'workflows';
+    }
+    return 'workflows';
+  });
+
+  // Persist activeTab to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('workflow-active-tab', activeTab);
+    }
+  }, [activeTab]);
 
   const workflows: Workflow[] = [];
 

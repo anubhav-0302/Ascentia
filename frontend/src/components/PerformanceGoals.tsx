@@ -23,6 +23,7 @@ import { useIsAdmin } from '../store/useAuthStore';
 import { useEmployeeStore } from '../store/useEmployeeStore';
 import { useNotificationStore } from '../store/notificationStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { useModalWithUnsavedChanges } from '../hooks/useModalWithUnsavedChanges';
 import Button from './Button';
 import Input from './Input';
 import StatusBadge from './StatusBadge';
@@ -49,7 +50,21 @@ const PerformanceGoals: React.FC = () => {
   const { user } = useAuthStore();
   const { employees, fetchEmployees } = useEmployeeStore();
   const { addNotification } = useNotificationStore();
-  const [activeTab, setActiveTab] = useState('my-goals');
+  
+  // Initialize activeTab from localStorage, default to 'my-goals'
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('performance-active-tab') || 'my-goals';
+    }
+    return 'my-goals';
+  });
+
+  // Persist activeTab to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('performance-active-tab', activeTab);
+    }
+  }, [activeTab]);
   const [cycles, setCycles] = useState<PerformanceCycle[]>([]);
   const [goals, setGoals] = useState<PerformanceGoal[]>([]);
   const [reviews, setReviews] = useState<PerformanceReview[]>([]);
@@ -103,6 +118,104 @@ const PerformanceGoals: React.FC = () => {
   
   // Filtered employees based on user role
   const [filteredEmployees, setFilteredEmployees] = useState<any[]>([]);
+
+  // Detect unsaved changes in cycle form
+  const isCycleFormChanged = () => {
+    return (
+      cycleForm.name.trim() !== '' ||
+      cycleForm.description.trim() !== '' ||
+      cycleForm.startDate.trim() !== ''
+    );
+  };
+
+  // Detect unsaved changes in goal form
+  const isGoalFormChanged = () => {
+    return (
+      goalForm.title.trim() !== '' ||
+      goalForm.description.trim() !== '' ||
+      goalForm.targetDate.trim() !== ''
+    );
+  };
+
+  // Detect unsaved changes in review form
+  const isReviewFormChanged = () => {
+    return (
+      reviewForm.comments.trim() !== '' ||
+      reviewForm.rating !== 3
+    );
+  };
+
+  // Detect unsaved changes in KRA form
+  const isKraFormChanged = () => {
+    return (
+      kraForm.title.trim() !== '' ||
+      kraForm.description.trim() !== '' ||
+      kraForm.targetValue.trim() !== ''
+    );
+  };
+
+  // Modal close handlers with unsaved changes warning
+  const { handleClose: handleCloseCycleModal } = useModalWithUnsavedChanges({
+    isOpen: showCycleModal,
+    onClose: () => {
+      setShowCycleModal(false);
+      setCycleForm({
+        name: '',
+        description: '',
+        startDate: '',
+        endDate: ''
+      });
+    },
+    hasUnsavedChanges: isCycleFormChanged()
+  });
+
+  const { handleClose: handleCloseGoalModal } = useModalWithUnsavedChanges({
+    isOpen: showGoalModal,
+    onClose: () => {
+      setShowGoalModal(false);
+      setEditingGoal(null);
+      setGoalForm({
+        cycleId: 0,
+        employeeId: 0,
+        title: '',
+        description: '',
+        targetDate: ''
+      });
+    },
+    hasUnsavedChanges: isGoalFormChanged()
+  });
+
+  const { handleClose: handleCloseReviewModal } = useModalWithUnsavedChanges({
+    isOpen: showReviewModal,
+    onClose: () => {
+      setShowReviewModal(false);
+      setReviewForm({
+        cycleId: 0,
+        goalId: 0,
+        employeeId: 0,
+        type: 'Self',
+        rating: 3,
+        comments: ''
+      });
+    },
+    hasUnsavedChanges: isReviewFormChanged()
+  });
+
+  const { handleClose: handleCloseKraModal } = useModalWithUnsavedChanges({
+    isOpen: showKraFormModal,
+    onClose: () => {
+      setShowKraFormModal(false);
+      setSelectedGoalForKra(null);
+      setKraForm({
+        title: '',
+        description: '',
+        targetValue: '',
+        weightage: 1.0,
+        dueDate: ''
+      });
+    },
+    hasUnsavedChanges: isKraFormChanged()
+  });
 
   const fetchCycles = async () => {
     try {
@@ -949,7 +1062,7 @@ const PerformanceGoals: React.FC = () => {
                 <div className="flex justify-end space-x-4">
                   <Button
                     type="button"
-                    onClick={() => setShowCycleModal(false)}
+                    onClick={handleCloseCycleModal}
                     variant="secondary"
                   >
                     Cancel
@@ -1052,11 +1165,7 @@ const PerformanceGoals: React.FC = () => {
                 <div className="flex justify-end space-x-4">
                   <Button
                     type="button"
-                    onClick={() => {
-                      setShowGoalModal(false);
-                      setEditingGoal(null);
-                      setGoalForm({ cycleId: 0, employeeId: 0, title: '', description: '', targetDate: '' });
-                    }}
+                    onClick={handleCloseGoalModal}
                     variant="secondary"
                   >
                     Cancel
@@ -1136,10 +1245,7 @@ const PerformanceGoals: React.FC = () => {
                 <div className="flex justify-end space-x-4">
                   <Button
                     type="button"
-                    onClick={() => {
-                      setShowReviewModal(false);
-                      setReviewForm({ cycleId: 0, goalId: 0, employeeId: 0, type: 'Self', rating: 3, comments: '' });
-                    }}
+                    onClick={handleCloseReviewModal}
                     variant="secondary"
                   >
                     Cancel
@@ -1206,10 +1312,7 @@ const PerformanceGoals: React.FC = () => {
                 <div className="flex justify-end space-x-4">
                   <Button
                     type="button"
-                    onClick={() => {
-                      setShowKraFormModal(false);
-                      setKraForm({ title: '', description: '', targetValue: '', weightage: 1.0, dueDate: '' });
-                    }}
+                    onClick={handleCloseKraModal}
                     variant="secondary"
                   >
                     Cancel

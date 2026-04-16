@@ -39,6 +39,8 @@ const createSalaryComponent = async (req, res) => {
   try {
     const { name, type, category, amount, isPercentage, isTaxable } = req.body;
     
+    console.log(`📝 Creating component: name=${name}, type=${type}, amount=${amount}, isPercentage=${isPercentage} (type: ${typeof isPercentage})`);
+    
     if (!name || !type || !category || amount === undefined) {
       return res.status(400).json({ 
         success: false, 
@@ -60,7 +62,14 @@ const createSalaryComponent = async (req, res) => {
       });
     }
     
-    if (isPercentage && (amount < 0 || amount > 100)) {
+    // Convert isPercentage to boolean (handle string values from form data)
+    // Only treat as percentage if explicitly true
+    const isPercentageBoolean = isPercentage === true || isPercentage === 'true' || isPercentage === 1 || isPercentage === '1';
+    console.log(`✓ isPercentageBoolean=${isPercentageBoolean}, amount=${amount}, raw isPercentage=${isPercentage}`);
+    
+    // Only validate percentage range if it's actually marked as percentage
+    if (isPercentageBoolean === true && (amount < 0 || amount > 100)) {
+      console.log(`❌ Validation failed: percentage ${amount} is not between 0-100`);
       return res.status(400).json({ 
         success: false, 
         message: 'Percentage amount must be between 0 and 100' 
@@ -137,7 +146,12 @@ const updateSalaryComponent = async (req, res) => {
         });
       }
       
-      if (isPercentage && (amount < 0 || amount > 100)) {
+      // Convert isPercentage to boolean (handle string values from form data)
+      // Only treat as percentage if explicitly true
+      const isPercentageBoolean = isPercentage === true || isPercentage === 'true' || isPercentage === 1 || isPercentage === '1';
+      
+      // Only validate percentage range if it's actually marked as percentage
+      if (isPercentageBoolean === true && (amount < 0 || amount > 100)) {
         return res.status(400).json({ 
           success: false, 
           message: 'Percentage amount must be between 0 and 100' 

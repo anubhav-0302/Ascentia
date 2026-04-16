@@ -16,6 +16,7 @@ import {
 import { useIsAdmin, useCanApproveTimesheet, useAuthStore } from '../store/useAuthStore';
 import { useEmployeeStore } from '../store/useEmployeeStore';
 import { useNotificationStore } from '../store/notificationStore';
+import { useModalWithUnsavedChanges } from '../hooks/useModalWithUnsavedChanges';
 import Button from './Button';
 import Input from './Input';
 import StatusBadge from './StatusBadge';
@@ -47,7 +48,21 @@ const TimesheetEntry: React.FC = () => {
   
   // Debug authentication state
   // console.log('🔐 Auth state:', { user, token: token ? 'exists' : 'missing', isAuthenticated });
-  const [activeTab, setActiveTab] = useState('my-timesheet');
+  
+  // Initialize activeTab from localStorage, default to 'my-timesheet'
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('timesheet-active-tab') || 'my-timesheet';
+    }
+    return 'my-timesheet';
+  });
+
+  // Persist activeTab to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('timesheet-active-tab', activeTab);
+    }
+  }, [activeTab]);
   const [timesheets, setTimesheets] = useState<TimesheetEntryType[]>([]);
   const [pagination, setPagination] = useState<any>(null);
   const [loading, setLoading] = useState(false);

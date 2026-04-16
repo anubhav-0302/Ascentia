@@ -1,0 +1,20 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔍 Running regression tests before commit..."
+echo ""
+
+# Run the regression test script
+node scripts/regression-test.js
+
+# Check if regression tests passed
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Regression tests failed! Commit aborted."
+  echo "Please fix the issues and try again."
+  exit 1
+fi
+
+echo ""
+echo "✅ All regression tests passed!"
+echo "Proceeding with commit..."

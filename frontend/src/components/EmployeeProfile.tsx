@@ -15,6 +15,7 @@ import { employeeApi, type Employee, type UpdateEmployeeRequest } from '../api/e
 import { documentsApi } from '../api/documentsApi';
 import { changePassword, uploadProfilePicture, setupTwoFactor, disableTwoFactor } from '../api/userApi';
 import { performanceReviewApi } from '../api/performanceReviewApi';
+import PayslipView from './PayslipView';
 import toast from 'react-hot-toast';
 
 const EmployeeProfile: React.FC = () => {
@@ -959,6 +960,12 @@ const EmployeeProfile: React.FC = () => {
                 </Card>
               </div>
             </div>
+
+            {/* Salary Details Section */}
+            <PayslipView 
+              employeeId={employee.id} 
+              employeeName={employee.name}
+            />
           </div>
         </FadeIn>
       </StandardLayout>
