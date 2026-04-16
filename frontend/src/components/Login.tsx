@@ -74,14 +74,17 @@ const Login = () => {
       <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-8 w-full max-w-md border border-slate-700/50 shadow-xl">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-teal-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i className="fas fa-users text-white text-2xl"></i>
+          <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-teal-500/30">
+            <span className="text-white font-bold text-2xl">A</span>
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2">
-            Welcome Back
+          <h1 className="text-3xl font-bold text-white mb-2">
+            Ascentia
           </h1>
-          <p className="text-gray-400">
-            Sign in to access your HR dashboard
+          <p className="text-teal-400 font-medium mb-1">
+            Smart HR Management Platform
+          </p>
+          <p className="text-gray-400 text-sm">
+            Sign in to access your dashboard
           </p>
         </div>
 

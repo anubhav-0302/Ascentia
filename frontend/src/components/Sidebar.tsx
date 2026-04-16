@@ -175,7 +175,7 @@ const Sidebar: React.FC = () => {
       {/* Logo */}
       <div className="p-6 border-b border-slate-800/50">
         <h1 className="text-xl font-bold text-white flex items-center">
-          <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center mr-3">
+          <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-teal-500/30">
             <span className="text-white font-bold text-sm">A</span>
           </div>
           Ascentia

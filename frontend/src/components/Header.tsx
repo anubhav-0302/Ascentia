@@ -44,15 +44,7 @@ const Header: React.FC<HeaderProps> = () => {
 
   return (
     <header className="h-16 bg-slate-900/80 backdrop-blur-lg border-b border-slate-800/50 fixed top-0 right-0 left-64 z-40">
-      <div className="h-full px-6 flex items-center justify-between">
-        {/* Left Section - Visual balance with subtle accent */}
-        <div className="flex-1 flex items-center">
-          <div className="w-px h-8 bg-gradient-to-b from-transparent via-slate-700 to-transparent"></div>
-        </div>
-
-        {/* Center Divider */}
-        <div className="h-8 w-px bg-gradient-to-b from-transparent via-slate-700 to-transparent mx-4"></div>
-
+      <div className="h-full px-6 flex items-center justify-end">
         {/* Right Section - Enhanced visual presentation */}
         <div className="flex items-center space-x-3">
           {/* Header Search */}
