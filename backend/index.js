@@ -16,6 +16,7 @@ import settingsRoutes from './routes/settingsRoutes.js';
 import documentRoutes from './routes/documentRoutes.js';
 import roleManagementRoutes from './routes/roleManagementRoutes.js';
 import dataProtectionRoutes from './routes/dataProtectionRoutes.js';
+import analyticsRoutes from './routes/analyticsRoutes.js';
 import { requireAuth } from './middleware/auth.js';
 import { initializeLeaveData } from './leaveStoreDB.js';
 import { setupScheduledBackups } from './scripts/backup-system.js';
@@ -131,6 +132,7 @@ app.use('/api/settings', requireAuth, settingsRoutes);
 app.use('/api/documents', requireAuth, documentRoutes);
 app.use('/api/admin/roles', roleManagementRoutes);
 app.use('/api/data-protection', requireAuth, dataProtectionRoutes);
+app.use('/api/analytics', requireAuth, analyticsRoutes);
 
 // Start server
 app.listen(PORT, async () => {

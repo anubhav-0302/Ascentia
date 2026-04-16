@@ -25,6 +25,7 @@ import ActivityFeed from "./ActivityFeed";
 import LayoutWrapper from "./LayoutWrapper";
 import Button from "./Button";
 import StatusBadge from "./StatusBadge";
+import AdvancedAnalytics from "./AdvancedAnalytics";
 
 // Chart color schemes
 const DEPARTMENT_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
@@ -792,6 +793,13 @@ const Dashboard = () => {
 
       {/* Activity Feed */}
       <ActivityFeed />
+
+      {/* Advanced Analytics - Only for Admin, HR, Manager */}
+      {(isAdmin || userRole === 'hr' || userRole === 'manager') && (
+        <div className="mt-8">
+          <AdvancedAnalytics />
+        </div>
+      )}
     </LayoutWrapper>
   );
 };
