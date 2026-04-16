@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StandardLayout } from './StandardLayout';
-import { Settings as SettingsIcon, Bell, Shield, Palette, Database, Moon, Sun, Mail, Smartphone, Calendar, AlertCircle, Eye, EyeOff, BarChart3 } from 'lucide-react';
+import { Settings as SettingsIcon, Bell, Shield, Palette, Database, Moon, Sun, Mail, Smartphone, Calendar, AlertCircle, Eye, BarChart3 } from 'lucide-react';
 import Card from './Card';
 import UnifiedDropdown from './UnifiedDropdown';
 import Button from './Button';
@@ -26,7 +26,7 @@ const Settings: React.FC = () => {
   const [deletePassword, setDeletePassword] = useState('');
   const isAdmin = useIsAdmin();
   
-  const { settings, loading, error, fetchSettings, updateSetting, resetSettings, changePassword, setup2FA, verify2FA, deleteAccount, exportData } = useSettingsStore();
+  const { settings, loading, fetchSettings, updateSetting, resetSettings, changePassword, setup2FA, verify2FA, deleteAccount, exportData } = useSettingsStore();
 
   // Helper to safely get setting values
   function getSetting<T>(key: keyof UserSettings, defaultValue: T): T {
@@ -571,7 +571,7 @@ const Settings: React.FC = () => {
 
       {/* Password Change Modal */}
       {showPasswordModal && (
-        <Modal onClose={() => setShowPasswordModal(false)}>
+        <Modal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)}>
           <h3 className="text-lg font-semibold text-white mb-4">Change Password</h3>
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
             <div>
@@ -631,7 +631,7 @@ const Settings: React.FC = () => {
 
       {/* Delete Account Modal */}
       {showDeleteModal && (
-        <Modal onClose={() => setShowDeleteModal(false)}>
+        <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
           <h3 className="text-lg font-semibold text-white mb-4 text-red-400">Delete Account</h3>
           <div className="space-y-4">
             <p className="text-gray-300">
@@ -684,7 +684,7 @@ const Settings: React.FC = () => {
 
       {/* 2FA Setup Modal */}
       {show2FAModal && twoFactorData && (
-        <Modal onClose={() => setShow2FAModal(false)}>
+        <Modal isOpen={show2FAModal} onClose={() => setShow2FAModal(false)}>
           <h3 className="text-lg font-semibold text-white mb-4">Setup Two-Factor Authentication</h3>
           <div className="space-y-4">
             <div>
