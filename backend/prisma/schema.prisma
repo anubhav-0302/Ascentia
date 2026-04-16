@@ -34,7 +34,7 @@ model Employee {
   leaveRequests       LeaveRequest[]
   passwordChangesMade PasswordChangeHistory[] @relation("PasswordChanger")
   passwordChanges     PasswordChangeHistory[]
-  goals               PerformanceGoal[]
+  goals               PerformanceGoal[]       @relation("EmployeeGoals")
   writtenReviews      PerformanceReview[]     @relation("PerformanceReviewer")
   reviews             PerformanceReview[]
   approvedTimesheets  Timesheet[]             @relation("TimesheetApprover")
@@ -105,27 +105,44 @@ model PerformanceGoal {
   status      String              @default("Active")
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
-  employee    Employee            @relation(fields: [employeeId], references: [id])
+  employee    Employee            @relation("EmployeeGoals", fields: [employeeId], references: [id])
   cycle       PerformanceCycle    @relation(fields: [cycleId], references: [id])
   reviews     PerformanceReview[]
+  kras        KRA[]
+}
+
+model KRA {
+  id            Int       @id @default(autoincrement())
+  goalId        Int
+  title         String
+  description   String?
+  targetValue   String?
+  actualValue   String?
+  weightage     Float     @default(1.0)
+  status        String    @default("Pending")
+  dueDate       DateTime?
+  completedDate DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  goal          PerformanceGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
 }
 
 model PerformanceReview {
   id         Int              @id @default(autoincrement())
-  cycleId    Int
-  goalId     Int
+  cycleId    Int?
+  goalId     Int?
   employeeId Int
   reviewerId Int
   type       String
   rating     Int
-  comments   String?
+  feedback   String?          @map("comments")
   status     String           @default("Pending")
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
   reviewer   Employee         @relation("PerformanceReviewer", fields: [reviewerId], references: [id])
   employee   Employee         @relation(fields: [employeeId], references: [id])
-  goal       PerformanceGoal  @relation(fields: [goalId], references: [id])
-  cycle      PerformanceCycle @relation(fields: [cycleId], references: [id])
+  goal       PerformanceGoal? @relation(fields: [goalId], references: [id])
+  cycle      PerformanceCycle? @relation(fields: [cycleId], references: [id])
 }
 
 model SalaryComponent {

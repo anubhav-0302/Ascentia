@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { 
   getPerformanceCycles, 
   getPerformanceGoals, 
   createPerformanceCycle, 
+  deletePerformanceCycle,
   createPerformanceGoal, 
   updatePerformanceGoal,
   getPerformanceReviews, 
@@ -16,6 +17,8 @@ import {
   type CreateGoalRequest,
   type CreateReviewRequest
 } from '../api/performanceApi';
+import { kraApi } from '../api/kraApi';
+import type { KRA } from '../api/kraApi';
 import { useIsAdmin } from '../store/useAuthStore';
 import { useEmployeeStore } from '../store/useEmployeeStore';
 import { useNotificationStore } from '../store/notificationStore';
@@ -44,7 +47,7 @@ import {
 const PerformanceGoals: React.FC = () => {
   const isAdmin = useIsAdmin();
   const { user } = useAuthStore();
-  const { employees } = useEmployeeStore();
+  const { employees, fetchEmployees } = useEmployeeStore();
   const { addNotification } = useNotificationStore();
   const [activeTab, setActiveTab] = useState('my-goals');
   const [cycles, setCycles] = useState<PerformanceCycle[]>([]);
@@ -58,8 +61,12 @@ const PerformanceGoals: React.FC = () => {
   const [showCycleModal, setShowCycleModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showKraFormModal, setShowKraFormModal] = useState(false);
   const [editingGoal, setEditingGoal] = useState<PerformanceGoal | null>(null);
   const [editingReview, setEditingReview] = useState<PerformanceReview | null>(null);
+  const [selectedGoalForKra, setSelectedGoalForKra] = useState<PerformanceGoal | null>(null);
+  const [kras, setKras] = useState<KRA[]>([]);
+  const [expandedGoalId, setExpandedGoalId] = useState<number | null>(null);
 
   // Form states
   const [cycleForm, setCycleForm] = useState<CreateCycleRequest>({
@@ -86,16 +93,25 @@ const PerformanceGoals: React.FC = () => {
     comments: ''
   });
 
-  // Fetch data on component mount and when tab changes
-  useEffect(() => {
-    fetchCycles();
-    fetchData();
-  }, [activeTab]);
+  const [kraForm, setKraForm] = useState({
+    title: '',
+    description: '',
+    targetValue: '',
+    weightage: 1.0,
+    dueDate: ''
+  });
+  
+  // Filtered employees based on user role
+  const [filteredEmployees, setFilteredEmployees] = useState<any[]>([]);
 
   const fetchCycles = async () => {
     try {
+      console.log('Fetching cycles...');
       const response = await getPerformanceCycles();
-      setCycles(response.data || []);
+      console.log('Cycles response:', response);
+      // response is now the Array(3) directly from getPerformanceCycles()
+      setCycles(response || []);
+      console.log('Cycles set in state:', response);
     } catch (err: any) {
       console.error('Failed to fetch cycles:', err);
     }
@@ -107,14 +123,34 @@ const PerformanceGoals: React.FC = () => {
       setError(null);
 
       if (activeTab === 'my-goals' || activeTab === 'all-goals') {
-        const params = activeTab === 'my-goals' ? { employeeId: user?.id } : {};
+        let params: any = {};
+        
+        if (activeTab === 'my-goals') {
+          // Employees see only their own goals
+          params.employeeId = user?.id;
+        } else if (activeTab === 'all-goals') {
+          // Managers see goals for their team members
+          // Admins see all goals
+          // Don't filter by employeeId - let backend handle it
+        }
+        
         const goalsResponse = await getPerformanceGoals(params);
-        setGoals(goalsResponse.data || []);
+        let filteredGoals = goalsResponse || [];
+        
+        // Additional filtering on frontend for managers viewing all-goals
+        if (activeTab === 'all-goals' && user?.role === 'manager') {
+          const teamMemberIds = employees
+            .filter(emp => emp.manager?.id === user?.id)
+            .map(emp => emp.id);
+          filteredGoals = filteredGoals.filter(goal => teamMemberIds.includes(goal.employeeId));
+        }
+        
+        setGoals(filteredGoals);
       }
 
       if (activeTab === 'reviews') {
         const reviewsResponse = await getPerformanceReviews();
-        setReviews(reviewsResponse.data || []);
+        setReviews(reviewsResponse || []);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to fetch data');
@@ -122,6 +158,39 @@ const PerformanceGoals: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Fetch employees on component mount
+  useEffect(() => {
+    if (employees.length === 0) {
+      fetchEmployees();
+    }
+  }, []);
+
+  // Fetch data on component mount and when tab changes
+  useEffect(() => {
+    fetchCycles();
+    fetchData();
+  }, [activeTab]);
+
+  // Debug: Track cycles state changes
+  useEffect(() => {
+    console.log('Cycles state updated:', cycles);
+  }, [cycles]);
+
+  // Filter employees based on user role
+  useEffect(() => {
+    if (isAdmin) {
+      // Admins see all employees
+      setFilteredEmployees(employees);
+    } else if (user?.role === 'manager') {
+      // Managers see only their team members (employees who report to them)
+      const teamMembers = employees.filter(emp => emp.manager?.id === user?.id);
+      setFilteredEmployees(teamMembers);
+    } else {
+      // Regular employees see only themselves
+      setFilteredEmployees(user ? [user] : []);
+    }
+  }, [employees, user, isAdmin]);
 
   const handleCreateCycle = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,11 +209,43 @@ const PerformanceGoals: React.FC = () => {
     }
   };
 
+  const handleDeleteCycle = async (cycleId: number) => {
+    try {
+      setLoading(true);
+      await deletePerformanceCycle(cycleId);
+      toast.success('Performance cycle deleted successfully');
+      fetchCycles();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete performance cycle');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCreateGoal = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate form
+    if (!goalForm.cycleId || goalForm.cycleId === 0) {
+      setError('Please select a cycle');
+      return;
+    }
+    if (!goalForm.employeeId || goalForm.employeeId === 0) {
+      setError('Please select an employee');
+      return;
+    }
+    if (!goalForm.title.trim()) {
+      setError('Please enter a goal title');
+      return;
+    }
+    if (!goalForm.targetDate) {
+      setError('Please select a target date');
+      return;
+    }
+    
     try {
       setLoading(true);
+      setError(null);
       await createPerformanceGoal(goalForm);
       setSuccess('Performance goal created successfully');
       setShowGoalModal(false);
@@ -162,8 +263,19 @@ const PerformanceGoals: React.FC = () => {
     
     if (!editingGoal) return;
     
+    // Validate form
+    if (!goalForm.title.trim()) {
+      setError('Please enter a goal title');
+      return;
+    }
+    if (!goalForm.targetDate) {
+      setError('Please select a target date');
+      return;
+    }
+    
     try {
       setLoading(true);
+      setError(null);
       await updatePerformanceGoal(editingGoal.id, {
         title: goalForm.title,
         description: goalForm.description,
@@ -220,6 +332,66 @@ const PerformanceGoals: React.FC = () => {
       comments: ''
     });
     setShowReviewModal(true);
+  };
+
+  const handleViewKras = async (goal: PerformanceGoal) => {
+    try {
+      setLoading(true);
+      const kraList = await kraApi.getKRAsByGoal(goal.id);
+      setKras(kraList || []);
+      setSelectedGoalForKra(goal);
+      setExpandedGoalId(expandedGoalId === goal.id ? null : goal.id);
+    } catch (err: any) {
+      toast.error('Failed to fetch KRAs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenKraForm = (goal: PerformanceGoal) => {
+    setSelectedGoalForKra(goal);
+    setKraForm({ title: '', description: '', targetValue: '', weightage: 1.0, dueDate: '' });
+    setShowKraFormModal(true);
+  };
+
+  const handleCreateKra = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedGoalForKra) return;
+
+    try {
+      setLoading(true);
+      await kraApi.createKRA({
+        goalId: selectedGoalForKra.id,
+        title: kraForm.title,
+        description: kraForm.description,
+        targetValue: kraForm.targetValue,
+        weightage: kraForm.weightage,
+        dueDate: kraForm.dueDate
+      });
+      toast.success('KRA created successfully');
+      setKraForm({ title: '', description: '', targetValue: '', weightage: 1.0, dueDate: '' });
+      setShowKraFormModal(false);
+      await handleViewKras(selectedGoalForKra);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to create KRA');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteKra = async (kraId: number) => {
+    try {
+      setLoading(true);
+      await kraApi.deleteKRA(kraId);
+      toast.success('KRA deleted successfully');
+      if (selectedGoalForKra) {
+        await handleViewKras(selectedGoalForKra);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete KRA');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getRatingStars = (rating: number) => {
@@ -324,7 +496,7 @@ const PerformanceGoals: React.FC = () => {
               My Goals
             </button>
             
-            {(isAdmin || activeTab === 'all-goals') && (
+            {(isAdmin || user?.role === 'manager') && (
               <button
                 onClick={() => setActiveTab('all-goals')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -333,7 +505,20 @@ const PerformanceGoals: React.FC = () => {
                     : 'border-transparent text-gray-400 hover:text-gray-300'
                 }`}
               >
-              All Goals
+              {isAdmin ? 'All Goals' : 'Team Goals'}
+              </button>
+            )}
+            
+            {isAdmin && (
+              <button
+                onClick={() => setActiveTab('cycles')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'cycles'
+                    ? 'border-teal-500 text-teal-400'
+                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                }`}
+              >
+              Cycles
               </button>
             )}
             
@@ -350,29 +535,25 @@ const PerformanceGoals: React.FC = () => {
           </nav>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-4 mb-6">
-          {isAdmin && (
-            <Button
-              onClick={() => setShowCycleModal(true)}
-              icon={<Plus className="w-4 h-4" />}
-            >
-              Create Cycle
-            </Button>
-          )}
-          
-          <Button
-            onClick={() => setShowGoalModal(true)}
-            icon={<Plus className="w-4 h-4" />}
-          >
-            Add Goal
-          </Button>
-        </div>
 
         {/* Goals List */}
         {(activeTab === 'my-goals' || activeTab === 'all-goals') && (
-          <Card className="overflow-hidden">
-            {loading ? (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-white">
+                {activeTab === 'my-goals' ? 'My Goals' : 'All Goals'}
+              </h2>
+              {activeTab === 'all-goals' && (isAdmin || user?.role === 'manager') && (
+                <Button 
+                  onClick={() => setShowGoalModal(true)}
+                  icon={<Plus className="w-4 h-4" />}
+                >
+                  Create Goal
+                </Button>
+              )}
+            </div>
+            <Card className="overflow-hidden">
+              {loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
                 <span className="ml-3 text-gray-400">Loading goals...</span>
@@ -412,7 +593,8 @@ const PerformanceGoals: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-slate-700/50">
                     {goals.map((goal) => (
-                      <tr key={goal.id} className="hover:bg-slate-700/40 transition-colors">
+                      <React.Fragment key={goal.id}>
+                        <tr className="hover:bg-slate-700/40 transition-colors">
                         <td className="px-6 py-4">
                           <div>
                             <div className="text-sm font-medium text-white">
@@ -467,15 +649,84 @@ const PerformanceGoals: React.FC = () => {
                             >
                               Review
                             </Button>
+                            <Button
+                              onClick={() => handleViewKras(goal)}
+                              size="sm"
+                              variant={expandedGoalId === goal.id ? 'primary' : 'secondary'}
+                            >
+                              KRAs
+                            </Button>
                           </div>
                         </td>
                       </tr>
+                      {expandedGoalId === goal.id && (
+                        <tr className="bg-slate-700/20">
+                          <td colSpan={6} className="px-6 py-4">
+                            <div className="space-y-4">
+                              <div className="flex justify-between items-center">
+                                <h4 className="text-sm font-semibold text-white">Key Result Areas (KRAs)</h4>
+                                {(goal.employeeId === user?.id || isAdmin) && (
+                                  <Button
+                                    onClick={() => handleOpenKraForm(goal)}
+                                    size="sm"
+                                    icon={<Plus className="w-3 h-3" />}
+                                  >
+                                    Add KRA
+                                  </Button>
+                                )}
+                              </div>
+                              {kras.length === 0 ? (
+                                <p className="text-sm text-gray-400">No KRAs added yet</p>
+                              ) : (
+                                <div className="space-y-2">
+                                  {kras.map((kra) => (
+                                    <div key={kra.id} className="bg-slate-700/40 p-3 rounded">
+                                      <div className="flex justify-between items-start">
+                                        <div className="flex-1">
+                                          <div className="text-sm font-medium text-white">{kra.title}</div>
+                                          {kra.description && (
+                                            <div className="text-xs text-gray-400 mt-1">{kra.description}</div>
+                                          )}
+                                          <div className="text-xs text-gray-500 mt-2">
+                                            Target: {kra.targetValue} | Weight: {kra.weightage * 100}% | Status: {kra.status}
+                                          </div>
+                                        </div>
+                                        <div className="flex space-x-2">
+                                          {user?.role === 'manager' && goal.employeeId !== user?.id && (
+                                            <Button
+                                              size="sm"
+                                              variant="secondary"
+                                            >
+                                              Review
+                                            </Button>
+                                          )}
+                                          {(goal.employeeId === user?.id || isAdmin) && (
+                                            <Button
+                                              onClick={() => handleDeleteKra(kra.id)}
+                                              size="sm"
+                                              variant="danger"
+                                            >
+                                              Delete
+                                            </Button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>
               </div>
             )}
-          </Card>
+            </Card>
+          </div>
         )}
 
         {/* Reviews List */}
@@ -564,6 +815,77 @@ const PerformanceGoals: React.FC = () => {
           </Card>
         )}
 
+        {/* Cycles Section - Admin Only */}
+        {activeTab === 'cycles' && isAdmin && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-white">Performance Cycles</h2>
+              <Button 
+                onClick={() => setShowCycleModal(true)}
+                icon={<Plus className="w-4 h-4" />}
+              >
+                Create Cycle
+              </Button>
+            </div>
+
+            {cycles.length === 0 ? (
+              <Card className="p-12 text-center">
+                <Calendar className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+                <p className="text-gray-400 text-lg">No performance cycles found</p>
+                <p className="text-gray-500 text-sm mt-2">Create your first performance cycle to get started</p>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {cycles.map((cycle) => (
+                  <Card key={cycle.id} className="p-6 hover:shadow-lg transition-shadow">
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-lg font-semibold text-white">{cycle.name}</h3>
+                      <div className="flex items-center space-x-2">
+                        <StatusBadge status={cycle.status} />
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Delete cycle "${cycle.name}"? This action cannot be undone.`)) {
+                              handleDeleteCycle(cycle.id);
+                            }
+                          }}
+                          className="p-1 hover:bg-red-500/20 rounded transition-colors"
+                          title="Delete cycle"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-400 hover:text-red-300" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {cycle.description && (
+                      <p className="text-gray-400 text-sm mb-4">{cycle.description}</p>
+                    )}
+                    
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center text-gray-400">
+                        <Calendar className="w-4 h-4 mr-2" />
+                        Start: {new Date(cycle.startDate).toLocaleDateString()}
+                      </div>
+                      <div className="flex items-center text-gray-400">
+                        <Calendar className="w-4 h-4 mr-2" />
+                        End: {new Date(cycle.endDate).toLocaleDateString()}
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4 pt-4 border-t border-slate-700 flex justify-between text-sm">
+                      <span className="text-gray-400">
+                        {cycle.goals?.length || 0} Goals
+                      </span>
+                      <span className="text-gray-400">
+                        {cycle.reviews?.length || 0} Reviews
+                      </span>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Create Cycle Modal */}
         {showCycleModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -644,8 +966,8 @@ const PerformanceGoals: React.FC = () => {
           </div>
         )}
 
-        {/* Create/Edit Goal Modal */}
-        {showGoalModal && (
+        {/* Create/Edit Goal Modal - Only for admins and managers */}
+        {showGoalModal && (isAdmin || user?.role === 'manager') && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <Card className="w-full max-w-md p-6">
               <h3 className="text-lg font-semibold text-white mb-4">
@@ -680,7 +1002,7 @@ const PerformanceGoals: React.FC = () => {
                     onChange={(value) => setGoalForm(prev => ({ ...prev, employeeId: parseInt(value as string) }))}
                     options={[
                       { value: '', label: 'Select an employee' },
-                      ...employees.map(emp => ({ value: emp.id, label: emp.name }))
+                      ...filteredEmployees.map(emp => ({ value: emp.id, label: emp.name }))
                     ]}
                     showLabel={false}
                     required={true}
@@ -827,6 +1149,76 @@ const PerformanceGoals: React.FC = () => {
                     loading={loading}
                   >
                     Submit Review
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          </div>
+        )}
+
+        {/* Add KRA Modal */}
+        {showKraFormModal && selectedGoalForKra && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-md p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Add Key Result Area (KRA)</h3>
+              
+              <form onSubmit={handleCreateKra} className="space-y-4">
+                <Input
+                  label="KRA Title *"
+                  value={kraForm.title}
+                  onChange={(e) => setKraForm({ ...kraForm, title: e.target.value })}
+                  placeholder="e.g., Complete Project X"
+                  required
+                />
+
+                <Input
+                  label="Description"
+                  value={kraForm.description}
+                  onChange={(e) => setKraForm({ ...kraForm, description: e.target.value })}
+                  placeholder="Detailed description of the KRA"
+                />
+
+                <Input
+                  label="Target Value *"
+                  value={kraForm.targetValue}
+                  onChange={(e) => setKraForm({ ...kraForm, targetValue: e.target.value })}
+                  placeholder="e.g., 100%, 50 units, $10,000"
+                  required
+                />
+
+                <Input
+                  label="Weightage (%)"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={kraForm.weightage.toString()}
+                  onChange={(e) => setKraForm({ ...kraForm, weightage: parseFloat(e.target.value) || 1.0 })}
+                />
+
+                <Input
+                  label="Due Date"
+                  type="date"
+                  value={kraForm.dueDate}
+                  onChange={(e) => setKraForm({ ...kraForm, dueDate: e.target.value })}
+                />
+
+                <div className="flex justify-end space-x-4">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setShowKraFormModal(false);
+                      setKraForm({ title: '', description: '', targetValue: '', weightage: 1.0, dueDate: '' });
+                    }}
+                    variant="secondary"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    loading={loading}
+                  >
+                    Add KRA
                   </Button>
                 </div>
               </form>

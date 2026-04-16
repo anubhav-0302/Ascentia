@@ -124,6 +124,11 @@ export const createPerformanceCycle = async (data: CreateCycleRequest) => {
   return response.data;
 };
 
+export const deletePerformanceCycle = async (cycleId: number) => {
+  const response = await apiClient.delete(`/performance/cycles/${cycleId}`);
+  return response;
+};
+
 // Performance Goals
 export const getPerformanceGoals = async (params?: {
   cycleId?: number;
@@ -140,7 +145,7 @@ export const getPerformanceGoals = async (params?: {
     : '/performance/goals';
   
   const response = await apiClient.get(url);
-  return response.data;
+  return response.data || [];
 };
 
 export const createPerformanceGoal = async (data: CreateGoalRequest) => {
@@ -175,7 +180,7 @@ export const getPerformanceReviews = async (params?: {
     : '/performance/reviews';
   
   const response = await apiClient.get(url);
-  return response.data;
+  return response.data || [];
 };
 
 export const createPerformanceReview = async (data: CreateReviewRequest) => {

@@ -14,6 +14,7 @@ import { EnhancedModal } from './EnhancedModal';
 import { employeeApi, type Employee, type UpdateEmployeeRequest } from '../api/employeeApi';
 import { documentsApi } from '../api/documentsApi';
 import { changePassword, uploadProfilePicture, setupTwoFactor, disableTwoFactor } from '../api/userApi';
+import { performanceReviewApi } from '../api/performanceReviewApi';
 import toast from 'react-hot-toast';
 
 const EmployeeProfile: React.FC = () => {
@@ -49,6 +50,17 @@ const EmployeeProfile: React.FC = () => {
   });
   const [authLoading, setAuthLoading] = useState(false);
   const [twoFactorSetupData, setTwoFactorSetupData] = useState<any>(null);
+  
+  // Performance Reviews state
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewForm, setReviewForm] = useState({
+    rating: 5,
+    feedback: '',
+    type: 'General'
+  });
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   // Find employee from store or fetch if not available
   useEffect(() => {
@@ -241,6 +253,60 @@ const EmployeeProfile: React.FC = () => {
 
     fetchDocuments();
   }, [employee]);
+
+  // Fetch performance reviews
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!employee) return;
+      
+      setReviewsLoading(true);
+      try {
+        const response = await performanceReviewApi.getEmployeeReviews(employee.id);
+        if (response.success) {
+          setReviews(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch reviews:', error);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+
+    fetchReviews();
+  }, [employee]);
+
+  // Handle review submission
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!employee) return;
+    
+    setSubmittingReview(true);
+    try {
+      const response = await performanceReviewApi.createReview(
+        employee.id,
+        reviewForm.rating,
+        reviewForm.feedback,
+        reviewForm.type
+      );
+      
+      if (response.success) {
+        toast.success('Performance review submitted successfully');
+        setShowReviewModal(false);
+        setReviewForm({ rating: 5, feedback: '', type: 'General' });
+        
+        // Refresh reviews
+        const reviewsResponse = await performanceReviewApi.getEmployeeReviews(employee.id);
+        if (reviewsResponse.success) {
+          setReviews(reviewsResponse.data);
+        }
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to submit review');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   // Handle document upload
   const handleDocumentUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -671,6 +737,76 @@ const EmployeeProfile: React.FC = () => {
                     </div>
                   </Card>
                 )}
+
+                {/* Performance Reviews Section */}
+                <Card className="bg-slate-800/60 rounded-2xl p-6 shadow-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-white flex items-center">
+                      <Calendar className="w-5 h-5 mr-2 text-teal-400" />
+                      Performance Reviews
+                    </h3>
+                    {(isAdmin || user?.role === 'manager') && !isOwnProfile && (
+                      <Button
+                        size="sm"
+                        onClick={() => setShowReviewModal(true)}
+                      >
+                        Add Review
+                      </Button>
+                    )}
+                  </div>
+
+                  {reviewsLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-500 mx-auto"></div>
+                      <p className="text-gray-400 text-sm mt-2">Loading reviews...</p>
+                    </div>
+                  ) : reviews.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Calendar className="w-12 h-12 text-gray-500 mx-auto mb-3" />
+                      <p className="text-gray-400">No performance reviews yet</p>
+                      {(isAdmin || user?.role === 'manager') && !isOwnProfile && (
+                        <p className="text-gray-500 text-sm mt-2">Click "Add Review" to provide feedback</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {reviews.map((review) => (
+                        <div key={review.id} className="p-4 bg-slate-700/30 rounded-lg">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <p className="text-white font-medium">{review.reviewer.name}</p>
+                              <p className="text-gray-400 text-sm">
+                                {review.reviewer.role} • {new Date(review.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div className="flex items-center">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <svg
+                                  key={star}
+                                  className={`w-5 h-5 ${
+                                    star <= review.rating ? 'text-yellow-400' : 'text-gray-600'
+                                  }`}
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                              ))}
+                            </div>
+                          </div>
+                          {review.feedback && (
+                            <p className="text-gray-300 mt-2">{review.feedback}</p>
+                          )}
+                          {review.type && (
+                            <span className="inline-block px-2 py-1 bg-teal-500/20 text-teal-300 text-xs rounded-full mt-2">
+                              {review.type}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
               </div>
 
               {/* Leave Summary Section */}
@@ -949,6 +1085,86 @@ const EmployeeProfile: React.FC = () => {
               </Button>
             </div>
           </div>
+        </EnhancedModal>
+      )}
+
+      {/* Performance Review Modal - Only for admins/managers */}
+      {(isAdmin || user?.role === 'manager') && !isOwnProfile && (
+        <EnhancedModal
+          isOpen={showReviewModal}
+          onClose={() => setShowReviewModal(false)}
+          title={`Add Performance Review - ${employee?.name}`}
+        >
+          <form onSubmit={handleSubmitReview} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Rating</label>
+              <div className="flex items-center space-x-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                    className="focus:outline-none"
+                  >
+                    <svg
+                      className={`w-8 h-8 ${
+                        star <= reviewForm.rating ? 'text-yellow-400' : 'text-gray-600'
+                      } hover:text-yellow-400 transition-colors`}
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  </button>
+                ))}
+              </div>
+              <p className="text-gray-400 text-sm mt-1">Selected: {reviewForm.rating} out of 5</p>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Review Type</label>
+              <select
+                value={reviewForm.type}
+                onChange={(e) => setReviewForm({ ...reviewForm, type: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+                <option value="General">General</option>
+                <option value="Quarterly">Quarterly</option>
+                <option value="Annual">Annual</option>
+                <option value="Project">Project</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Feedback</label>
+              <textarea
+                value={reviewForm.feedback}
+                onChange={(e) => setReviewForm({ ...reviewForm, feedback: e.target.value })}
+                placeholder="Provide detailed feedback..."
+                rows={4}
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+            </div>
+            
+            <div className="flex space-x-3 pt-4">
+              <Button 
+                type="button" 
+                onClick={() => setShowReviewModal(false)}
+                variant="secondary"
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                loading={submittingReview}
+                className="flex-1"
+                loadingText="Submitting..."
+              >
+                Submit Review
+              </Button>
+            </div>
+          </form>
         </EnhancedModal>
       )}
     </PageTransition>

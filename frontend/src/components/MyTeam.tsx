@@ -4,6 +4,7 @@ import { useFilters } from '../contexts/FilterContext';
 import Filter from './Filter';
 import { Users, UserPlus, TrendingUp, Award, Calendar, Target, Star } from 'lucide-react';
 import Card from './Card';
+import Button from './Button';
 import { PageTransition, FadeIn } from './PageTransition';
 import { useEmployeeStore } from '../store/useEmployeeStore';
 
@@ -233,10 +234,12 @@ const MyTeam: React.FC = () => {
                     <Users className="w-5 h-5 mr-2 text-blue-400" />
                     Team Members {filteredTeamMembers.length !== teamMembers.length && `(${filteredTeamMembers.length}/${teamMembers.length})`}
                   </h3>
-                  <button className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg text-sm font-medium transition-colors flex items-center">
-                    <UserPlus className="w-4 h-4 mr-2" />
+                  <Button
+                    icon={<UserPlus className="w-4 h-4" />}
+                    size="sm"
+                  >
                     Add Member
-                  </button>
+                  </Button>
                 </div>
                 
                 {/* Department Groups */}
