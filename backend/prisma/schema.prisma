@@ -185,3 +185,53 @@ model Document {
 
   @@index([employeeId])
 }
+
+model RoleConfig {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
+  description String?
+  isCustom    Boolean      @default(false)
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  permissions Permission[]
+  auditLogs   PermissionAudit[]
+
+  @@index([name])
+}
+
+model Permission {
+  id          Int      @id @default(autoincrement())
+  roleId      Int
+  module      String
+  action      String
+  isEnabled   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  role RoleConfig @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, module, action])
+  @@index([roleId])
+  @@index([module])
+}
+
+model PermissionAudit {
+  id            Int      @id @default(autoincrement())
+  roleId        Int
+  changedBy     Int
+  module        String
+  action        String
+  previousValue Boolean
+  newValue      Boolean
+  reason        String?
+  changedAt     DateTime @default(now())
+  
+  role RoleConfig @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  changedByUser Employee @relation(fields: [changedBy], references: [id])
+
+  @@index([roleId])
+  @@index([changedBy])
+  @@index([changedAt])
+}
