@@ -18,7 +18,7 @@ import roleManagementRoutes from './routes/roleManagementRoutes.js';
 import dataProtectionRoutes from './routes/dataProtectionRoutes.js';
 import { requireAuth } from './middleware/auth.js';
 import { initializeLeaveData } from './leaveStoreDB.js';
-// import { setupScheduledBackups } from './scripts/backup-system.js';
+import { setupScheduledBackups } from './scripts/backup-system.js';
 import prisma from './lib/prisma.js';
 
 const app = express();
@@ -136,10 +136,10 @@ app.use('/api/data-protection', requireAuth, dataProtectionRoutes);
 app.listen(PORT, async () => {
   await initializeDatabase();
   
-  // Start automatic backup system (temporarily disabled)
-  // console.log('🔄 Starting automatic backup system...');
-  // setupScheduledBackups();
-  // console.log('✅ Automatic backups scheduled (daily at 2:00 AM)');
+  // Start automatic backup system
+  console.log('🔄 Starting automatic backup system...');
+  setupScheduledBackups();
+  console.log('✅ Automatic backups scheduled (daily at 2:00 AM)');
   
   console.log(`🚀 Ascentia API running on http://localhost:${PORT}`);
   console.log('🔧 Complete API mode with database persistence - all routes available');
