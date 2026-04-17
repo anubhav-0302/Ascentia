@@ -36,7 +36,7 @@ const CommandCenter: React.FC = () => {
     }
   ];
 
-  const recentActivities = [];
+  const recentActivities: any[] = [];
 
   const quickActions = [
     {

@@ -340,7 +340,7 @@ const PayrollBenefits: React.FC = () => {
     }
   ];
 
-  const recentPayrolls = [];
+  const recentPayrolls: any[] = [];
 
   const benefitsEnrollment = [
     {

@@ -148,7 +148,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       const response = await settingsApi.setup2FA();
       return response.data;
     } catch (error) {
-      set({ error: error.message });
+      set({ error: error instanceof Error ? error.message : 'An error occurred' });
       throw error;
     }
   },
@@ -158,7 +158,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       set({ error: null });
       await settingsApi.verify2FA(token);
     } catch (error) {
-      set({ error: error.message });
+      set({ error: error instanceof Error ? error.message : 'An error occurred' });
       throw error;
     }
   },
@@ -168,7 +168,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       set({ error: null });
       await settingsApi.disable2FA();
     } catch (error) {
-      set({ error: error.message });
+      set({ error: error instanceof Error ? error.message : 'An error occurred' });
       throw error;
     }
   },
@@ -178,7 +178,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       set({ error: null });
       await settingsApi.deleteAccount(password);
     } catch (error) {
-      set({ error: error.message });
+      set({ error: error instanceof Error ? error.message : 'An error occurred' });
       throw error;
     }
   },
@@ -189,7 +189,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       const response = await settingsApi.exportData();
       return response.data;
     } catch (error) {
-      set({ error: error.message });
+      set({ error: error instanceof Error ? error.message : 'An error occurred' });
       throw error;
     }
   },

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
 import { 
   getMyTimesheet, 
   getAllTimesheets, 
@@ -13,16 +12,14 @@ import {
   type CreateTimesheetRequest,
   type ApproveTimesheetRequest
 } from '../api/timesheetApi';
-import { useIsAdmin, useCanApproveTimesheet, useAuthStore } from '../store/useAuthStore';
+import { useAuthStore, useCanApproveTimesheet } from '../store/useAuthStore';
 import { useEmployeeStore } from '../store/useEmployeeStore';
-import { useNotificationStore } from '../store/notificationStore';
-import { useModalWithUnsavedChanges } from '../hooks/useModalWithUnsavedChanges';
 import Button from './Button';
 import Input from './Input';
 import StatusBadge from './StatusBadge';
 import Card from './Card';
 import UnifiedDropdown from './UnifiedDropdown';
-import { PageTransition, FadeIn } from './PageTransition';
+import { PageTransition } from './PageTransition';
 import { StandardLayout } from './StandardLayout';
 import { TableSkeleton, CardSkeleton } from './LoadingSkeleton';
 import { 
@@ -36,15 +33,12 @@ import {
   Download, 
   Filter as FilterIcon,
   TrendingUp,
-  Users,
   Info
 } from 'lucide-react';
 
 const TimesheetEntry: React.FC = () => {
-  const isAdmin = useIsAdmin();
+  const { user } = useAuthStore();
   const canApproveTimesheet = useCanApproveTimesheet();
-  const { user, token, isAuthenticated } = useAuthStore();
-  const { addNotification } = useNotificationStore();
   const { employees } = useEmployeeStore();
   
   // Debug authentication state
@@ -71,7 +65,6 @@ const TimesheetEntry: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimesheetEntryType | null>(null);
-  const [selectedWeek, setSelectedWeek] = useState(new Date());
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedEntries, setSelectedEntries] = useState<number[]>([]);
   const [showBulkActions, setShowBulkActions] = useState(false);
@@ -230,7 +223,7 @@ const TimesheetEntry: React.FC = () => {
     }
   };
 
-  const handleEdit = (entry: TimesheetEntry) => {
+  const handleEdit = (entry: TimesheetEntryType) => {
     setEditingEntry(entry);
     setFormData({
       date: entry.date.split('T')[0],

@@ -16,8 +16,8 @@ const MyTeam: React.FC = () => {
 
   const teamStats = useMemo(() => [
     { title: 'Team Members', value: String(employees.length), change: 'Total employees', icon: Users, color: 'text-blue-400' },
-    { title: 'Active', value: String(employees.filter(e => e.status === 'Active').length), change: 'Currently active', icon: TrendingUp, color: 'text-green-400' },
-    { title: 'Remote', value: String(employees.filter(e => e.status === 'Remote').length), change: 'Working remotely', icon: Target, color: 'text-purple-400' },
+    { title: 'Active', value: String(employees.filter(e => e.status.toLowerCase() === 'active').length), change: 'Currently active', icon: TrendingUp, color: 'text-green-400' },
+    { title: 'Remote', value: String(employees.filter(e => e.status.toLowerCase() === 'remote').length), change: 'Working remotely', icon: Target, color: 'text-purple-400' },
     { title: 'Departments', value: String(new Set(employees.map(e => e.department).filter(Boolean)).size), change: 'Active departments', icon: Award, color: 'text-yellow-400' }
   ], [employees]);
 
@@ -47,11 +47,16 @@ const MyTeam: React.FC = () => {
   ];
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Active': return 'text-green-400 bg-green-400/10';
-      case 'On Leave': return 'text-yellow-400 bg-yellow-400/10';
+    const normalizedStatus = status.toLowerCase();
+    switch (normalizedStatus) {
+      case 'active': return 'text-green-400 bg-green-400/10';
+      case 'on leave': return 'text-yellow-400 bg-yellow-400/10';
       default: return 'text-gray-400 bg-gray-400/10';
     }
+  };
+
+  const normalizeStatus = (status: string) => {
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
   };
 
   // Filter team members based on filter context
@@ -212,7 +217,7 @@ const MyTeam: React.FC = () => {
                             <div className="flex items-center space-x-2">
                               <span className="text-gray-500 text-xs">{member.department}</span>
                               <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(member.status)}`}>
-                                {member.status}
+                                {normalizeStatus(member.status)}
                               </span>
                             </div>
                           </div>
@@ -281,7 +286,7 @@ const MyTeam: React.FC = () => {
                                 
                                 {/* Status Badge */}
                                 <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(member.status)} flex-shrink-0`}>
-                                  {member.status}
+                                  {normalizeStatus(member.status)}
                                 </span>
                               </div>
                             </div>

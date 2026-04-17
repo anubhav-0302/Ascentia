@@ -9,7 +9,7 @@ import StatusBadge from './StatusBadge';
 import Card from './Card';
 import LeaveCalendar from './LeaveCalendar';
 import UnifiedDropdown from './UnifiedDropdown';
-import { Calendar, CheckCircle, XCircle, Plus, XOctagon, CalendarX, AlertTriangle, Search, Filter, TrendingUp, Clock } from 'lucide-react';
+import { Calendar, CheckCircle, XCircle, Plus, XOctagon, CalendarX, AlertTriangle, Search, Filter, Clock } from 'lucide-react';
 
 const LeaveAttendance = () => {
   const isAdmin = useIsAdmin();
@@ -160,9 +160,9 @@ const LeaveAttendance = () => {
     
     const balance = leaveTypes.map(type => ({
       type,
-      total: quotas[type],
-      used: used[type] || 0,
-      remaining: quotas[type] - (used[type] || 0)
+      total: quotas[type as keyof typeof quotas],
+      used: used[type as keyof typeof used] || 0,
+      remaining: quotas[type as keyof typeof quotas] - (used[type as keyof typeof used] || 0)
     }));
     
     return balance;
@@ -604,8 +604,6 @@ const LeaveAttendance = () => {
             {/* Calendar Section */}
             <div className="flex-1 p-4 border-b lg:border-b-0 lg:border-r border-slate-700/30">
               <LeaveCalendar 
-                compact={true}
-                small={true}
                 onDateSelect={(startDate, endDate) => {
                   setFormData(prev => ({ ...prev, startDate, endDate }));
                   setShowForm(true);
@@ -713,7 +711,7 @@ const LeaveAttendance = () => {
                     </label>
                     <UnifiedDropdown
                       value={formData.type}
-                      onChange={(value) => setFormData(prev => ({ ...prev, type: value }))}
+                      onChange={(value) => setFormData(prev => ({ ...prev, type: String(value) }))}
                       options={[
                         { value: '', label: 'Select leave type' },
                         { value: 'Annual Leave', label: 'Annual Leave' },

@@ -14,6 +14,8 @@ export interface Employee {
   createdAt?: string;
   updatedAt?: string;
   hasPassword?: boolean;
+  twoFactorEnabled?: boolean;
+  lastPasswordChange?: string;
   managerId?: number;
   manager?: {
     id: number;

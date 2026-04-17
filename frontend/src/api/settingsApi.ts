@@ -24,7 +24,7 @@ export const settingsApi = {
 
   // Setup 2FA
   setup2FA: async () => {
-    const response = await apiClient.post('/settings/2fa/setup');
+    const response = await apiClient.post('/settings/2fa/setup', {});
     return response.data;
   },
 
@@ -41,10 +41,8 @@ export const settingsApi = {
   },
 
   // Delete account
-  deleteAccount: async (password: string) => {
-    const response = await apiClient.delete('/settings/account', { 
-      data: { password } 
-    });
+  deleteAccount: async (_password: string) => {
+    const response = await apiClient.delete('/settings/account');
     return response.data;
   },
 

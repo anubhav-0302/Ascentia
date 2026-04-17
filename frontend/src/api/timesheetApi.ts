@@ -160,7 +160,7 @@ export const getTimesheetHistory = async (params?: {
   startDate?: string;
   endDate?: string;
   employeeId?: number;
-  format?: 'json' | 'csv';
+  format?: 'json' | 'csv' | 'pdf';
 }) => {
   const queryString = new URLSearchParams();
   if (params?.startDate) queryString.append('startDate', params.startDate);

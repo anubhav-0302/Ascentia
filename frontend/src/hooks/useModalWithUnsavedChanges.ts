@@ -4,7 +4,6 @@ interface UseModalWithUnsavedChangesProps {
   isOpen: boolean;
   onClose: () => void;
   hasUnsavedChanges: boolean;
-  onSave?: () => void;
 }
 
 /**
@@ -21,8 +20,7 @@ interface UseModalWithUnsavedChangesProps {
 export const useModalWithUnsavedChanges = ({
   isOpen,
   onClose,
-  hasUnsavedChanges,
-  onSave
+  hasUnsavedChanges
 }: UseModalWithUnsavedChangesProps) => {
   const handleClose = useCallback(() => {
     if (hasUnsavedChanges) {

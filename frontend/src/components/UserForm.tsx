@@ -184,7 +184,7 @@ const UserForm: React.FC<UserFormProps> = ({
         <UnifiedDropdown
           value={formData.managerId || ''}
           onChange={(value) => {
-            handleChange('managerId', value ? parseInt(value as string) : undefined);
+            handleChange('managerId', value ? parseInt(String(value)) : '');
           }}
           options={[
             { value: '', label: 'No Manager' },

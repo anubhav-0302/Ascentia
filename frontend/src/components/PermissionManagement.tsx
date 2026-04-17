@@ -11,7 +11,6 @@ import Button from './Button';
 import Input from './Input';
 import Card from './Card';
 import Modal from './Modal';
-import UserForm from './UserForm';
 import EmployeeFormModal from './EmployeeFormModal';
 import UnifiedDropdown from './UnifiedDropdown';
 import StatusBadge from './StatusBadge';
@@ -25,8 +24,6 @@ import {
   Key, 
   Shield, 
   Mail, 
-  Calendar,
-  CheckCircle,
   XCircle,
   Crown,
   User as UserIcon
@@ -58,17 +55,6 @@ const PermissionManagement = () => {
   }, [fetchEmployees]);
   
   // Form states
-  const [createFormData, setCreateFormData] = useState<CreateEmployeeRequest & { password: string }>({
-    name: '',
-    email: '',
-    password: '',
-    role: 'employee',
-    jobTitle: 'Employee',
-    department: 'General',
-    location: 'Main Office',
-    status: 'active'
-  });
-  
   const [editFormData, setEditFormData] = useState<UpdateEmployeeRequest>({
     name: '',
     email: '',
@@ -255,17 +241,6 @@ const PermissionManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const openEditModal = (user: Employee) => {
-    setSelectedUser(user);
-    setEditFormData({
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      status: user.status
-    });
-    setShowEditModal(true);
   };
 
   const openPasswordModal = (user: Employee) => {
@@ -501,7 +476,7 @@ const PermissionManagement = () => {
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">Role</label>
             <UnifiedDropdown
-              value={editFormData.role}
+              value={editFormData.role || 'employee'}
               onChange={(value) => setEditFormData({ ...editFormData, role: value as 'admin' | 'employee' })}
               options={[
                 { value: 'employee', label: 'Employee' },
@@ -518,7 +493,7 @@ const PermissionManagement = () => {
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
             <UnifiedDropdown
-              value={editFormData.status}
+              value={editFormData.status || 'active'}
               onChange={(value) => setEditFormData({ ...editFormData, status: value as 'active' | 'inactive' })}
               options={[
                 { value: 'active', label: 'Active' },

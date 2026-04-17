@@ -8,11 +8,8 @@ import Modal from './Modal';
 import Input from './Input';
 import ToggleSwitch from './ToggleSwitch';
 import { PageTransition, FadeIn } from './PageTransition';
-import { useIsAdmin } from '../store/useAuthStore';
 import type { UserSettings } from '../store/useSettingsStore';
 import { useSettingsStore } from '../store/useSettingsStore';
-import { useAuthStore } from '../store/useAuthStore';
-import RoleManagement from './RoleManagement';
 import toast from 'react-hot-toast';
 
 const Settings: React.FC = () => {
@@ -24,7 +21,6 @@ const Settings: React.FC = () => {
   const [twoFactorToken, setTwoFactorToken] = useState('');
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [deletePassword, setDeletePassword] = useState('');
-  const isAdmin = useIsAdmin();
   
   const { settings, loading, fetchSettings, updateSetting, resetSettings, changePassword, setup2FA, verify2FA, deleteAccount, exportData } = useSettingsStore();
 
@@ -233,19 +229,6 @@ const Settings: React.FC = () => {
                     <Database className="w-4 h-4 mr-3" />
                     Data & Privacy
                   </button>
-                  {isAdmin && (
-                    <button 
-                      onClick={() => handleNavigationClick('configure')}
-                      className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        activeSection === 'configure'
-                          ? 'bg-teal-500/10 text-teal-400 border-l-4 border-teal-500'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-                      }`}
-                    >
-                      <Shield className="w-4 h-4 mr-3" />
-                      Role Management
-                    </button>
-                  )}
                                   </nav>
               </Card>
             </div>
@@ -557,12 +540,6 @@ const Settings: React.FC = () => {
                   </FadeIn>
                 )}
 
-                {/* Role Management Section - Admin Only */}
-                {activeSection === 'configure' && isAdmin && (
-                  <FadeIn>
-                    <RoleManagement token={useAuthStore.getState().token || ''} showHeader={true} />
-                  </FadeIn>
-                )}
               </div>
             </div>
           </div>

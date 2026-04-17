@@ -20,15 +20,6 @@ interface RecentReport {
   format: string;
 }
 
-interface ReportStat {
-  title: string;
-  value: string;
-  change: string;
-  icon: any;
-  color: string;
-  link: string;
-}
-
 interface ReportTemplate {
   name: string;
   description: string;
@@ -158,7 +149,7 @@ const Reports: React.FC = () => {
     return leaveData
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 10)
-      .map((leave, index) => ({
+      .map((leave) => ({
         id: leave.id,
         name: `${leave.type} Leave - ${leave.user?.name || 'Unknown User'}`,
         type: leave.type || 'Unknown',

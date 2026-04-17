@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+
+// Extend Window interface for document upload
+declare global {
+  interface Window {
+    documentUploadInput?: HTMLInputElement;
+  }
+}
+
 import { StandardLayout } from './StandardLayout';
-import { User, Mail, Calendar, MapPin, Briefcase, Building, Edit, Trash2, Clock, AlertCircle, FileText, Download, Upload, X } from 'lucide-react';
+import { User, Calendar, MapPin, Briefcase, Edit, Trash2, Clock, AlertCircle, FileText, Download, Upload } from 'lucide-react';
 import Card from './Card';
 import { PageTransition, FadeIn } from './PageTransition';
 import { useEmployeeStore } from '../store/useEmployeeStore';
@@ -13,7 +21,7 @@ import StatusBadge from './StatusBadge';
 import { EnhancedModal } from './EnhancedModal';
 import { employeeApi, type Employee, type UpdateEmployeeRequest } from '../api/employeeApi';
 import { documentsApi } from '../api/documentsApi';
-import { changePassword, uploadProfilePicture, setupTwoFactor, disableTwoFactor } from '../api/userApi';
+import { changePassword, setupTwoFactor, disableTwoFactor } from '../api/userApi';
 import { performanceReviewApi } from '../api/performanceReviewApi';
 import PayslipView from './PayslipView';
 import toast from 'react-hot-toast';
@@ -21,7 +29,6 @@ import toast from 'react-hot-toast';
 const EmployeeProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuthStore();
   const isAdmin = useIsAdmin();
   const { employees, fetchEmployees } = useEmployeeStore();
@@ -29,6 +36,7 @@ const EmployeeProfile: React.FC = () => {
   // If no ID provided (e.g., /profile route), use current user's ID
   const employeeId = id || user?.id?.toString();
   const isOwnProfile = !id || (user && parseInt(id) === user.id);
+  const employeeIdNum = employeeId ? parseInt(employeeId) : undefined;
   
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
@@ -77,7 +85,7 @@ const EmployeeProfile: React.FC = () => {
       }
       
       // First check if employee exists in store
-      let foundEmployee = employees.find(emp => emp.id === employeeId);
+      let foundEmployee = employees.find(emp => emp.id === employeeIdNum);
       
       if (foundEmployee) {
         setEmployee(foundEmployee);
@@ -87,7 +95,7 @@ const EmployeeProfile: React.FC = () => {
       
       // If not found, try direct API call first (more efficient)
       try {
-        const response = await employeeApi.getEmployee(employeeId);
+        const response = await employeeApi.getEmployee(employeeIdNum!);
         // Handle API response format: { success: true, data: employee }
         if (response && response.data) {
           setEmployee(response.data);
@@ -104,7 +112,7 @@ const EmployeeProfile: React.FC = () => {
           await fetchEmployees();
           // Wait a bit for state to update
           setTimeout(() => {
-            const updatedEmployee = employees.find(emp => emp.id === employeeId);
+            const updatedEmployee = employees.find(emp => emp.id === employeeIdNum);
             if (updatedEmployee) {
               setEmployee(updatedEmployee);
             } else {
@@ -447,26 +455,6 @@ const EmployeeProfile: React.FC = () => {
     }
   };
 
-  // Profile picture upload handler (only for own profile)
-  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !employee) return;
-
-    setAuthLoading(true);
-    try {
-      const response = await uploadProfilePicture(employee.id, file);
-      if (response.profilePicture) {
-        const updatedEmployee = { ...employee, profilePicture: response.profilePicture };
-        setEmployee(updatedEmployee);
-        toast.success('Profile picture updated successfully');
-      }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to upload profile picture');
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
   if (loading) {
     return (
       <PageTransition>
@@ -542,7 +530,6 @@ const EmployeeProfile: React.FC = () => {
                     <p className="text-teal-400 font-medium">{employee.jobTitle}</p>
                     <div className="flex items-center space-x-4 mt-2">
                       <StatusBadge status={employee.status} />
-                      <span className="text-gray-400 text-sm">{employee.role}</span>
                     </div>
                   </div>
                 </div>
@@ -597,7 +584,7 @@ const EmployeeProfile: React.FC = () => {
                         <User className="w-4 h-4 mr-2 text-gray-400" />
                         {employee.manager ? (
                           <button
-                            onClick={() => navigate(`/employee/${employee.manager.id}`)}
+                            onClick={() => employee.manager && navigate(`/employee/${employee.manager.id}`)}
                             className="text-teal-400 hover:text-teal-300 transition-colors"
                           >
                             {employee.manager.name}
@@ -629,10 +616,6 @@ const EmployeeProfile: React.FC = () => {
                   </h2>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-400 mb-2">Role</label>
-                      <p className="text-white">{employee.role || 'Not available'}</p>
-                    </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-400 mb-2">Status</label>
                       <StatusBadge status={employee.status} />

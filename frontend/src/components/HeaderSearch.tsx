@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useDebounce } from '../hooks/useDebounce';
 import { useNavigate } from 'react-router-dom';
 import { employeeApi } from '../api/employeeApi';
-import { Search, Users, Calendar, File, Settings, Home, UserPlus, BarChart3 } from 'lucide-react';
+import { Search, Users, Calendar, Settings, Home, UserPlus, BarChart3 } from 'lucide-react';
 
 interface SearchResult {
   id: string;

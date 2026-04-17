@@ -309,17 +309,17 @@ function Directory() {
             )}
           </div>
         </div>
-
-        {/* Modal */}
-        <EmployeeFormModal
-          employee={editingEmployee}
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onSave={handleSaveEmployee}
-          employees={employees}
-          currentUserId={user?.id}
-        />
       </div>
+
+      {/* Modal - Rendered outside main content container for proper z-index */}
+      <EmployeeFormModal
+        employee={editingEmployee}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveEmployee}
+        employees={employees}
+        currentUserId={user?.id}
+      />
     </PageTransition>
   );
 }

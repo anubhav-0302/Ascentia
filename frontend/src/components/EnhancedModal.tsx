@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface EnhancedModalProps {
@@ -44,9 +45,9 @@ export const EnhancedModal: React.FC<EnhancedModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 flex items-center justify-center z-[99999] p-4"
       onClick={handleBackdropClick}
     >
       {/* Backdrop */}
@@ -97,7 +98,8 @@ export const EnhancedModal: React.FC<EnhancedModalProps> = ({
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
@@ -134,7 +136,7 @@ export const SlideModal: React.FC<{
   }, [isOpen]);
 
   const getPositionClasses = () => {
-    const baseClasses = 'fixed top-0 h-full bg-slate-800 border-l border-slate-700 shadow-2xl transition-transform duration-300 ease-out z-50';
+    const baseClasses = 'fixed top-0 h-full bg-slate-800 border-l border-slate-700 shadow-2xl transition-transform duration-300 ease-out z-[99999]';
     
     switch (position) {
       case 'left':
@@ -179,12 +181,12 @@ export const SlideModal: React.FC<{
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
         className={`
-          fixed inset-0 bg-black/60 backdrop-blur-sm z-40
+          fixed inset-0 bg-black/60 backdrop-blur-sm z-[99998]
           transition-opacity duration-300 ease-out
           ${isAnimating ? 'opacity-100' : 'opacity-0'}
         `}
@@ -203,7 +205,8 @@ export const SlideModal: React.FC<{
           {children}
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 };
 

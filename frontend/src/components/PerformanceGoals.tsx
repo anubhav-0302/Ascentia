@@ -8,8 +8,7 @@ import {
   createPerformanceGoal, 
   updatePerformanceGoal,
   getPerformanceReviews, 
-  createPerformanceReview, 
-  updatePerformanceReview,
+  createPerformanceReview,
   type PerformanceCycle, 
   type PerformanceGoal, 
   type PerformanceReview,
@@ -21,7 +20,6 @@ import { kraApi } from '../api/kraApi';
 import type { KRA } from '../api/kraApi';
 import { useIsAdmin } from '../store/useAuthStore';
 import { useEmployeeStore } from '../store/useEmployeeStore';
-import { useNotificationStore } from '../store/notificationStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useModalWithUnsavedChanges } from '../hooks/useModalWithUnsavedChanges';
 import Button from './Button';
@@ -29,7 +27,7 @@ import Input from './Input';
 import StatusBadge from './StatusBadge';
 import Card from './Card';
 import UnifiedDropdown from './UnifiedDropdown';
-import { PageTransition, FadeIn } from './PageTransition';
+import { PageTransition } from './PageTransition';
 import { StandardLayout } from './StandardLayout';
 import { 
   Target, 
@@ -38,7 +36,6 @@ import {
   Trash2, 
   Star, 
   Calendar, 
-  Users, 
   TrendingUp,
   Award,
   CheckCircle,
@@ -49,7 +46,6 @@ const PerformanceGoals: React.FC = () => {
   const isAdmin = useIsAdmin();
   const { user } = useAuthStore();
   const { employees, fetchEmployees } = useEmployeeStore();
-  const { addNotification } = useNotificationStore();
   
   // Initialize activeTab from localStorage, default to 'my-goals'
   const [activeTab, setActiveTab] = useState(() => {
@@ -78,7 +74,6 @@ const PerformanceGoals: React.FC = () => {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showKraFormModal, setShowKraFormModal] = useState(false);
   const [editingGoal, setEditingGoal] = useState<PerformanceGoal | null>(null);
-  const [editingReview, setEditingReview] = useState<PerformanceReview | null>(null);
   const [selectedGoalForKra, setSelectedGoalForKra] = useState<PerformanceGoal | null>(null);
   const [kras, setKras] = useState<KRA[]>([]);
   const [expandedGoalId, setExpandedGoalId] = useState<number | null>(null);
@@ -123,7 +118,7 @@ const PerformanceGoals: React.FC = () => {
   const isCycleFormChanged = () => {
     return (
       cycleForm.name.trim() !== '' ||
-      cycleForm.description.trim() !== '' ||
+      (cycleForm.description && cycleForm.description.trim() !== '') ||
       cycleForm.startDate.trim() !== ''
     );
   };
@@ -132,7 +127,7 @@ const PerformanceGoals: React.FC = () => {
   const isGoalFormChanged = () => {
     return (
       goalForm.title.trim() !== '' ||
-      goalForm.description.trim() !== '' ||
+      (goalForm.description && goalForm.description.trim() !== '') ||
       goalForm.targetDate.trim() !== ''
     );
   };
@@ -140,7 +135,7 @@ const PerformanceGoals: React.FC = () => {
   // Detect unsaved changes in review form
   const isReviewFormChanged = () => {
     return (
-      reviewForm.comments.trim() !== '' ||
+      (reviewForm.comments && reviewForm.comments.trim() !== '') ||
       reviewForm.rating !== 3
     );
   };
@@ -255,7 +250,7 @@ const PerformanceGoals: React.FC = () => {
           const teamMemberIds = employees
             .filter(emp => emp.manager?.id === user?.id)
             .map(emp => emp.id);
-          filteredGoals = filteredGoals.filter(goal => teamMemberIds.includes(goal.employeeId));
+          filteredGoals = filteredGoals.filter((goal: PerformanceGoal) => teamMemberIds.includes(goal.employeeId));
         }
         
         setGoals(filteredGoals);

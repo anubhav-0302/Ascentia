@@ -1,4 +1,4 @@
-import { apiClient } from './apiClient';
+import { apiClient, BASE_URL } from "./apiClient";
 
 export interface User {
   id: number;
@@ -93,12 +93,19 @@ export const uploadProfilePicture = async (file: File) => {
   const formData = new FormData();
   formData.append('profilePicture', file);
   
-  const response = await apiClient.post('/users/me/profile-picture', formData, {
+  const response = await fetch(`${BASE_URL}/users/me/profile-picture`, {
+    method: 'POST',
     headers: {
-      'Content-Type': 'multipart/form-data',
+      'Authorization': `Bearer ${localStorage.getItem('token')}`,
     },
+    body: formData,
   });
-  return response;
+  
+  if (!response.ok) {
+    throw new Error('Failed to upload profile picture');
+  }
+  
+  return response.json();
 };
 
 // Delete user (admin only)
