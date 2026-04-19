@@ -56,9 +56,13 @@ const LeaveAttendance = () => {
       setError(null);
       setSuccess(null);
 
-      // Validate dates
+      // Validate dates - use local date for comparison
       const start = new Date(formData.startDate);
       const end = new Date(formData.endDate);
+      
+      // Get today's date at midnight (local timezone)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
       
       if (start > end) {
         setError('End date must be after or same as start date');
@@ -66,9 +70,19 @@ const LeaveAttendance = () => {
         return;
       }
 
-      if (start < new Date()) {
+      if (start < today) {
         setError('Start date must be today or later');
         toast.error('Start date must be today or later');
+        return;
+      }
+
+      // Validate leave quota
+      const requestedDays = calculateDuration(formData.startDate, formData.endDate);
+      const leaveTypeBalance = leaveBalance.find(b => b.type === formData.type);
+      
+      if (leaveTypeBalance && requestedDays > leaveTypeBalance.remaining) {
+        setError(`Insufficient ${formData.type} balance. You have ${leaveTypeBalance.remaining} days remaining but requesting ${requestedDays} days.`);
+        toast.error(`Insufficient ${formData.type} balance. You have ${leaveTypeBalance.remaining} days remaining but requesting ${requestedDays} days.`);
         return;
       }
 
@@ -111,6 +125,14 @@ const LeaveAttendance = () => {
     });
   };
 
+  // Handle leave type change with validation
+  const handleLeaveTypeChange = (value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      type: String(value)
+    }));
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -138,7 +160,10 @@ const LeaveAttendance = () => {
   
   // Calculate leave balance for employee
   const leaveBalance = useMemo(() => {
-    const approvedLeaves = leaves.filter(leave => leave.status === 'Approved');
+    // Include both Approved and Pending leaves in balance calculation
+    const approvedAndPendingLeaves = leaves.filter(leave => 
+      leave.status === 'Approved' || leave.status === 'Pending'
+    );
     
     // Standard annual leave quotas (can be made configurable)
     const quotas = {
@@ -149,7 +174,7 @@ const LeaveAttendance = () => {
       'Paternity Leave': 14
     };
     
-    const used = approvedLeaves.reduce((acc, leave) => {
+    const used = approvedAndPendingLeaves.reduce((acc, leave) => {
       const duration = calculateDuration(leave.startDate, leave.endDate);
       acc[leave.type] = (acc[leave.type] || 0) + duration;
       return acc;
@@ -158,12 +183,18 @@ const LeaveAttendance = () => {
     // Only show up to Paternity Leave
     const leaveTypes = ['Annual Leave', 'Sick Leave', 'Personal Leave', 'Maternity Leave', 'Paternity Leave'];
     
-    const balance = leaveTypes.map(type => ({
-      type,
-      total: quotas[type as keyof typeof quotas],
-      used: used[type as keyof typeof used] || 0,
-      remaining: quotas[type as keyof typeof quotas] - (used[type as keyof typeof used] || 0)
-    }));
+    const balance = leaveTypes.map(type => {
+      const total = quotas[type as keyof typeof quotas];
+      const usedDays = used[type as keyof typeof used] || 0;
+      const remaining = Math.max(0, total - usedDays); // Prevent negative balance
+      
+      return {
+        type,
+        total,
+        used: usedDays,
+        remaining
+      };
+    });
     
     return balance;
   }, [leaves]);
@@ -604,6 +635,7 @@ const LeaveAttendance = () => {
             {/* Calendar Section */}
             <div className="flex-1 p-4 border-b lg:border-b-0 lg:border-r border-slate-700/30">
               <LeaveCalendar 
+                leaves={leaves}
                 onDateSelect={(startDate, endDate) => {
                   setFormData(prev => ({ ...prev, startDate, endDate }));
                   setShowForm(true);
@@ -711,7 +743,7 @@ const LeaveAttendance = () => {
                     </label>
                     <UnifiedDropdown
                       value={formData.type}
-                      onChange={(value) => setFormData(prev => ({ ...prev, type: String(value) }))}
+                      onChange={handleLeaveTypeChange}
                       options={[
                         { value: '', label: 'Select leave type' },
                         { value: 'Annual Leave', label: 'Annual Leave' },
@@ -723,6 +755,21 @@ const LeaveAttendance = () => {
                       placeholder="Select leave type"
                       required={true}
                     />
+                    {formData.type && (
+                      <div className="mt-2 text-xs">
+                        {(() => {
+                          const balance = leaveBalance.find(b => b.type === formData.type);
+                          if (balance) {
+                            return (
+                              <p className={balance.remaining <= 0 ? 'text-red-400' : balance.remaining <= 2 ? 'text-yellow-400' : 'text-green-400'}>
+                                Available: {balance.remaining} days
+                              </p>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
+                    )}
                   </div>
 
                   <div>

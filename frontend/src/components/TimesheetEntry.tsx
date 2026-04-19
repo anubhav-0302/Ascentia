@@ -153,14 +153,17 @@ const TimesheetEntry: React.FC = () => {
         response = await getAllTimesheets(params);
       }
       
-      const timesheetsData = Array.isArray(response) ? response : (response.data || []);
-      setTimesheets(timesheetsData);
-      setFilteredTimesheets(timesheetsData);
-      setPagination(response.pagination || null);
+      // Safely handle response
+      const timesheetsData = Array.isArray(response) ? response : (response?.data || []);
+      setTimesheets(Array.isArray(timesheetsData) ? timesheetsData : []);
+      setFilteredTimesheets(Array.isArray(timesheetsData) ? timesheetsData : []);
+      setPagination(response?.pagination || null);
       setCurrentPage(page);
     } catch (err: any) {
-    console.error('❌ Fetch timesheets error:', err);
+      console.error('❌ Fetch timesheets error:', err);
       setError(err.message || 'Failed to fetch timesheet entries');
+      setTimesheets([]);
+      setFilteredTimesheets([]);
     } finally {
       setLoading(false);
     }
@@ -413,12 +416,12 @@ const TimesheetEntry: React.FC = () => {
     setShowForm(false);
   };
 
-  // Calculate weekly statistics
+  // Calculate weekly statistics with safe defaults
   const weekStats = {
-    totalHours: timesheets.reduce((sum, entry) => sum + entry.hours, 0),
-    pendingCount: timesheets.filter(entry => entry.status === 'Pending').length,
-    approvedCount: timesheets.filter(entry => entry.status === 'Approved').length,
-    rejectedCount: timesheets.filter(entry => entry.status === 'Rejected').length
+    totalHours: Array.isArray(timesheets) ? timesheets.reduce((sum, entry) => sum + (entry?.hours || 0), 0) : 0,
+    pendingCount: Array.isArray(timesheets) ? timesheets.filter(entry => entry?.status === 'Pending').length : 0,
+    approvedCount: Array.isArray(timesheets) ? timesheets.filter(entry => entry?.status === 'Approved').length : 0,
+    rejectedCount: Array.isArray(timesheets) ? timesheets.filter(entry => entry?.status === 'Rejected').length : 0
   };
 
   return (

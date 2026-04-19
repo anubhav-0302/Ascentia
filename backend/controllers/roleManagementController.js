@@ -430,3 +430,61 @@ export const checkUserPermission = async (req, res) => {
     });
   }
 };
+
+// GET /api/admin/permissions/sidebar - Get sidebar permissions for current user
+export const getSidebarPermissions = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Get user's role
+    const user = await prisma.employee.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Get role config
+    const roleConfig = await prisma.roleConfig.findUnique({
+      where: { name: user.role },
+      include: { permissions: true }
+    });
+
+    if (!roleConfig) {
+      return res.status(404).json({
+        success: false,
+        message: 'Role configuration not found'
+      });
+    }
+
+    // Get all sidebar permissions for this role
+    const sidebarPermissions = roleConfig.permissions.filter(p => p.module === 'sidebar');
+    
+    // Build result object
+    const result = {};
+    sidebarPermissions.forEach(perm => {
+      result[perm.action] = perm.isEnabled;
+    });
+
+    // Prevent caching - always return fresh data
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('❌ Error fetching sidebar permissions:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch sidebar permissions',
+      error: error.message
+    });
+  }
+};

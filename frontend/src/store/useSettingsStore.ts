@@ -73,7 +73,8 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     try {
       set({ loading: true, error: null });
       const response = await settingsApi.getSettings();
-      set({ settings: response.data, loading: false });
+      // response is already the settings object (settingsApi.getSettings returns response.data)
+      set({ settings: response, loading: false });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       set({ error: errorMessage, loading: false });

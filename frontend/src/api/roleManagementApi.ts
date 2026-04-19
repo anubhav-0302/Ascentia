@@ -124,6 +124,26 @@ export const createCustomRole = async (
   }
 };
 
+// Get sidebar permissions for current user
+export const getSidebarPermissions = async (token: string): Promise<{ [key: string]: boolean }> => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/admin/roles/sidebar/permissions`, {
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      },
+      params: { t: Date.now() } // Add timestamp to prevent caching
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching sidebar permissions:', error);
+    // Return empty object on error - sidebar will use hardcoded fallback
+    return {};
+  }
+};
+
 // Delete custom role
 export const deleteCustomRole = async (roleId: number, token: string): Promise<void> => {
   try {

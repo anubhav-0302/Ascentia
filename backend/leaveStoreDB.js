@@ -79,7 +79,16 @@ export const getMyLeaveRequests = async (userId) => {
 export const getAllLeaveRequests = async () => {
   try {
     const leaveRequests = readLeaveRequests();
-    return leaveRequests;
+    
+    // Populate user data for each leave request
+    const leaveRequestsWithUsers = await Promise.all(
+      leaveRequests.map(async (request) => {
+        const user = await resolveUser(request.userId);
+        return { ...request, user };
+      })
+    );
+    
+    return leaveRequestsWithUsers;
   } catch (error) {
     console.error("❌ Error getting all leave requests:", error);
     return [];

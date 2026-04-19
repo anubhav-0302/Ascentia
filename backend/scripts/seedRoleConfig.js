@@ -107,11 +107,79 @@ const PERMISSIONS = {
     { module: 'command', action: 'view', isEnabled: true },
     { module: 'command', action: 'create', isEnabled: true },
     { module: 'command', action: 'edit', isEnabled: true },
-    { module: 'command', action: 'delete', isEnabled: true }
+    { module: 'command', action: 'delete', isEnabled: true },
+    
+    // Sidebar Menu Items
+    { module: 'sidebar', action: 'dashboard', isEnabled: true },
+    { module: 'sidebar', action: 'command-center', isEnabled: true },
+    { module: 'sidebar', action: 'workflow-hub', isEnabled: true },
+    { module: 'sidebar', action: 'my-team', isEnabled: true },
+    { module: 'sidebar', action: 'directory', isEnabled: true },
+    { module: 'sidebar', action: 'leave-attendance', isEnabled: true },
+    { module: 'sidebar', action: 'timesheet-entry', isEnabled: true },
+    { module: 'sidebar', action: 'performance-goals', isEnabled: true },
+    { module: 'sidebar', action: 'payroll-benefits', isEnabled: true },
+    { module: 'sidebar', action: 'recruiting', isEnabled: true },
+    { module: 'sidebar', action: 'reports', isEnabled: true },
+    { module: 'sidebar', action: 'audit-logs', isEnabled: true },
+    { module: 'sidebar', action: 'permission-management', isEnabled: true },
+    { module: 'sidebar', action: 'role-management', isEnabled: true },
+    { module: 'sidebar', action: 'profile', isEnabled: true },
+    { module: 'sidebar', action: 'settings', isEnabled: true }
   ],
   
   hr: [
-    // HR has no sidebar access in current implementation
+    // Payroll
+    { module: 'payroll', action: 'view', isEnabled: true },
+    { module: 'payroll', action: 'create', isEnabled: true },
+    { module: 'payroll', action: 'edit', isEnabled: true },
+    { module: 'payroll', action: 'delete', isEnabled: true },
+    
+    // Timesheet
+    { module: 'timesheet', action: 'view', isEnabled: true },
+    { module: 'timesheet', action: 'create', isEnabled: true },
+    { module: 'timesheet', action: 'edit', isEnabled: true },
+    { module: 'timesheet', action: 'delete', isEnabled: true },
+    { module: 'timesheet', action: 'approve', isEnabled: true },
+    
+    // Leave
+    { module: 'leave', action: 'view', isEnabled: true },
+    { module: 'leave', action: 'create', isEnabled: true },
+    { module: 'leave', action: 'edit', isEnabled: true },
+    { module: 'leave', action: 'delete', isEnabled: true },
+    { module: 'leave', action: 'approve', isEnabled: true },
+    
+    // Employees
+    { module: 'employees', action: 'view', isEnabled: true },
+    { module: 'employees', action: 'create', isEnabled: true },
+    { module: 'employees', action: 'edit', isEnabled: true },
+    { module: 'employees', action: 'delete', isEnabled: true },
+    
+    // Reports
+    { module: 'reports', action: 'view', isEnabled: true },
+    { module: 'reports', action: 'export', isEnabled: true },
+    
+    // Settings
+    { module: 'settings', action: 'view', isEnabled: true },
+    { module: 'settings', action: 'edit', isEnabled: true },
+    
+    // Sidebar Menu Items
+    { module: 'sidebar', action: 'dashboard', isEnabled: true },
+    { module: 'sidebar', action: 'command-center', isEnabled: false },
+    { module: 'sidebar', action: 'workflow-hub', isEnabled: false },
+    { module: 'sidebar', action: 'my-team', isEnabled: false },
+    { module: 'sidebar', action: 'directory', isEnabled: true },
+    { module: 'sidebar', action: 'leave-attendance', isEnabled: true },
+    { module: 'sidebar', action: 'timesheet-entry', isEnabled: true },
+    { module: 'sidebar', action: 'performance-goals', isEnabled: false },
+    { module: 'sidebar', action: 'payroll-benefits', isEnabled: true },
+    { module: 'sidebar', action: 'recruiting', isEnabled: false },
+    { module: 'sidebar', action: 'reports', isEnabled: true },
+    { module: 'sidebar', action: 'audit-logs', isEnabled: false },
+    { module: 'sidebar', action: 'permission-management', isEnabled: false },
+    { module: 'sidebar', action: 'role-management', isEnabled: false },
+    { module: 'sidebar', action: 'profile', isEnabled: true },
+    { module: 'sidebar', action: 'settings', isEnabled: true }
   ],
   
   manager: [
@@ -141,7 +209,25 @@ const PERMISSIONS = {
     
     // Settings
     { module: 'settings', action: 'view', isEnabled: true },
-    { module: 'settings', action: 'edit', isEnabled: true }
+    { module: 'settings', action: 'edit', isEnabled: true },
+    
+    // Sidebar Menu Items
+    { module: 'sidebar', action: 'dashboard', isEnabled: true },
+    { module: 'sidebar', action: 'command-center', isEnabled: false },
+    { module: 'sidebar', action: 'workflow-hub', isEnabled: false },
+    { module: 'sidebar', action: 'my-team', isEnabled: true },
+    { module: 'sidebar', action: 'directory', isEnabled: false },
+    { module: 'sidebar', action: 'leave-attendance', isEnabled: true },
+    { module: 'sidebar', action: 'timesheet-entry', isEnabled: true },
+    { module: 'sidebar', action: 'performance-goals', isEnabled: true },
+    { module: 'sidebar', action: 'payroll-benefits', isEnabled: false },
+    { module: 'sidebar', action: 'recruiting', isEnabled: false },
+    { module: 'sidebar', action: 'reports', isEnabled: true },
+    { module: 'sidebar', action: 'audit-logs', isEnabled: false },
+    { module: 'sidebar', action: 'permission-management', isEnabled: false },
+    { module: 'sidebar', action: 'role-management', isEnabled: false },
+    { module: 'sidebar', action: 'profile', isEnabled: true },
+    { module: 'sidebar', action: 'settings', isEnabled: true }
   ],
   
   employee: [
@@ -168,7 +254,25 @@ const PERMISSIONS = {
     
     // Settings
     { module: 'settings', action: 'view', isEnabled: true },
-    { module: 'settings', action: 'edit', isEnabled: true }
+    { module: 'settings', action: 'edit', isEnabled: true },
+    
+    // Sidebar Menu Items
+    { module: 'sidebar', action: 'dashboard', isEnabled: true },
+    { module: 'sidebar', action: 'command-center', isEnabled: false },
+    { module: 'sidebar', action: 'workflow-hub', isEnabled: false },
+    { module: 'sidebar', action: 'my-team', isEnabled: false },
+    { module: 'sidebar', action: 'directory', isEnabled: false },
+    { module: 'sidebar', action: 'leave-attendance', isEnabled: true },
+    { module: 'sidebar', action: 'timesheet-entry', isEnabled: true },
+    { module: 'sidebar', action: 'performance-goals', isEnabled: true },
+    { module: 'sidebar', action: 'payroll-benefits', isEnabled: true },
+    { module: 'sidebar', action: 'recruiting', isEnabled: false },
+    { module: 'sidebar', action: 'reports', isEnabled: false },
+    { module: 'sidebar', action: 'audit-logs', isEnabled: false },
+    { module: 'sidebar', action: 'permission-management', isEnabled: false },
+    { module: 'sidebar', action: 'role-management', isEnabled: false },
+    { module: 'sidebar', action: 'profile', isEnabled: true },
+    { module: 'sidebar', action: 'settings', isEnabled: true }
   ]
 };
 

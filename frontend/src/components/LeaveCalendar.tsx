@@ -6,19 +6,26 @@ interface LeaveCalendarProps {
   className?: string;
   onDateSelect?: (startDate: string, endDate: string) => void;
   onClear?: () => void;
+  leaves?: LeaveRequest[];
 }
 
-const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ className = '', onDateSelect, onClear }) => {
+const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ className = '', onDateSelect, onClear, leaves: providedLeaves }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
+  const [leaves, setLeaves] = useState<LeaveRequest[]>(providedLeaves || []);
   const [loading, setLoading] = useState(false);
   const [hoveredLeave, setHoveredLeave] = useState<LeaveRequest | null>(null);
   const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
   const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(null);
   const [isSelecting, setIsSelecting] = useState(false);
 
-  // Fetch leaves for the current month
+  // Only fetch leaves if not provided as prop
   const fetchLeaves = useCallback(async () => {
+    // If leaves are provided as prop, don't fetch
+    if (providedLeaves) {
+      setLeaves(providedLeaves);
+      return;
+    }
+    
     try {
       setLoading(true);
       const response = await getAllLeaves();
@@ -28,9 +35,9 @@ const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ className = '', onDateSel
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [providedLeaves]);
 
-  // Fetch leaves only on component mount
+  // Fetch leaves only on component mount or when providedLeaves changes
   React.useEffect(() => {
     fetchLeaves();
   }, [fetchLeaves]);
@@ -141,9 +148,16 @@ const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ className = '', onDateSel
         setSelectedEndDate(clickedDate);
       }
       
-      // Format dates as YYYY-MM-DD for the form
-      const startDateStr = selectedStartDate?.toISOString().split('T')[0] || clickedDate.toISOString().split('T')[0];
-      const endDateStr = clickedDate.toISOString().split('T')[0];
+      // Format dates as YYYY-MM-DD using local date (not UTC)
+      const formatLocalDate = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+      
+      const startDateStr = selectedStartDate ? formatLocalDate(selectedStartDate) : formatLocalDate(clickedDate);
+      const endDateStr = formatLocalDate(clickedDate);
       
       // Call the callback to update the form
       onDateSelect(startDateStr, endDateStr);
@@ -270,14 +284,14 @@ const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ className = '', onDateSel
                         onMouseEnter={() => setHoveredLeave(leave)}
                         onMouseLeave={() => setHoveredLeave(null)}
                       >
-                        {leave.user?.name || 'Unknown'}
+                        {leave.type || 'Leave'}
                         
                         {/* Hover tooltip */}
                         {hoveredLeave?.id === leave.id && (
                           <div className="absolute z-50 bottom-full left-0 mb-2 w-48 p-3 bg-slate-900/95 backdrop-blur-lg border border-slate-700/50 rounded-lg shadow-xl">
                             <div className="flex items-center justify-between mb-2">
                               <span className="font-medium text-white text-sm">
-                                {leave.user?.name || 'Unknown'}
+                                {leave.user?.name || 'Employee'}
                               </span>
                               <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(leave.status)}`}>
                                 {leave.status}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -18,14 +18,35 @@ import {
   Shield
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
+import { getSidebarPermissions } from '../api/roleManagementApi';
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const userRole = user?.role?.toLowerCase() || 'employee';
+  const [sidebarPermissions, setSidebarPermissions] = useState<{ [key: string]: boolean } | null>(null);
 
   const isActive = (path: string) => location.pathname === path;
+
+  // Load sidebar permissions from database on every render
+  // This ensures users always see the latest permissions
+  useEffect(() => {
+    const loadSidebarPermissions = async () => {
+      if (token) {
+        try {
+          const permissions = await getSidebarPermissions(token);
+          setSidebarPermissions(permissions);
+        } catch (error) {
+          console.error('Error loading sidebar permissions:', error);
+          // On error, use null to trigger fallback to hardcoded roles
+          setSidebarPermissions(null);
+        }
+      }
+    };
+    
+    loadSidebarPermissions();
+  }, [token, location.pathname]);
 
   const handleProfileClick = () => {
     navigate('/profile');
@@ -40,7 +61,8 @@ const Sidebar: React.FC = () => {
     path: string;
     icon: any;
     onClick?: () => void;
-    requiredRoles?: string[]; // 'admin', 'manager', 'employee'
+    menuKey?: string; // Key for database sidebar permissions
+    requiredRoles?: string[]; // Fallback for when database unavailable
   }
 
   interface NavSection {
@@ -49,9 +71,20 @@ const Sidebar: React.FC = () => {
   }
 
   // Check if user has access to a nav item
+  // ONLY use database permissions - no fallback
   const hasAccess = (item: NavItem): boolean => {
-    if (!item.requiredRoles) return true; // No role restriction
-    return item.requiredRoles.includes(userRole);
+    // If permissions loaded and item has menuKey, check database
+    if (sidebarPermissions !== null && item.menuKey) {
+      return sidebarPermissions[item.menuKey] === true;
+    }
+    
+    // While loading (sidebarPermissions is null), show based on hardcoded rules temporarily
+    // Once loaded, ONLY database permissions matter
+    if (sidebarPermissions === null && item.requiredRoles) {
+      return item.requiredRoles.includes(userRole);
+    }
+    
+    return false;
   };
 
   const navSections: NavSection[] = [
@@ -62,18 +95,21 @@ const Sidebar: React.FC = () => {
           name: 'Dashboard', 
           path: '/dashboard',
           icon: LayoutDashboard,
+          menuKey: 'dashboard',
           requiredRoles: ['admin', 'manager', 'employee']
         },
         { 
           name: 'Command Center', 
           path: '/command-center',
           icon: Command,
+          menuKey: 'command-center',
           requiredRoles: ['admin']
         },
         { 
           name: 'Workflow Hub', 
           path: '/workflow-hub',
           icon: GitBranch,
+          menuKey: 'workflow-hub',
           requiredRoles: ['admin']
         }
       ]
@@ -85,49 +121,57 @@ const Sidebar: React.FC = () => {
           name: 'My Team', 
           path: '/my-team',
           icon: Users,
+          menuKey: 'my-team',
           requiredRoles: ['admin', 'manager']
         },
         { 
           name: 'Directory', 
           path: '/directory',
           icon: Building,
-          requiredRoles: ['admin']
+          menuKey: 'directory',
+          requiredRoles: ['admin', 'hr']
         },
         { 
           name: 'Leave & Attendance', 
           path: '/leave-attendance',
           icon: Calendar,
-          requiredRoles: ['admin', 'manager', 'employee']
+          menuKey: 'leave-attendance',
+          requiredRoles: ['admin', 'manager', 'employee', 'hr']
         },
         { 
           name: 'Timesheet Entry', 
           path: '/timesheet-entry',
           icon: Clock,
-          requiredRoles: ['admin', 'manager', 'employee']
+          menuKey: 'timesheet-entry',
+          requiredRoles: ['admin', 'manager', 'employee', 'hr']
         },
         { 
           name: 'Performance Goals', 
           path: '/performance-goals',
           icon: Target,
+          menuKey: 'performance-goals',
           requiredRoles: ['admin', 'manager', 'employee']
         },
         { 
           name: 'Payroll & Benefits', 
           path: '/payroll-benefits',
           icon: DollarSign,
-          requiredRoles: ['admin', 'employee']
+          menuKey: 'payroll-benefits',
+          requiredRoles: ['admin', 'employee', 'hr']
         },
         { 
           name: 'Recruiting', 
           path: '/recruiting',
           icon: UserCheck,
+          menuKey: 'recruiting',
           requiredRoles: ['admin']
         },
         { 
           name: 'Reports', 
           path: '/reports',
           icon: FileText,
-          requiredRoles: ['admin', 'manager']
+          menuKey: 'reports',
+          requiredRoles: ['admin', 'manager', 'hr']
         }
       ]
     },
@@ -138,33 +182,38 @@ const Sidebar: React.FC = () => {
           name: 'Audit Logs', 
           path: '/audit-logs',
           icon: Database,
+          menuKey: 'audit-logs',
           requiredRoles: ['admin']
         },
         { 
           name: 'Permission Management', 
           path: '/permission-management',
           icon: Users,
+          menuKey: 'permission-management',
           requiredRoles: ['admin']
         },
         { 
           name: 'Role Management', 
           path: '/role-management',
           icon: Shield,
+          menuKey: 'role-management',
           requiredRoles: ['admin']
         },
         { 
           name: 'Profile', 
           path: '/profile',
           icon: User,
+          menuKey: 'profile',
           onClick: handleProfileClick,
-          requiredRoles: ['admin', 'manager', 'employee']
+          requiredRoles: ['admin', 'manager', 'employee', 'hr']
         },
         { 
           name: 'Settings', 
           path: '/settings',
           icon: Settings,
+          menuKey: 'settings',
           onClick: handleSettingsClick,
-          requiredRoles: ['admin', 'manager', 'employee']
+          requiredRoles: ['admin', 'manager', 'employee', 'hr']
         }
       ]
     }

@@ -27,6 +27,7 @@ import { FilterProvider } from './contexts/FilterContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { CompactViewProvider } from './contexts/CompactViewContext';
 import { useAuthStore, useAuthInitialized, useIsAuthenticated } from './store/useAuthStore';
+import { useSettingsStore } from './store/useSettingsStore';
 import './styles/globals.css';
 import './styles/theme.css';
 
@@ -34,11 +35,19 @@ function App() {
   const { initializeAuth } = useAuthStore();
   const authInitialized = useAuthInitialized();
   const isAuthenticated = useIsAuthenticated();
+  const { fetchSettings } = useSettingsStore();
 
   // Initialize authentication on app load
   useEffect(() => {
     initializeAuth();
   }, [initializeAuth]);
+
+  // Load user settings after authentication is initialized and user is authenticated
+  useEffect(() => {
+    if (authInitialized && isAuthenticated) {
+      fetchSettings();
+    }
+  }, [authInitialized, isAuthenticated, fetchSettings]);
 
   // Show loading screen while auth is initializing
   if (!authInitialized) {

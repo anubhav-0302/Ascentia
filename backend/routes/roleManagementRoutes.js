@@ -6,7 +6,8 @@ import {
   createCustomRole,
   deleteCustomRole,
   getPermissionAuditLog,
-  checkUserPermission
+  checkUserPermission,
+  getSidebarPermissions
 } from '../controllers/roleManagementController.js';
 import { requireAuth, authorize } from '../middleware/auth.js';
 
@@ -20,6 +21,15 @@ router.use((req, res, next) => {
 
 // GET /api/admin/roles - Get all roles (admin only)
 router.get('/', requireAuth, authorize('admin'), getRoles);
+
+// GET /api/admin/permissions/audit - Get permission audit log (admin only)
+router.get('/audit/logs', requireAuth, authorize('admin'), getPermissionAuditLog);
+
+// GET /api/admin/permissions/check - Check user permission (authenticated users)
+router.get('/check/permission', requireAuth, checkUserPermission);
+
+// GET /api/admin/permissions/sidebar - Get sidebar permissions for current user
+router.get('/sidebar/permissions', requireAuth, getSidebarPermissions);
 
 // GET /api/admin/roles/:id - Get role with permissions (admin only)
 router.get('/:id', requireAuth, authorize('admin'), getRolePermissions);
@@ -42,11 +52,5 @@ router.post('/', requireAuth, authorize('admin'), createCustomRole);
 
 // DELETE /api/admin/roles/:id - Delete custom role (admin only)
 router.delete('/:id', requireAuth, authorize('admin'), deleteCustomRole);
-
-// GET /api/admin/permissions/audit - Get permission audit log (admin only)
-router.get('/audit/logs', requireAuth, authorize('admin'), getPermissionAuditLog);
-
-// GET /api/admin/permissions/check - Check user permission (authenticated users)
-router.get('/check/permission', requireAuth, checkUserPermission);
 
 export default router;

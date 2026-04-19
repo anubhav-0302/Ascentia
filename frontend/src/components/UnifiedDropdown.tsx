@@ -52,7 +52,7 @@ const UnifiedDropdown: React.FC<UnifiedDropdownProps> = ({
   useEffect(() => {
     if (isOpen && dropdownRef.current && dropdownListRef.current) {
       const rect = dropdownRef.current.getBoundingClientRect();
-      const dropdownHeight = 240; // Approximate max height (max-h-60)
+      const dropdownHeight = 400; // Increased max height for more options
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
 
@@ -109,7 +109,7 @@ const UnifiedDropdown: React.FC<UnifiedDropdownProps> = ({
               dropUp ? 'bottom-full mb-1' : 'top-full mt-1'
             }`}
           >
-            <div className="max-h-60 overflow-y-auto">
+            <div className="max-h-96 overflow-y-auto">
               {options.map((option) => (
                 <button
                   type="button"

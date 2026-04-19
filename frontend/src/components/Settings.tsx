@@ -267,12 +267,32 @@ const Settings: React.FC = () => {
                             value={getSetting('timezone', 'UTC-5 (Eastern)')}
                             onChange={(value) => updateSetting('timezone', value as string)}
                             options={[
-                              { value: 'UTC-5 (Eastern)', label: 'UTC-5 (Eastern)' },
-                              { value: 'UTC-6 (Central)', label: 'UTC-6 (Central)' },
-                              { value: 'UTC-7 (Mountain)', label: 'UTC-7 (Mountain)' },
+                              { value: 'UTC-12 (Baker Island)', label: 'UTC-12 (Baker Island)' },
+                              { value: 'UTC-11 (Samoa)', label: 'UTC-11 (Samoa)' },
+                              { value: 'UTC-10 (Hawaii)', label: 'UTC-10 (Hawaii)' },
+                              { value: 'UTC-9 (Alaska)', label: 'UTC-9 (Alaska)' },
                               { value: 'UTC-8 (Pacific)', label: 'UTC-8 (Pacific)' },
+                              { value: 'UTC-7 (Mountain)', label: 'UTC-7 (Mountain)' },
+                              { value: 'UTC-6 (Central)', label: 'UTC-6 (Central)' },
+                              { value: 'UTC-5 (Eastern)', label: 'UTC-5 (Eastern)' },
+                              { value: 'UTC-4 (Atlantic)', label: 'UTC-4 (Atlantic)' },
+                              { value: 'UTC-3 (Brazil)', label: 'UTC-3 (Brazil)' },
+                              { value: 'UTC-2 (Mid-Atlantic)', label: 'UTC-2 (Mid-Atlantic)' },
+                              { value: 'UTC-1 (Azores)', label: 'UTC-1 (Azores)' },
                               { value: 'UTC+0 (GMT)', label: 'UTC+0 (GMT)' },
-                              { value: 'UTC+1 (CET)', label: 'UTC+1 (CET)' }
+                              { value: 'UTC+1 (CET)', label: 'UTC+1 (CET)' },
+                              { value: 'UTC+2 (EET)', label: 'UTC+2 (EET)' },
+                              { value: 'UTC+3 (MSK)', label: 'UTC+3 (Moscow)' },
+                              { value: 'UTC+4 (Dubai)', label: 'UTC+4 (Dubai)' },
+                              { value: 'UTC+5 (Pakistan)', label: 'UTC+5 (Pakistan)' },
+                              { value: 'UTC+5:30 (India)', label: 'UTC+5:30 (India - IST)' },
+                              { value: 'UTC+6 (Bangladesh)', label: 'UTC+6 (Bangladesh)' },
+                              { value: 'UTC+7 (Bangkok)', label: 'UTC+7 (Bangkok)' },
+                              { value: 'UTC+8 (Singapore)', label: 'UTC+8 (Singapore)' },
+                              { value: 'UTC+9 (Tokyo)', label: 'UTC+9 (Tokyo)' },
+                              { value: 'UTC+10 (Sydney)', label: 'UTC+10 (Sydney)' },
+                              { value: 'UTC+11 (Solomon Islands)', label: 'UTC+11 (Solomon Islands)' },
+                              { value: 'UTC+12 (Fiji)', label: 'UTC+12 (Fiji)' }
                             ]}
                             showLabel={false}
                             size="md"

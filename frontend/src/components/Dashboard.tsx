@@ -571,14 +571,20 @@ const Dashboard = () => {
                 alert('Opening announcement composer...\n\nThis would open a rich text editor for creating company-wide announcements with scheduling and targeting options.');
               }}
               className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group"
+              disabled={!isAdmin}
+              title={!isAdmin ? 'Only admins can send announcements' : 'Send announcement'}
             >
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center group-hover:bg-green-500/30 transition-colors duration-200">
-                  <i className="fas fa-bullhorn text-green-400 text-sm"></i>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${
+                  isAdmin 
+                    ? 'bg-green-500/20 group-hover:bg-green-500/30' 
+                    : 'bg-gray-500/20 group-hover:bg-gray-500/20'
+                }`}>
+                  <i className={`fas fa-bullhorn text-sm ${isAdmin ? 'text-green-400' : 'text-gray-400'}`}></i>
                 </div>
                 <div>
-                  <p className="text-white font-medium text-sm">Send Announcement</p>
-                  <p className="text-gray-500 text-xs">Company-wide notice</p>
+                  <p className={`font-medium text-sm ${isAdmin ? 'text-white' : 'text-gray-500'}`}>Send Announcement</p>
+                  <p className="text-gray-500 text-xs">{isAdmin ? 'Company-wide notice' : 'Admin only'}</p>
                 </div>
               </div>
             </button>
