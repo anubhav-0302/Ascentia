@@ -26,7 +26,9 @@ const MODULE_ACTIONS: { [module: string]: string[] } = {
   audit: ['view'],
   settings: ['view', 'edit'],
   users: ['view', 'create', 'edit', 'delete'],
-  kra: ['view', 'create', 'edit', 'delete']
+  kra: ['view', 'create', 'edit', 'delete'],
+  workflow: ['view', 'create', 'edit', 'delete'],
+  command: ['view', 'create', 'edit', 'delete']
 };
 
 const MODULES = Object.keys(MODULE_ACTIONS);

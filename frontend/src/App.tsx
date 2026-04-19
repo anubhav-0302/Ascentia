@@ -83,8 +83,16 @@ function App() {
                       <Route path="/" element={<Dashboard />} />
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/directory" element={<Directory />} />
-                      <Route path="/command-center" element={<CommandCenter />} />
-                      <Route path="/workflow-hub" element={<WorkflowHub />} />
+                      <Route path="/command-center" element={
+                        <ProtectedRoute requiredRoles={['admin']}>
+                          <CommandCenter />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/workflow-hub" element={
+                        <ProtectedRoute requiredRoles={['admin']}>
+                          <WorkflowHub />
+                        </ProtectedRoute>
+                      } />
                       <Route path="/timesheet-entry" element={<TimesheetEntry />} />
                       <Route path="/performance-goals" element={<PerformanceGoals />} />
                       <Route path="/my-team" element={<MyTeam />} />

@@ -68,13 +68,13 @@ const Sidebar: React.FC = () => {
           name: 'Command Center', 
           path: '/command-center',
           icon: Command,
-          requiredRoles: ['admin', 'manager']
+          requiredRoles: ['admin']
         },
         { 
           name: 'Workflow Hub', 
           path: '/workflow-hub',
           icon: GitBranch,
-          requiredRoles: ['admin', 'manager']
+          requiredRoles: ['admin']
         }
       ]
     },
