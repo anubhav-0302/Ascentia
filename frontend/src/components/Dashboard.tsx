@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { getDashboardStats, type DashboardStats } from "../api/dashboardApi";
+import { getMyLeaves } from "../api/leaveApi";
 import { useFilters } from "../contexts/FilterContext";
 import { useIsAdmin, useAuthStore } from "../store/useAuthStore";
 import {
@@ -42,6 +43,7 @@ const TREND_COLORS = {
 
 const Dashboard = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [myLeaves, setMyLeaves] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { updateFilters } = useFilters();
@@ -52,12 +54,32 @@ const Dashboard = () => {
   const userRole = user?.role?.toLowerCase() || 'employee';
   const isManager = userRole === 'manager';
 
+  // Calculate leave balance using useMemo to prevent recalculation on every render
+  const leaveBalance = useMemo(() => {
+    const totalLeaveDays = 21; // Standard annual leave
+    const usedLeaveDays = myLeaves
+      .filter(l => l.status === 'Approved' || l.status === 'Pending')
+      .reduce((acc, leave) => {
+        const start = new Date(leave.startDate);
+        const end = new Date(leave.endDate);
+        const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        return acc + days;
+      }, 0);
+    return Math.max(0, totalLeaveDays - usedLeaveDays);
+  }, [myLeaves]);
+
   const fetchStats = async () => {
     try {
       setLoading(true);
       setError(null);
       const data = await getDashboardStats();
       setStats(data);
+      
+      // Fetch personal leave data for employees
+      if (!isAdmin && !isManager) {
+        const leavesData = await getMyLeaves();
+        setMyLeaves(leavesData.data || []);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load dashboard data');
     } finally {
@@ -307,7 +329,7 @@ const Dashboard = () => {
                 </div>
                 <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Pending</span>
               </div>
-              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-blue-100 transition-colors duration-300">3</h3>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-blue-100 transition-colors duration-300">{stats?.leaveStatus?.find(l => l.status === 'Pending')?.count || 0}</h3>
               <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Leave Approvals</p>
               <div className="mt-4 flex items-center text-xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <span>Review Requests</span>
@@ -384,7 +406,9 @@ const Dashboard = () => {
                 </div>
                 <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Available</span>
               </div>
-              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-green-100 transition-colors duration-300">12</h3>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-green-100 transition-colors duration-300">
+                {leaveBalance}
+              </h3>
               <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Leave Days Remaining</p>
               <div className="mt-4 flex items-center text-xs text-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <span>Request Leave</span>
@@ -544,7 +568,7 @@ const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-white font-medium text-sm">Approve Leave</p>
-                  <p className="text-gray-500 text-xs">3 pending requests</p>
+                  <p className="text-gray-500 text-xs">{stats?.leaveStatus?.find(l => l.status === 'Pending')?.count || 0} pending requests</p>
                 </div>
               </div>
             </Link>

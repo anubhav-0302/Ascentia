@@ -509,10 +509,7 @@ const EmployeeProfile: React.FC = () => {
   
   return (
     <PageTransition>
-      <StandardLayout 
-        title={employee.name}
-        description={`${employee.jobTitle} • ${employee.department}`}
-      >
+      <StandardLayout>
         <FadeIn delay={100}>
           <div className="space-y-6">
             {/* Header Section */}

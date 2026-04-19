@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
-import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { User, Settings, LogOut, ChevronDown, Menu } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
 import HeaderSearch from './HeaderSearch';
 
 interface HeaderProps {
-  // No props needed since title/subtitle are handled by individual pages
+  onMenuClick?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = () => {
+const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const [showProfile, setShowProfile] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuthStore();
@@ -43,8 +43,16 @@ const Header: React.FC<HeaderProps> = () => {
   }, []);
 
   return (
-    <header className="h-16 bg-slate-900/80 backdrop-blur-lg border-b border-slate-800/50 fixed top-0 right-0 left-64 z-40">
-      <div className="h-full px-6 flex items-center justify-end">
+    <header className="h-16 bg-slate-900/80 backdrop-blur-lg border-b border-slate-800/50 fixed top-0 right-0 left-0 lg:left-64 z-40">
+      <div className="h-full px-4 lg:px-6 flex items-center justify-between lg:justify-end">
+        {/* Mobile Menu Button */}
+        <button
+          onClick={onMenuClick}
+          className="lg:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/50 transition-colors"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+
         {/* Right Section - Enhanced visual presentation */}
         <div className="flex items-center space-x-3">
           {/* Header Search */}

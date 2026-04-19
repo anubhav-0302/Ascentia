@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { X } from 'lucide-react';
 import { 
   LayoutDashboard, 
   Users, 
@@ -20,7 +21,27 @@ import {
 import { useAuthStore } from '../store/useAuthStore';
 import { getSidebarPermissions } from '../api/roleManagementApi';
 
-const Sidebar: React.FC = () => {
+// Type definitions
+interface NavItem {
+  name: string;
+  path?: string;
+  icon: any;
+  menuKey?: string;
+  requiredRoles?: string[];
+  onClick?: () => void;
+}
+
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, token } = useAuthStore();
@@ -55,20 +76,6 @@ const Sidebar: React.FC = () => {
   const handleSettingsClick = () => {
     navigate('/settings');
   };
-
-  interface NavItem {
-    name: string;
-    path: string;
-    icon: any;
-    onClick?: () => void;
-    menuKey?: string; // Key for database sidebar permissions
-    requiredRoles?: string[]; // Fallback for when database unavailable
-  }
-
-  interface NavSection {
-    title: string;
-    items: NavItem[];
-  }
 
   // Check if user has access to a nav item
   // ONLY use database permissions - no fallback
@@ -220,32 +227,53 @@ const Sidebar: React.FC = () => {
   ];
 
   return (
-    <div className="w-64 bg-slate-900 border-r border-slate-800/50 h-screen fixed left-0 top-0 flex flex-col">
-      {/* Logo */}
-      <div className="p-6 border-b border-slate-800/50">
-        <h1 className="text-xl font-bold text-white flex items-center">
-          <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-teal-500/30">
-            <span className="text-white font-bold text-sm">A</span>
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={onClose}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 shadow-2xl overflow-hidden transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        isOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        <div className="flex flex-col h-full">
+          {/* Logo/Brand Section */}
+          <div className="p-6 border-b border-slate-700/50 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-xl">A</span>
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-white">Ascentia</h1>
+                <p className="text-xs text-slate-400">HR Management System</p>
+              </div>
+            </div>
+            {/* Mobile Close Button */}
+            <button
+              onClick={onClose}
+              className="lg:hidden p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          Ascentia
-        </h1>
-      </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 py-4 overflow-y-auto scrollbar-hide">
-        {navSections.map((section, index) => {
-          // Filter items based on user role access
-          const accessibleItems = section.items.filter(hasAccess);
-          
-          // Don't render section if no items are accessible
-          if (accessibleItems.length === 0) return null;
-          
-          return (
-            <div key={index} className="mb-8">
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-3">
-                {section.title}
-              </h3>
-              <ul className="space-y-1">
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900 py-4">
+            {navSections.map((section, index) => {
+              const accessibleItems = section.items.filter(hasAccess);
+              
+              if (accessibleItems.length === 0) return null;
+              
+              return (
+                <div key={index} className="mb-8">
+                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-3">
+                    {section.title}
+                  </h3>
+                  <ul className="space-y-1">
                 {accessibleItems.map((item) => {
                   const Icon = item.icon;
                   const active = isActive(item.path);
@@ -279,6 +307,9 @@ const Sidebar: React.FC = () => {
                       ) : (
                         <Link
                           to={item.path}
+                          onClick={() => {
+                            if (onClose) onClose();
+                          }}
                           className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative ${
                             active
                               ? 'bg-teal-500/10 text-teal-400 border-l-4 border-teal-500 shadow-lg shadow-teal-500/10'
@@ -308,9 +339,10 @@ const Sidebar: React.FC = () => {
             </div>
           );
         })}
-      </nav>
-
-          </div>
+          </nav>
+        </div>
+      </div>
+    </>
   );
 };
 

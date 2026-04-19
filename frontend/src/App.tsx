@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Toaster } from 'react-hot-toast';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -36,6 +36,7 @@ function App() {
   const authInitialized = useAuthInitialized();
   const isAuthenticated = useIsAuthenticated();
   const { fetchSettings } = useSettingsStore();
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Initialize authentication on app load
   useEffect(() => {
@@ -80,13 +81,14 @@ function App() {
       <ThemeProvider>
         <CompactViewProvider>
           <FilterProvider>
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col">
-              <Sidebar />
-              <Header />
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+              <Sidebar isOpen={isMobileSidebarOpen} onClose={() => setIsMobileSidebarOpen(false)} />
+              <div className="lg:ml-64 flex flex-col min-h-screen">
+                <Header onMenuClick={() => setIsMobileSidebarOpen(true)} />
               
               {/* Main Content Area */}
-              <main className="ml-64 mt-16 px-6 py-6 flex-1 overflow-y-auto scrollbar-hide">
-                <div className="max-w-7xl mx-auto pb-24">
+              <main className="mt-16 px-4 lg:px-6 py-4 lg:py-6 flex-1 overflow-y-auto scrollbar-hide">
+                <div className="max-w-full lg:max-w-7xl mx-auto pb-24">
                   <ProtectedRoute>
                     <Routes>
                       <Route path="/" element={<Dashboard />} />
@@ -123,13 +125,13 @@ function App() {
               </main>
               
               {/* Footer - Always at bottom */}
-              <footer className="ml-64 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800/50 py-3 px-6 mt-auto">
+              <footer className="hidden lg:block bg-slate-900/95 backdrop-blur-lg border-t border-slate-800/50 py-3 px-6 mt-auto">
                 <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
                   <div className="flex items-center space-x-2">
                     <div className="w-6 h-6 bg-gradient-to-br from-teal-500 to-teal-600 rounded flex items-center justify-center">
                       <span className="text-white font-bold text-xs">A</span>
                     </div>
-                    <span className="text-sm text-gray-400">© 2026 Ascentia. All rights reserved.</span>
+                    <span className="text-sm text-gray-400"> 2026 Ascentia. All rights reserved.</span>
                   </div>
                   <div className="flex items-center space-x-4 text-xs text-gray-500">
                     <span className="hover:text-teal-400 transition-colors cursor-pointer">Privacy</span>
@@ -138,6 +140,24 @@ function App() {
                   </div>
                 </div>
               </footer>
+
+              {/* Mobile Footer */}
+              <footer className="lg:hidden bg-slate-900/95 backdrop-blur-lg border-t border-slate-800/50 py-3 px-4 mt-auto">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-6 h-6 bg-gradient-to-br from-teal-500 to-teal-600 rounded flex items-center justify-center">
+                      <span className="text-white font-bold text-xs">A</span>
+                    </div>
+                    <span className="text-sm text-gray-400"> 2026 Ascentia</span>
+                  </div>
+                  <div className="flex items-center space-x-4 text-xs text-gray-500">
+                    <span className="hover:text-teal-400 transition-colors cursor-pointer">Privacy</span>
+                    <span className="hover:text-teal-400 transition-colors cursor-pointer">Terms</span>
+                    <span className="hover:text-teal-400 transition-colors cursor-pointer">Support</span>
+                  </div>
+                </div>
+              </footer>
+              </div>
               <Toaster position="top-right" />
               
               {/* Global Command Palette */}

@@ -969,8 +969,15 @@ const PayrollBenefits: React.FC = () => {
                       step="0.01"
                       min="0"
                       max={componentForm.isPercentage ? 100 : undefined}
-                      value={componentForm.amount}
-                      onChange={(e) => setComponentForm(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
+                      value={componentForm.amount || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          setComponentForm(prev => ({ ...prev, amount: 0 }));
+                        } else {
+                          setComponentForm(prev => ({ ...prev, amount: parseFloat(value) || 0 }));
+                        }
+                      }}
                       placeholder={componentForm.isPercentage ? "Enter percentage (0-100)" : "Enter amount"}
                       required
                     />
@@ -1072,8 +1079,15 @@ const PayrollBenefits: React.FC = () => {
                       type="number"
                       step="0.01"
                       min="0"
-                      value={assignForm.amount}
-                      onChange={(e) => setAssignForm(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
+                      value={assignForm.amount || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          setAssignForm(prev => ({ ...prev, amount: 0 }));
+                        } else {
+                          setAssignForm(prev => ({ ...prev, amount: parseFloat(value) || 0 }));
+                        }
+                      }}
                       placeholder="Amount or percentage"
                       required
                     />

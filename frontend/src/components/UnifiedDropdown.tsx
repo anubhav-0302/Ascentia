@@ -105,11 +105,11 @@ const UnifiedDropdown: React.FC<UnifiedDropdownProps> = ({
         {isOpen && !disabled && (
           <div 
             ref={dropdownListRef}
-            className={`absolute left-0 right-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl overflow-hidden ${
+            className={`absolute left-0 right-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl overflow-hidden min-w-full max-w-sm ${
               dropUp ? 'bottom-full mb-1' : 'top-full mt-1'
             }`}
           >
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
               {options.map((option) => (
                 <button
                   type="button"
