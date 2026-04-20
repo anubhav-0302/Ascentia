@@ -75,9 +75,10 @@ export class ApiError extends Error {
 
 // Centralized employee API using apiClient
 export const employeeApi = {
-  getEmployees: () => {
-    console.log("🔍 Fetching employees...");
-    return apiClient.get("/employees");
+  getEmployees: (scope?: string) => {
+    console.log("🔍 Fetching employees with scope:", scope || 'default');
+    const url = scope ? `/employees?scope=${scope}` : "/employees";
+    return apiClient.get(url);
   },
   
   getEmployee: (id: number) => {

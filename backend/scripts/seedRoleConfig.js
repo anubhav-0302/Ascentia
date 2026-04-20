@@ -29,6 +29,11 @@ const DEFAULT_ROLES = [
     isCustom: false
   },
   {
+    name: 'teamlead',
+    description: 'Team lead - manage direct reports',
+    isCustom: false
+  },
+  {
     name: 'employee',
     description: 'Employee self-service access',
     isCustom: false
@@ -183,6 +188,54 @@ const PERMISSIONS = {
   ],
   
   manager: [
+    // Performance
+    { module: 'performance', action: 'view', isEnabled: true },
+    { module: 'performance', action: 'create', isEnabled: true },
+    { module: 'performance', action: 'edit', isEnabled: true },
+    { module: 'performance', action: 'delete', isEnabled: true },
+    
+    // Timesheet
+    { module: 'timesheet', action: 'view', isEnabled: true },
+    { module: 'timesheet', action: 'create', isEnabled: true },
+    { module: 'timesheet', action: 'edit', isEnabled: true },
+    { module: 'timesheet', action: 'delete', isEnabled: true },
+    { module: 'timesheet', action: 'approve', isEnabled: true },
+    
+    // Leave
+    { module: 'leave', action: 'view', isEnabled: true },
+    { module: 'leave', action: 'create', isEnabled: true },
+    { module: 'leave', action: 'edit', isEnabled: true },
+    { module: 'leave', action: 'delete', isEnabled: true },
+    { module: 'leave', action: 'approve', isEnabled: true },
+    
+    // Reports
+    { module: 'reports', action: 'view', isEnabled: true },
+    { module: 'reports', action: 'export', isEnabled: true },
+    
+    // Settings
+    { module: 'settings', action: 'view', isEnabled: true },
+    { module: 'settings', action: 'edit', isEnabled: true },
+    
+    // Sidebar Menu Items
+    { module: 'sidebar', action: 'dashboard', isEnabled: true },
+    { module: 'sidebar', action: 'command-center', isEnabled: false },
+    { module: 'sidebar', action: 'workflow-hub', isEnabled: false },
+    { module: 'sidebar', action: 'my-team', isEnabled: true },
+    { module: 'sidebar', action: 'directory', isEnabled: false },
+    { module: 'sidebar', action: 'leave-attendance', isEnabled: true },
+    { module: 'sidebar', action: 'timesheet-entry', isEnabled: true },
+    { module: 'sidebar', action: 'performance-goals', isEnabled: true },
+    { module: 'sidebar', action: 'payroll-benefits', isEnabled: false },
+    { module: 'sidebar', action: 'recruiting', isEnabled: false },
+    { module: 'sidebar', action: 'reports', isEnabled: true },
+    { module: 'sidebar', action: 'audit-logs', isEnabled: false },
+    { module: 'sidebar', action: 'permission-management', isEnabled: false },
+    { module: 'sidebar', action: 'role-management', isEnabled: false },
+    { module: 'sidebar', action: 'profile', isEnabled: true },
+    { module: 'sidebar', action: 'settings', isEnabled: true }
+  ],
+  
+  teamlead: [
     // Performance
     { module: 'performance', action: 'view', isEnabled: true },
     { module: 'performance', action: 'create', isEnabled: true },

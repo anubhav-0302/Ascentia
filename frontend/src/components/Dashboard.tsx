@@ -45,13 +45,12 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { updateFilters } = useFilters();
-  const isAdmin = useIsAdmin();
   const { user } = useAuthStore();
-  
-  // Determine user role for dashboard customization
   const userRole = user?.role?.toLowerCase() || 'employee';
+  const isAdmin = useIsAdmin();
   const isManager = userRole === 'manager';
   const isHR = userRole === 'hr';
+  const isTeamLead = userRole === 'teamlead';
 
   // Calculate leave balance using useMemo to prevent recalculation on every render
   const leaveBalance = useMemo(() => {
@@ -198,7 +197,7 @@ const Dashboard = () => {
       {/* Header */}
       <div className="mb-8 animate-fadeIn">
         <h1 className="text-3xl font-bold text-white mb-2">
-          {isAdmin ? 'Admin Dashboard' : isManager ? 'Manager Dashboard' : isHR ? 'HR Dashboard' : 'My Dashboard'}
+          {isAdmin ? 'Admin Dashboard' : isManager ? 'Manager Dashboard' : isHR ? 'HR Dashboard' : isTeamLead ? 'Team Lead Dashboard' : 'My Dashboard'}
         </h1>
         <p className="text-gray-400">
           {isAdmin 
@@ -207,6 +206,8 @@ const Dashboard = () => {
             ? 'Team performance and management overview'
             : isHR
             ? 'HR operations and employee management metrics'
+            : isTeamLead
+            ? 'Team lead management and direct reports overview'
             : 'Your personal information and leave summary'
           }
         </p>
@@ -460,7 +461,7 @@ const Dashboard = () => {
         )}
 
         {/* EMPLOYEE VIEW - Personal Focused Metrics */}
-        {!isAdmin && !isManager && !isHR && (
+        {!isAdmin && !isManager && !isHR && !isTeamLead && (
           <>
             <div className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn hover:border-blue-500/40 hover:shadow-blue-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.1s' }}>

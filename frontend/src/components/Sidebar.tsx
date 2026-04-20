@@ -129,7 +129,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
           path: '/my-team',
           icon: Users,
           menuKey: 'my-team',
-          requiredRoles: ['admin', 'manager']
+          requiredRoles: ['admin', 'manager', 'teamlead']
         },
         { 
           name: 'Directory', 
@@ -143,21 +143,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
           path: '/leave-attendance',
           icon: Calendar,
           menuKey: 'leave-attendance',
-          requiredRoles: ['admin', 'manager', 'employee', 'hr']
+          requiredRoles: ['admin', 'manager', 'employee', 'hr', 'teamlead']
         },
         { 
           name: 'Timesheet Entry', 
           path: '/timesheet-entry',
           icon: Clock,
           menuKey: 'timesheet-entry',
-          requiredRoles: ['admin', 'manager', 'employee', 'hr']
+          requiredRoles: ['admin', 'manager', 'employee', 'hr', 'teamlead']
         },
         { 
           name: 'Performance Goals', 
           path: '/performance-goals',
           icon: Target,
           menuKey: 'performance-goals',
-          requiredRoles: ['admin', 'manager', 'employee']
+          requiredRoles: ['admin', 'manager', 'employee', 'teamlead']
         },
         { 
           name: 'Payroll & Benefits', 
@@ -178,7 +178,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
           path: '/reports',
           icon: FileText,
           menuKey: 'reports',
-          requiredRoles: ['admin', 'manager', 'hr']
+          requiredRoles: ['admin', 'manager', 'hr', 'teamlead']
         }
       ]
     },
@@ -212,7 +212,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
           icon: User,
           menuKey: 'profile',
           onClick: handleProfileClick,
-          requiredRoles: ['admin', 'manager', 'employee', 'hr']
+          requiredRoles: ['admin', 'manager', 'employee', 'hr', 'teamlead']
         },
         { 
           name: 'Settings', 
@@ -220,7 +220,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
           icon: Settings,
           menuKey: 'settings',
           onClick: handleSettingsClick,
-          requiredRoles: ['admin', 'manager', 'employee', 'hr']
+          requiredRoles: ['admin', 'manager', 'employee', 'hr', 'teamlead']
         }
       ]
     }

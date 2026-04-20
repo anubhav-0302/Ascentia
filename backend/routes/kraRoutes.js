@@ -17,8 +17,8 @@ router.use((req, res, next) => {
 
 // KRA Routes - Admin/Manager can manage, employees view own
 router.get('/goal/:goalId', requireAuth, getKRAsByGoal);
-router.post('/', requireAuth, authorize('admin', 'manager'), createKRA);
-router.put('/:id', requireAuth, authorize('admin', 'manager'), updateKRA);
-router.delete('/:id', requireAuth, authorize('admin', 'manager'), deleteKRA);
+router.post('/', requireAuth, authorize('admin', 'manager', 'teamlead'), createKRA);
+router.put('/:id', requireAuth, authorize('admin', 'manager', 'teamlead'), updateKRA);
+router.delete('/:id', requireAuth, authorize('admin', 'manager', 'teamlead'), deleteKRA);
 
 export default router;

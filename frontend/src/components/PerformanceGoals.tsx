@@ -245,8 +245,8 @@ const PerformanceGoals: React.FC = () => {
         const goalsResponse = await getPerformanceGoals(params);
         let filteredGoals = goalsResponse || [];
         
-        // Additional filtering on frontend for managers viewing all-goals
-        if (activeTab === 'all-goals' && user?.role === 'manager') {
+        // Additional filtering on frontend for managers/team leads viewing all-goals
+        if (activeTab === 'all-goals' && (user?.role === 'manager' || user?.role === 'teamlead')) {
           const teamMemberIds = employees
             .filter(emp => emp.manager?.id === user?.id)
             .map(emp => emp.id);
@@ -290,8 +290,8 @@ const PerformanceGoals: React.FC = () => {
     if (isAdmin) {
       // Admins see all employees
       setFilteredEmployees(employees);
-    } else if (user?.role === 'manager') {
-      // Managers see only their team members (employees who report to them)
+    } else if (user?.role === 'manager' || user?.role === 'teamlead') {
+      // Managers/Team Leads see only their team members (employees who report to them)
       const teamMembers = employees.filter(emp => emp.manager?.id === user?.id);
       setFilteredEmployees(teamMembers);
     } else {
@@ -604,7 +604,7 @@ const PerformanceGoals: React.FC = () => {
               My Goals
             </button>
             
-            {(isAdmin || user?.role === 'manager') && (
+            {(isAdmin || user?.role === 'manager' || user?.role === 'teamlead') && (
               <button
                 onClick={() => setActiveTab('all-goals')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -651,7 +651,7 @@ const PerformanceGoals: React.FC = () => {
               <h2 className="text-xl font-semibold text-white">
                 {activeTab === 'my-goals' ? 'My Goals' : 'All Goals'}
               </h2>
-              {activeTab === 'all-goals' && (isAdmin || user?.role === 'manager') && (
+              {activeTab === 'all-goals' && (isAdmin || user?.role === 'manager' || user?.role === 'teamlead') && (
                 <Button 
                   onClick={() => setShowGoalModal(true)}
                   icon={<Plus className="w-4 h-4" />}
@@ -800,7 +800,7 @@ const PerformanceGoals: React.FC = () => {
                                           </div>
                                         </div>
                                         <div className="flex space-x-2">
-                                          {user?.role === 'manager' && goal.employeeId !== user?.id && (
+                                          {(user?.role === 'manager' || user?.role === 'teamlead') && goal.employeeId !== user?.id && (
                                             <Button
                                               size="sm"
                                               variant="secondary"
@@ -1074,8 +1074,8 @@ const PerformanceGoals: React.FC = () => {
           </div>
         )}
 
-        {/* Create/Edit Goal Modal - Only for admins and managers */}
-        {showGoalModal && (isAdmin || user?.role === 'manager') && (
+        {/* Create/Edit Goal Modal - Only for admins, managers, and team leads */}
+        {showGoalModal && (isAdmin || user?.role === 'manager' || user?.role === 'teamlead') && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <Card className="w-full max-w-md p-6">
               <h3 className="text-lg font-semibold text-white mb-4">

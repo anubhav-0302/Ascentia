@@ -26,6 +26,11 @@ export const getDashboardStats = async (req, res) => {
           return leaveEmployee?.department === manager.department;
         });
       }
+    } else if (userRole === 'teamlead') {
+      // Team Leads see only their direct reports
+      const directReports = employees.filter(e => e.managerId === userId);
+      employees = directReports;
+      allLeave = allLeave.filter(l => directReports.some(e => e.id === l.employeeId));
     } else if (userRole === 'employee') {
       // Employees see only their own data
       employees = employees.filter(e => e.id === userId);
@@ -66,17 +71,17 @@ export const getDashboardStats = async (req, res) => {
     const teamAttendance = totalEmployees > 0 ? Math.round((activeEmployees / totalEmployees) * 100) : 0;
 
     // Calculate average performance rating (TODO: Integrate with performance reviews table)
-    const avgPerformance = userRole === 'manager' ? 4.2 : null;
-
+    const avgPerformance = (userRole === 'manager' || userRole === 'teamlead') ? 4.2 : null;
+    
     // Calculate hours logged for employees (TODO: Integrate with timesheet entries table)
     const hoursLogged = userRole === 'employee' ? 160 : null;
-
+    
     // Calculate performance rating for employees (TODO: Integrate with performance reviews table)
     const performanceRating = userRole === 'employee' ? 4.5 : null;
-
-    // Calculate pending timesheet reviews for HR/Manager (TODO: Query from timesheet table)
-    const pendingTimesheetReviews = (userRole === 'hr' || userRole === 'manager') ? 12 : null;
-
+    
+    // Calculate pending timesheet reviews for HR/Manager/TeamLead (TODO: Query from timesheet table)
+    const pendingTimesheetReviews = (userRole === 'hr' || userRole === 'manager' || userRole === 'teamlead') ? 12 : null;
+    
     // Calculate payroll status for HR (TODO: Check payroll schedule table)
     const payrollStatus = userRole === 'hr' ? 'Run' : null;
 

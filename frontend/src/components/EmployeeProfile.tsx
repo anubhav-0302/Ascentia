@@ -602,7 +602,7 @@ const EmployeeProfile: React.FC = () => {
                       <Calendar className="w-5 h-5 mr-2 text-teal-400" />
                       Performance Reviews
                     </h3>
-                    {(isAdmin || user?.role === 'manager') && !isOwnProfile && (
+                    {(isAdmin || user?.role === 'manager' || user?.role === 'teamlead') && !isOwnProfile && (
                       <Button
                         size="sm"
                         onClick={() => setShowReviewModal(true)}
@@ -621,7 +621,7 @@ const EmployeeProfile: React.FC = () => {
                     <div className="text-center py-8">
                       <Calendar className="w-12 h-12 text-gray-500 mx-auto mb-3" />
                       <p className="text-gray-400">No performance reviews yet</p>
-                      {(isAdmin || user?.role === 'manager') && !isOwnProfile && (
+                      {(isAdmin || user?.role === 'manager' || user?.role === 'teamlead') && !isOwnProfile && (
                         <p className="text-gray-500 text-sm mt-2">Click "Add Review" to provide feedback</p>
                       )}
                     </div>
@@ -842,7 +842,7 @@ const EmployeeProfile: React.FC = () => {
 
       
       {/* Performance Review Modal - Only for admins/managers */}
-      {(isAdmin || user?.role === 'manager') && !isOwnProfile && (
+      {(isAdmin || user?.role === 'manager' || user?.role === 'teamlead') && !isOwnProfile && (
         <EnhancedModal
           isOpen={showReviewModal}
           onClose={() => setShowReviewModal(false)}
@@ -1034,6 +1034,7 @@ const EmployeeEditForm: React.FC<EmployeeEditFormProps> = ({
           <option value="employee">Employee</option>
           <option value="hr">HR</option>
           <option value="manager">Manager</option>
+          <option value="teamlead">Team Lead</option>
         </select>
       </div>
       

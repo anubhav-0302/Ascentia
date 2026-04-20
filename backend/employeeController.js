@@ -5,7 +5,29 @@ import { logDatabaseOperation } from './databaseLogger.js';
 // GET /api/employees - Get all employees from database
 export const getEmployees = async (req, res) => {
   try {
+    const userRole = req.user.role.toLowerCase();
+    const userId = req.user.id;
+    const { scope } = req.query; // ?scope=team or ?scope=all
+    
+    console.log(`📊 getEmployees: role=${userRole}, scope=${scope || 'default'}`);
+    
+    let whereClause = {};
+    
+    // Role-based filtering
+    if (scope === 'all' && (userRole === 'admin' || userRole === 'hr')) {
+      // Admin and HR can explicitly request all employees
+      whereClause = {};
+    } else if (scope === 'team' || (userRole === 'manager' || userRole === 'teamlead')) {
+      // Managers and Team Leads see only their direct reports (or anyone requesting team scope)
+      whereClause.managerId = userId;
+    } else if (userRole === 'employee') {
+      // Employees see only themselves (shouldn't reach here due to permissions)
+      whereClause.id = userId;
+    }
+    // Default: Admin and HR see all, others see their team
+    
     const employees = await prisma.employee.findMany({ 
+      where: whereClause,
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,

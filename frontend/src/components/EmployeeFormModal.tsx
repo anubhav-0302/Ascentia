@@ -170,6 +170,7 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
             { value: '', label: 'Select Role' },
             { value: 'employee', label: 'Employee' },
             { value: 'manager', label: 'Manager' },
+            { value: 'teamlead', label: 'Team Lead' },
             { value: 'hr', label: 'HR' },
             { value: 'admin', label: 'Admin' }
           ]}
@@ -191,7 +192,7 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
           options={[
             { value: '', label: 'No Manager' },
             ...employees
-              .filter(emp => emp.role === 'manager' || emp.role === 'admin') // Only show managers and admins
+              .filter(emp => emp.role === 'manager' || emp.role === 'teamlead' || emp.role === 'admin') // Only show managers, team leads, and admins
               .filter(emp => currentUserId ? emp.id !== currentUserId : true) // Exclude current user
               .filter(emp => employee ? emp.id !== employee.id : true) // Exclude employee being edited
               .map(emp => ({

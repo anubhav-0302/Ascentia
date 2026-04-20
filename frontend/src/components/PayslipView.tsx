@@ -68,7 +68,7 @@ const PayslipView: React.FC<PayslipViewProps> = ({ employeeId, employeeName }) =
   // Check if user can view this salary
   const canView = () => {
     if (!user) return false;
-    if (user.role === 'admin' || user.role === 'hr') return true;
+    if (user.role === 'admin' || user.role === 'hr' || user.role === 'teamlead') return true;
     if (user.id === employeeId) return true;
     // Manager can view team members (would need manager relationship check)
     return false;

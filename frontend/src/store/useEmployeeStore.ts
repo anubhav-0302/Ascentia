@@ -3,13 +3,10 @@ import { employeeApi, ApiError } from '../api/employeeApi';
 import type { Employee } from '../api/employeeApi';
 
 interface EmployeeStore {
-  // State
   employees: Employee[];
   loading: boolean;
   error: string | null;
-  
-  // Actions
-  fetchEmployees: () => Promise<void>;
+  fetchEmployees: (scope?: string) => Promise<void>;
   clearError: () => void;
   reset: () => void;
 }
@@ -21,7 +18,7 @@ export const useEmployeeStore = create<EmployeeStore>((set, get) => ({
   error: null,
 
   // Fetch employees from API
-  fetchEmployees: async () => {
+  fetchEmployees: async (scope?: string) => {
     const { loading } = get();
     
     // Prevent duplicate calls
@@ -30,12 +27,12 @@ export const useEmployeeStore = create<EmployeeStore>((set, get) => ({
       return;
     }
 
-    console.log('Fetching employees...');
+    console.log('Fetching employees with scope:', scope || 'default');
     
     set({ loading: true, error: null });
 
     try {
-      const res = await employeeApi.getEmployees();
+      const res = await employeeApi.getEmployees(scope);
       console.log("API RESPONSE:", res);
       
       // Handle new API response format: { success: true, data: [...] }
@@ -44,24 +41,23 @@ export const useEmployeeStore = create<EmployeeStore>((set, get) => ({
       
       set({ 
         employees, 
-        loading: false, 
-        error: null 
+        loading: false 
       });
     } catch (error: any) {
-      console.error('FETCH ERROR:', error);
+      console.error('Failed to fetch employees:', error);
       
-      let errorMessage = 'Failed to load employees';
-      
+      let errorMessage = 'Failed to fetch employees';
       if (error instanceof ApiError) {
         errorMessage = error.message;
-      } else if (error instanceof Error) {
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
         errorMessage = error.message;
       }
       
       set({ 
-        employees: [], 
-        loading: false, 
-        error: errorMessage 
+        error: errorMessage, 
+        loading: false 
       });
     }
   },

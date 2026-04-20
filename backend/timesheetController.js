@@ -66,9 +66,27 @@ const getMyTimesheet = async (req, res) => {
 const getAllTimesheets = async (req, res) => {
   try {
     const { startDate, endDate, employeeId, status, page = 1, limit = 50 } = req.query;
+    const userRole = req.user.role.toLowerCase();
+    const userId = req.user.id;
     
     const whereClause = {};
     
+    // Role-based filtering
+    if (userRole === 'manager' || userRole === 'teamlead') {
+      // Managers and Team Leads see only their direct reports
+      const directReports = await prisma.employee.findMany({
+        where: { managerId: userId },
+        select: { id: true }
+      });
+      const directReportIds = directReports.map(emp => emp.id);
+      whereClause.employeeId = { in: directReportIds };
+    } else if (userRole === 'employee') {
+      // Employees see only their own data (shouldn't reach here due to permissions)
+      whereClause.employeeId = userId;
+    }
+    // Admin and HR see all data (no additional filtering)
+    
+    // Apply additional filters
     if (startDate && endDate) {
       whereClause.date = {
         gte: new Date(startDate),
@@ -77,6 +95,22 @@ const getAllTimesheets = async (req, res) => {
     }
     
     if (employeeId) {
+      // If specific employeeId is provided, ensure user has permission to view it
+      if (userRole === 'manager' || userRole === 'teamlead') {
+        // Check if this employee is a direct report
+        const isDirectReport = await prisma.employee.findFirst({
+          where: { 
+            id: parseInt(employeeId),
+            managerId: userId 
+          }
+        });
+        if (!isDirectReport) {
+          return res.status(403).json({
+            success: false,
+            message: "You don't have permission to view this employee's timesheet"
+          });
+        }
+      }
       whereClause.employeeId = parseInt(employeeId);
     }
     

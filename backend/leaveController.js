@@ -24,11 +24,30 @@ export const getMyLeaveRequests = async (req, res) => {
   }
 };
 
-// GET /api/leave - Get all leave requests (admin only)
+// GET /api/leave - Get all leave requests (admin/hr/manager/teamlead)
 export const getAllLeaveRequests = async (req, res) => {
   try {
-    console.log("🔍 Fetching all leave requests (admin)");
-    const leaveRequests = await getAllLeaveRequestsFromDB();
+    const userRole = req.user.role.toLowerCase();
+    const userId = req.user.id;
+    console.log(`🔍 Fetching all leave requests for role: ${userRole}`);
+    
+    let leaveRequests = await getAllLeaveRequestsFromDB();
+    
+    // Filter data based on user role
+    if (userRole === 'manager' || userRole === 'teamlead') {
+      // Managers and Team Leads see only their direct reports
+      const prisma = await import('./lib/prisma.js').then(m => m.default);
+      const directReports = await prisma.employee.findMany({
+        where: { managerId: userId },
+        select: { id: true }
+      });
+      const directReportIds = directReports.map(emp => emp.id);
+      leaveRequests = leaveRequests.filter(l => directReportIds.includes(l.employeeId));
+    } else if (userRole === 'employee') {
+      // Employees see only their own data (shouldn't reach here due to permissions)
+      leaveRequests = leaveRequests.filter(l => l.employeeId === userId);
+    }
+    // Admin and HR see all data (no filtering)
     
     res.json({
       success: true,

@@ -12,7 +12,7 @@ import {
   type CreateTimesheetRequest,
   type ApproveTimesheetRequest
 } from '../api/timesheetApi';
-import { useAuthStore, useCanApproveTimesheet } from '../store/useAuthStore';
+import { useAuthStore, useIsManagerOrTeamLeadOrAdmin } from '../store/useAuthStore';
 import { useEmployeeStore } from '../store/useEmployeeStore';
 import Button from './Button';
 import Input from './Input';
@@ -38,7 +38,7 @@ import {
 
 const TimesheetEntry: React.FC = () => {
   const { user } = useAuthStore();
-  const canApproveTimesheet = useCanApproveTimesheet();
+  const canApproveTimesheet = useIsManagerOrTeamLeadOrAdmin();
   const { employees } = useEmployeeStore();
   
   // Debug authentication state

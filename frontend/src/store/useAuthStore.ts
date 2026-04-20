@@ -248,17 +248,27 @@ export const useIsAdmin = () => {
   return user?.role === 'admin';
 };
 
-export const useIsEmployee = () => {
-  const user = useUser();
-  return user?.role === 'employee';
-};
-
 export const useIsManager = () => {
-  const user = useUser();
+  const { user } = useAuthStore();
   return user?.role === 'manager';
 };
 
-export const useCanApproveTimesheet = () => {
-  const user = useUser();
+export const useIsTeamLead = () => {
+  const { user } = useAuthStore();
+  return user?.role === 'teamlead';
+};
+
+export const useIsHR = () => {
+  const { user } = useAuthStore();
+  return user?.role === 'hr';
+};
+
+export const useIsManagerOrAdmin = () => {
+  const { user } = useAuthStore();
   return user?.role === 'admin' || user?.role === 'manager';
+};
+
+export const useIsManagerOrTeamLeadOrAdmin = () => {
+  const { user } = useAuthStore();
+  return user?.role === 'admin' || user?.role === 'manager' || user?.role === 'teamlead';
 };

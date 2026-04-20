@@ -20,6 +20,7 @@ export const getAnalytics = async (req, res) => {
     const employeeFilter = userRole === 'admin' ? {} : 
                           userRole === 'hr' ? {} :
                           userRole === 'manager' ? { managerId: userId } :
+                          userRole === 'teamlead' ? { managerId: userId } :
                           { id: userId };
 
     // 1. Employee Insights
