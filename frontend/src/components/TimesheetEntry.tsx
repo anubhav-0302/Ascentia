@@ -111,8 +111,8 @@ const TimesheetEntry: React.FC = () => {
         const dateMatch = new Date(entry.date).toLocaleDateString().toLowerCase().includes(query);
         const descriptionMatch = entry.description?.toLowerCase().includes(query) || false;
         const employeeMatch = entry.employee?.name?.toLowerCase().includes(query) || false;
-        const statusMatch = entry.status.toLowerCase().includes(query);
-        const hoursMatch = entry.hours.toString().includes(query);
+        const statusMatch = entry.status?.toLowerCase().includes(query) || '';
+        const hoursMatch = entry.hours?.toString().includes(query) || '';
         
         return dateMatch || descriptionMatch || employeeMatch || statusMatch || hoursMatch;
       });
@@ -375,13 +375,15 @@ const TimesheetEntry: React.FC = () => {
   };
 
   const handleSelectAll = () => {
-    const pendingEntries = timesheets.filter(entry => entry.status === 'Pending');
-    const allSelected = pendingEntries.every(entry => selectedEntries.includes(entry.id));
+    if (!Array.isArray(timesheets)) return;
+    
+    const pendingEntries = timesheets.filter(entry => entry?.status === 'Pending');
+    const allSelected = pendingEntries.every(entry => selectedEntries.includes(entry?.id));
     
     if (allSelected) {
       setSelectedEntries([]);
     } else {
-      setSelectedEntries(pendingEntries.map(entry => entry.id));
+      setSelectedEntries(pendingEntries.map(entry => entry?.id).filter(Boolean));
     }
   };
 
@@ -992,7 +994,9 @@ const TimesheetEntry: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/50">
-                    {filteredTimesheets.map((entry) => (
+                    {Array.isArray(filteredTimesheets) && filteredTimesheets.map((entry) => {
+                      if (!entry || !entry.id) return null;
+                      return (
                       <tr key={entry.id} className="hover:bg-slate-700/40 transition-colors">
                         {activeTab === 'approvals' && (
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -1087,7 +1091,8 @@ const TimesheetEntry: React.FC = () => {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

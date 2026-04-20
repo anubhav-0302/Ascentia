@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { StandardLayout } from './StandardLayout';
 import { DollarSign, Calendar, Download, Users, Shield, FileText, Calculator, Plus, Edit, Trash2, CheckCircle } from 'lucide-react';
 import Card from './Card';
@@ -7,7 +7,7 @@ import { PageTransition, FadeIn } from './PageTransition';
 import Button from './Button';
 import Input from './Input';
 import StatusBadge from './StatusBadge';
-import { useIsAdmin } from '../store/useAuthStore';
+import { useIsAdmin, useAuthStore } from '../store/useAuthStore';
 import { 
   getSalaryComponents, 
   createSalaryComponent, 
@@ -21,6 +21,7 @@ import {
 } from '../api/payrollApi';
 import { useEmployeeStore } from '../store/useEmployeeStore';
 import { useModalWithUnsavedChanges } from '../hooks/useModalWithUnsavedChanges';
+import { getPayrollAccessibleEmployees } from '../utils/rbacFilters';
 
 const PayrollBenefits: React.FC = () => {
   // Initialize activeTab from localStorage, default to 'overview'
@@ -32,13 +33,40 @@ const PayrollBenefits: React.FC = () => {
   });
   const [selectedPayPeriod, setSelectedPayPeriod] = useState('current');
   const isAdmin = useIsAdmin();
+  const { user } = useAuthStore();
   const { employees: storeEmployees, fetchEmployees } = useEmployeeStore();
   const [employees, setEmployees] = useState(storeEmployees || []);
 
+  // RBAC: Determine access level
+  const canManagePayroll = isAdmin || user?.role === 'hr' || user?.role === 'admin';
+  const canViewTeamPayroll = user?.role === 'teamlead' || user?.role === 'manager';
+  const canViewOwnPayroll = user?.role === 'employee';
+
+  // Filter employees based on role
+  const accessibleEmployees = getPayrollAccessibleEmployees(employees, user);
+  
   // Salary components state
   const [salaryComponents, setSalaryComponents] = useState<SalaryComponent[]>([]);
   const [employeeSalaries, setEmployeeSalaries] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Filter employee salaries based on role
+  const filteredEmployeeSalaries = useMemo(() => {
+    return employeeSalaries.filter(salary => {
+      if (canManagePayroll) return true; // Admin/HR can see all
+      if (canViewTeamPayroll) {
+        // Managers can see team members' salaries
+        const employee = employees.find(emp => emp.id === salary.employeeId);
+        return employee?.department === user?.department;
+      }
+      if (canViewOwnPayroll) {
+        // Employees can only see their own salary
+        return salary.employeeId === user?.id;
+      }
+      return false;
+    });
+  }, [employeeSalaries, canManagePayroll, canViewTeamPayroll, canViewOwnPayroll, employees, user]);
+
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   
@@ -58,10 +86,10 @@ const PayrollBenefits: React.FC = () => {
   });
   
   const [assignForm, setAssignForm] = useState<AssignSalaryRequest>({
-    employeeId: 0,
-    componentId: 0,
+    employeeId: null as any,
+    componentId: null as any,
     amount: 0,
-    effectiveDate: '',
+    effectiveDate: new Date().toISOString().split('T')[0],
     endDate: ''
   });
 
@@ -126,8 +154,8 @@ const PayrollBenefits: React.FC = () => {
   // Detect unsaved changes in assign form
   const isAssignFormChanged = () => {
     return (
-      assignForm.employeeId !== 0 ||
-      assignForm.componentId !== 0 ||
+      assignForm.employeeId !== null ||
+      assignForm.componentId !== null ||
       assignForm.amount !== 0 ||
       assignForm.effectiveDate.trim() !== ''
     );
@@ -156,10 +184,10 @@ const PayrollBenefits: React.FC = () => {
     onClose: () => {
       setShowAssignModal(false);
       setAssignForm({
-        employeeId: 0,
-        componentId: 0,
+        employeeId: null as any,
+        componentId: null as any,
         amount: 0,
-        effectiveDate: '',
+        effectiveDate: new Date().toISOString().split('T')[0],
         endDate: ''
       });
     },
@@ -282,15 +310,17 @@ const PayrollBenefits: React.FC = () => {
       setSuccess('Salary component assigned successfully');
       setShowAssignModal(false);
       setAssignForm({
-        employeeId: 0,
-        componentId: 0,
+        employeeId: null as any,
+        componentId: null as any,
         amount: 0,
-        effectiveDate: '',
+        effectiveDate: new Date().toISOString().split('T')[0],
         endDate: ''
       });
       fetchEmployeeSalaries();
+      console.log('Assign Salary Success');
     } catch (err: any) {
       setError(err.message || 'Failed to assign salary component');
+      console.error('Assign Salary Error:', err);
     } finally {
       setLoading(false);
     }
@@ -658,7 +688,7 @@ const PayrollBenefits: React.FC = () => {
             <div className="space-y-6">
               {/* Action Buttons */}
               <div className="flex gap-4">
-                {isAdmin && (
+                {canManagePayroll && (
                   <Button
                     onClick={() => setShowComponentModal(true)}
                     icon={<Plus className="w-4 h-4" />}
@@ -666,13 +696,15 @@ const PayrollBenefits: React.FC = () => {
                     Add Component
                   </Button>
                 )}
-                <Button
-                  onClick={() => setShowAssignModal(true)}
-                  icon={<Plus className="w-4 h-4" />}
-                  variant="secondary"
-                >
-                  Assign to Employee
-                </Button>
+                {canManagePayroll && (
+                  <Button
+                    onClick={() => setShowAssignModal(true)}
+                    icon={<Plus className="w-4 h-4" />}
+                    variant="secondary"
+                  >
+                    Assign to Employee
+                  </Button>
+                )}
               </div>
 
               {/* Salary Components Table */}
@@ -755,11 +787,8 @@ const PayrollBenefits: React.FC = () => {
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <StatusBadge status={component.status} />
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex space-x-2">
-                                {isAdmin && (
+                                {canManagePayroll && (
                                   <>
                                     <Button
                                       onClick={() => handleEditComponent(component)}
@@ -827,7 +856,7 @@ const PayrollBenefits: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-700/50">
-                        {employeeSalaries.map((salary) => (
+                        {filteredEmployeeSalaries.map((salary) => (
                           <tr key={salary.id} className="hover:bg-slate-700/40 transition-colors">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-white">
@@ -969,14 +998,21 @@ const PayrollBenefits: React.FC = () => {
                       step="0.01"
                       min="0"
                       max={componentForm.isPercentage ? 100 : undefined}
-                      value={componentForm.amount || ''}
+                      value={componentForm.amount === 0 ? '' : componentForm.amount}
                       onChange={(e) => {
                         const value = e.target.value;
-                        if (value === '') {
+                        if (value === '' || value === '0') {
                           setComponentForm(prev => ({ ...prev, amount: 0 }));
                         } else {
-                          setComponentForm(prev => ({ ...prev, amount: parseFloat(value) || 0 }));
+                          const numValue = parseFloat(value);
+                          if (!isNaN(numValue) && numValue >= 0) {
+                            setComponentForm(prev => ({ ...prev, amount: numValue }));
+                          }
                         }
+                      }}
+                      onFocus={(e) => {
+                        // Select all text on focus for easy editing
+                        e.target.select();
                       }}
                       placeholder={componentForm.isPercentage ? "Enter percentage (0-100)" : "Enter amount"}
                       required
@@ -1047,7 +1083,7 @@ const PayrollBenefits: React.FC = () => {
                       onChange={(value) => setAssignForm(prev => ({ ...prev, employeeId: parseInt(value as string) }))}
                       options={[
                         { value: '', label: 'Select an employee' },
-                        ...employees.map(emp => ({ value: emp.id, label: emp.name }))
+                        ...accessibleEmployees.map((emp: any) => ({ value: emp.id, label: emp.name }))
                       ]}
                       label="Employee"
                       showLabel={false}
@@ -1079,20 +1115,26 @@ const PayrollBenefits: React.FC = () => {
                       type="number"
                       step="0.01"
                       min="0"
-                      value={assignForm.amount || ''}
+                      value={assignForm.amount === 0 ? '' : assignForm.amount}
                       onChange={(e) => {
                         const value = e.target.value;
-                        if (value === '') {
+                        if (value === '' || value === '0') {
                           setAssignForm(prev => ({ ...prev, amount: 0 }));
                         } else {
-                          setAssignForm(prev => ({ ...prev, amount: parseFloat(value) || 0 }));
+                          const numValue = parseFloat(value);
+                          if (!isNaN(numValue) && numValue >= 0) {
+                            setAssignForm(prev => ({ ...prev, amount: numValue }));
+                          }
                         }
+                      }}
+                      onFocus={(e) => {
+                        // Select all text on focus for easy editing
+                        e.target.select();
                       }}
                       placeholder="Amount or percentage"
                       required
                     />
                   </div>
-
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">

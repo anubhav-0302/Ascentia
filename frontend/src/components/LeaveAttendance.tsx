@@ -29,7 +29,7 @@ const LeaveAttendance = () => {
   // Form state
   const [formData, setFormData] = useState<CreateLeaveRequest>({
     type: '',
-    startDate: '',
+    startDate: new Date().toISOString().split('T')[0], // Today's date in local timezone
     endDate: '',
     reason: ''
   });
@@ -51,30 +51,32 @@ const LeaveAttendance = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate form data
+    if (!formData.type || !formData.startDate || !formData.endDate) {
+      setError('Please fill in all required fields');
+      return;
+    }
+    
+    // Validate dates using local timezone
+    const start = new Date(formData.startDate + 'T00:00:00');
+    const end = new Date(formData.endDate + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (start < today) {
+      setError('Start date cannot be in the past');
+      return;
+    }
+    
+    if (end < start) {
+      setError('End date cannot be before start date');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
       setSuccess(null);
-
-      // Validate dates - use local date for comparison
-      const start = new Date(formData.startDate);
-      const end = new Date(formData.endDate);
-      
-      // Get today's date at midnight (local timezone)
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      if (start > end) {
-        setError('End date must be after or same as start date');
-        toast.error('End date must be after or same as start date');
-        return;
-      }
-
-      if (start < today) {
-        setError('Start date must be today or later');
-        toast.error('Start date must be today or later');
-        return;
-      }
 
       // Validate leave quota
       const requestedDays = calculateDuration(formData.startDate, formData.endDate);
@@ -143,11 +145,12 @@ const LeaveAttendance = () => {
 
   // Calculate leave duration in days
   const calculateDuration = (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    // Use local timezone to avoid date shifting
+    const start = new Date(startDate + 'T00:00:00');
+    const end = new Date(endDate + 'T00:00:00');
     const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end day
-    return diffDays;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays + 1; // Include both start and end dates
   };
 
   // Get duration for current form dates

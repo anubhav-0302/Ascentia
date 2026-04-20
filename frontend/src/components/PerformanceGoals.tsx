@@ -22,6 +22,7 @@ import { useIsAdmin } from '../store/useAuthStore';
 import { useEmployeeStore } from '../store/useEmployeeStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useModalWithUnsavedChanges } from '../hooks/useModalWithUnsavedChanges';
+import { getFilteredEmployees } from '../utils/rbacFilters';
 import Button from './Button';
 import Input from './Input';
 import StatusBadge from './StatusBadge';
@@ -1110,7 +1111,7 @@ const PerformanceGoals: React.FC = () => {
                     onChange={(value) => setGoalForm(prev => ({ ...prev, employeeId: parseInt(value as string) }))}
                     options={[
                       { value: '', label: 'Select an employee' },
-                      ...filteredEmployees.map(emp => ({ value: emp.id, label: emp.name }))
+                      ...getFilteredEmployees(filteredEmployees, user).map(emp => ({ value: emp.id, label: emp.name }))
                     ]}
                     showLabel={false}
                     required={true}

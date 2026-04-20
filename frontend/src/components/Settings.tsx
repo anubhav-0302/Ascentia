@@ -59,20 +59,35 @@ const Settings: React.FC = () => {
   };
 
   const handleClearCache = () => {
+    // Preserve authentication data while clearing other cache
+    const authStorage = localStorage.getItem('auth-storage');
+    const settingsStorage = localStorage.getItem('settings-storage');
+    
     // Clear localStorage and sessionStorage
     localStorage.clear();
     sessionStorage.clear();
     
-    // Clear any application caches
+    // Restore authentication and settings data
+    if (authStorage) {
+      localStorage.setItem('auth-storage', authStorage);
+    }
+    if (settingsStorage) {
+      localStorage.setItem('settings-storage', settingsStorage);
+    }
+    
+    // Clear any application caches except auth-related
     if ('caches' in window) {
       caches.keys().then(names => {
         names.forEach(name => {
-          caches.delete(name);
+          // Don't clear API cache that might contain auth-related data
+          if (!name.includes('auth') && !name.includes('token')) {
+            caches.delete(name);
+          }
         });
       });
     }
     
-    toast.success('Cache cleared successfully. Please refresh the page for optimal performance.');
+    toast.success('Cache cleared successfully. Your authentication data has been preserved.');
   };
 
   const handleResetSettings = async () => {
