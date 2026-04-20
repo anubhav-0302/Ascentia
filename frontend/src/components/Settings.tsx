@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { StandardLayout } from './StandardLayout';
 import { Settings as SettingsIcon, Bell, Shield, Palette, Database, Moon, Sun, Mail, Smartphone, Calendar, AlertCircle, Eye, BarChart3 } from 'lucide-react';
+import { setupTwoFactor, disableTwoFactor } from '../api/userApi';
+import { useAuthStore } from '../store/useAuthStore';
 import Card from './Card';
 import UnifiedDropdown from './UnifiedDropdown';
 import Button from './Button';
@@ -21,8 +23,11 @@ const Settings: React.FC = () => {
   const [twoFactorToken, setTwoFactorToken] = useState('');
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [deletePassword, setDeletePassword] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [passwordErrors, setPasswordErrors] = useState<{ currentPassword?: string; newPassword?: string; general?: string }>({});
   
-  const { settings, loading, fetchSettings, updateSetting, resetSettings, changePassword, setup2FA, verify2FA, deleteAccount, exportData } = useSettingsStore();
+  const { settings, loading, fetchSettings, updateSetting, resetSettings, changePassword, verify2FA: storeVerify2FA, deleteAccount, exportData } = useSettingsStore();
+  const { user } = useAuthStore();
 
   // Helper to safely get setting values
   function getSetting<T>(key: keyof UserSettings, defaultValue: T): T {
@@ -104,43 +109,82 @@ const Settings: React.FC = () => {
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (passwordForm.newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters long');
+    // Clear previous errors
+    setPasswordErrors({});
+    
+    // Validate new password length
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordErrors({ newPassword: 'Password must be at least 6 characters long' });
       return;
     }
     
+    // Validate passwords match
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.error('Passwords do not match');
+      setPasswordErrors({ newPassword: 'New passwords do not match' });
       return;
     }
     
+    setAuthLoading(true);
     try {
       await changePassword(passwordForm.currentPassword, passwordForm.newPassword);
       toast.success('Password changed successfully');
       setShowPasswordModal(false);
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    } catch (error) {
-      toast.error('Failed to change password');
+      setPasswordErrors({});
+    } catch (error: any) {
+      // Set specific error based on the message
+      if (error.message === 'Current password is incorrect') {
+        setPasswordErrors({ currentPassword: error.message });
+      } else {
+        setPasswordErrors({ general: error.message || 'Failed to change password' });
+      }
+    } finally {
+      setAuthLoading(false);
     }
   };
 
   const handle2FASetup = async () => {
-    try {
-      const data = await setup2FA();
-      setTwoFactorData(data);
-      setShow2FAModal(true);
-    } catch (error) {
-      toast.error('Failed to setup 2FA');
+    if (user?.twoFactorEnabled) {
+      // Disable 2FA
+      setAuthLoading(true);
+      try {
+        await disableTwoFactor();
+        toast.success('2FA disabled successfully');
+        // Update user state
+        const updatedUser = { ...user, twoFactorEnabled: false };
+        useAuthStore.setState({ user: updatedUser });
+      } catch (error: any) {
+        toast.error(error.message || 'Failed to disable 2FA');
+      } finally {
+        setAuthLoading(false);
+      }
+    } else {
+      // Enable 2FA
+      setAuthLoading(true);
+      try {
+        const response = await setupTwoFactor();
+        setTwoFactorData(response);
+        setShow2FAModal(true);
+      } catch (error: any) {
+        toast.error(error.message || 'Failed to setup 2FA');
+      } finally {
+        setAuthLoading(false);
+      }
     }
   };
   
   const handle2FAVerify = async () => {
     try {
-      await verify2FA(twoFactorToken);
+      await storeVerify2FA(twoFactorToken);
       toast.success('2FA enabled successfully');
       setShow2FAModal(false);
       setTwoFactorToken('');
       setTwoFactorData(null);
+      // Update user state
+      if (user) {
+        const updatedUser = { ...user, twoFactorEnabled: true };
+        useAuthStore.setState({ user: updatedUser });
+      }
     } catch (error) {
       toast.error('Invalid verification code');
     }
@@ -423,10 +467,20 @@ const Settings: React.FC = () => {
                           <h4 className="text-white font-medium mb-4">Two-Factor Authentication</h4>
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-gray-300">Add an extra layer of security to your account</p>
+                              <p className="text-gray-300">
+                                {user?.twoFactorEnabled ? 'Enabled - Extra security active' : 'Add an extra layer of security to your account'}
+                              </p>
                             </div>
-                            <Button onClick={handle2FASetup} variant="secondary">
-                              Enable 2FA
+                            <Button 
+                              onClick={handle2FASetup}
+                              disabled={authLoading}
+                              className={`${
+                                user?.twoFactorEnabled 
+                                  ? 'bg-red-600 hover:bg-red-500 text-white' 
+                                  : 'bg-teal-600 hover:bg-teal-500 text-white'
+                              } ${authLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                              {authLoading ? 'Processing...' : (user?.twoFactorEnabled ? 'Disable' : 'Enable')}
                             </Button>
                           </div>
                         </div>
@@ -568,7 +622,10 @@ const Settings: React.FC = () => {
 
       {/* Password Change Modal */}
       {showPasswordModal && (
-        <Modal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)}>
+        <Modal isOpen={showPasswordModal} onClose={() => {
+          setShowPasswordModal(false);
+          setPasswordErrors({});
+        }}>
           <h3 className="text-lg font-semibold text-white mb-4">Change Password</h3>
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
             <div>
@@ -578,10 +635,20 @@ const Settings: React.FC = () => {
               <Input
                 type="password"
                 value={passwordForm.currentPassword}
-                onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                onChange={(e) => {
+                  setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }));
+                  // Clear error when user starts typing
+                  if (passwordErrors.currentPassword) {
+                    setPasswordErrors(prev => ({ ...prev, currentPassword: undefined }));
+                  }
+                }}
                 placeholder="Enter current password"
                 required
+                className={passwordErrors.currentPassword ? 'border-red-500' : ''}
               />
+              {passwordErrors.currentPassword && (
+                <p className="mt-1 text-sm text-red-400">{passwordErrors.currentPassword}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -590,10 +657,20 @@ const Settings: React.FC = () => {
               <Input
                 type="password"
                 value={passwordForm.newPassword}
-                onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
-                placeholder="Enter new password (min 8 characters)"
+                onChange={(e) => {
+                  setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }));
+                  // Clear error when user starts typing
+                  if (passwordErrors.newPassword) {
+                    setPasswordErrors(prev => ({ ...prev, newPassword: undefined }));
+                  }
+                }}
+                placeholder="Enter new password (min 6 characters)"
                 required
+                className={passwordErrors.newPassword ? 'border-red-500' : ''}
               />
+              {passwordErrors.newPassword && (
+                <p className="mt-1 text-sm text-red-400">{passwordErrors.newPassword}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -602,11 +679,23 @@ const Settings: React.FC = () => {
               <Input
                 type="password"
                 value={passwordForm.confirmPassword}
-                onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                onChange={(e) => {
+                  setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }));
+                  // Clear error when user starts typing
+                  if (passwordErrors.newPassword) {
+                    setPasswordErrors(prev => ({ ...prev, newPassword: undefined }));
+                  }
+                }}
                 placeholder="Confirm new password"
                 required
+                className={passwordErrors.newPassword ? 'border-red-500' : ''}
               />
             </div>
+            {passwordErrors.general && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                <p className="text-red-300 text-sm">{passwordErrors.general}</p>
+              </div>
+            )}
             <div className="flex justify-end space-x-3 pt-4">
               <Button
                 type="button"

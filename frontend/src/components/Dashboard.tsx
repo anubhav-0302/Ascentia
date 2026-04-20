@@ -17,9 +17,7 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
-  AreaChart,
-  Area
+  ResponsiveContainer
 } from "recharts";
 import SkeletonLoader, { CardSkeleton, ChartSkeleton, TableSkeleton } from "./SkeletonLoader";
 import ActivityFeed from "./ActivityFeed";
@@ -53,6 +51,7 @@ const Dashboard = () => {
   // Determine user role for dashboard customization
   const userRole = user?.role?.toLowerCase() || 'employee';
   const isManager = userRole === 'manager';
+  const isHR = userRole === 'hr';
 
   // Calculate leave balance using useMemo to prevent recalculation on every render
   const leaveBalance = useMemo(() => {
@@ -75,7 +74,7 @@ const Dashboard = () => {
       const data = await getDashboardStats();
       setStats(data);
       
-      // Fetch personal leave data for employees
+      // Fetch personal leave data for employees and HR users
       if (!isAdmin && !isManager) {
         const leavesData = await getMyLeaves();
         setMyLeaves(leavesData.data || []);
@@ -199,13 +198,15 @@ const Dashboard = () => {
       {/* Header */}
       <div className="mb-8 animate-fadeIn">
         <h1 className="text-3xl font-bold text-white mb-2">
-          {isAdmin ? 'Admin Dashboard' : isManager ? 'Manager Dashboard' : 'My Dashboard'}
+          {isAdmin ? 'Admin Dashboard' : isManager ? 'Manager Dashboard' : isHR ? 'HR Dashboard' : 'My Dashboard'}
         </h1>
         <p className="text-gray-400">
           {isAdmin 
             ? 'System overview and organization-wide metrics'
             : isManager
             ? 'Team performance and management overview'
+            : isHR
+            ? 'HR operations and employee management metrics'
             : 'Your personal information and leave summary'
           }
         </p>
@@ -349,7 +350,7 @@ const Dashboard = () => {
                 </div>
                 <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Status</span>
               </div>
-              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-purple-100 transition-colors duration-300">85%</h3>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-purple-100 transition-colors duration-300">{stats?.teamAttendance || 0}%</h3>
               <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Team Attendance</p>
               <div className="mt-4 flex items-center text-xs text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <span>View Attendance</span>
@@ -365,7 +366,7 @@ const Dashboard = () => {
                 </div>
                 <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Avg</span>
               </div>
-              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-orange-100 transition-colors duration-300">4.2/5</h3>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-orange-100 transition-colors duration-300">{stats?.avgPerformance || 'N/A'}/5</h3>
               <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Team Performance</p>
               <div className="mt-4 flex items-center text-xs text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <span>View Reviews</span>
@@ -375,8 +376,91 @@ const Dashboard = () => {
           </>
         )}
 
+        {/* HR VIEW - HR-Specific Metrics */}
+        {isHR && (
+          <>
+            <Link 
+              to="/directory"
+              onClick={() => handleNavigateToDirectory('total-employees')}
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-blue-500/40 hover:shadow-blue-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              style={{ animationDelay: '0.1s' }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-blue-500/20 rounded-xl group-hover:bg-blue-500/30 transition-colors duration-300">
+                  <i className="fas fa-users text-blue-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Total</span>
+              </div>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-blue-100 transition-colors duration-300">{stats?.totalEmployees || 0}</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Total Employees</p>
+              <div className="mt-4 flex items-center text-xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>View Directory</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
+            </Link>
+
+            <Link 
+              to="/leave-attendance"
+              onClick={() => handleNavigateToLeaveAttendance('leave-status')}
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-yellow-500/40 hover:shadow-yellow-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              style={{ animationDelay: '0.2s' }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-yellow-500/20 rounded-xl group-hover:bg-yellow-500/30 transition-colors duration-300">
+                  <i className="fas fa-calendar-times text-yellow-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Pending</span>
+              </div>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-yellow-100 transition-colors duration-300">{stats?.leaveStatus?.find(l => l.status === 'Pending')?.count || 0}</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Leave Approvals</p>
+              <div className="mt-4 flex items-center text-xs text-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>Review Requests</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
+            </Link>
+
+            <Link 
+              to="/timesheet-entry"
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-purple-500/40 hover:shadow-purple-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              style={{ animationDelay: '0.3s' }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-purple-500/20 rounded-xl group-hover:bg-purple-500/30 transition-colors duration-300">
+                  <i className="fas fa-clock text-purple-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Pending</span>
+              </div>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-purple-100 transition-colors duration-300">{stats?.pendingTimesheetReviews || 0}</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Timesheet Reviews</p>
+              <div className="mt-4 flex items-center text-xs text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>Review Timesheets</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
+            </Link>
+
+            <Link 
+              to="/payroll-benefits"
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-green-500/40 hover:shadow-green-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              style={{ animationDelay: '0.4s' }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-green-500/20 rounded-xl group-hover:bg-green-500/30 transition-colors duration-300">
+                  <i className="fas fa-money-check-alt text-green-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">This</span>
+              </div>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-green-100 transition-colors duration-300">{stats?.payrollStatus || 'N/A'}</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Payroll Status</p>
+              <div className="mt-4 flex items-center text-xs text-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>Manage Payroll</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
+            </Link>
+          </>
+        )}
+
         {/* EMPLOYEE VIEW - Personal Focused Metrics */}
-        {!isAdmin && !isManager && (
+        {!isAdmin && !isManager && !isHR && (
           <>
             <div className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn hover:border-blue-500/40 hover:shadow-blue-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.1s' }}>
@@ -424,7 +508,7 @@ const Dashboard = () => {
                 </div>
                 <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">This Month</span>
               </div>
-              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-purple-100 transition-colors duration-300">160</h3>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-purple-100 transition-colors duration-300">{stats?.hoursLogged || 0}</h3>
               <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Hours Logged</p>
               <div className="mt-4 flex items-center text-xs text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <span>View Timesheet</span>
@@ -440,7 +524,7 @@ const Dashboard = () => {
                 </div>
                 <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Current</span>
               </div>
-              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-orange-100 transition-colors duration-300">4.5/5</h3>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-orange-100 transition-colors duration-300">{stats?.performanceRating || 'N/A'}/5</h3>
               <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Performance Rating</p>
               <div className="mt-4 flex items-center text-xs text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <span>View Reviews</span>
@@ -451,429 +535,445 @@ const Dashboard = () => {
         )}
       </div>
 
-      {/* Insights & Alerts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* AI Insights */}
-        <div className="lg:col-span-2 bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-6 animate-fadeIn" style={{ animationDelay: '0.8s' }}>
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-white flex items-center">
-              <i className="fas fa-brain text-purple-400 mr-2"></i>
-              AI Insights
+      {/* Insights & Alerts Section - Role Based */}
+      {(isAdmin || isHR || isManager) && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* AI Insights */}
+          <div className="lg:col-span-2 bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-6 animate-fadeIn" style={{ animationDelay: '0.8s' }}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-white flex items-center">
+                <i className="fas fa-brain text-purple-400 mr-2"></i>
+                AI Insights
+              </h3>
+              <span className="text-xs text-gray-500">Updated 2 hours ago</span>
+            </div>
+            
+            <div className="space-y-4">
+              {/* Admin/HR see organization-wide insights */}
+              {(isAdmin || isHR) && (
+                <>
+                  <div className="p-4 bg-gradient-to-r from-blue-500/5 to-transparent rounded-lg">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i className="fas fa-chart-line text-blue-400 text-sm"></i>
+                      </div>
+                      <div>
+                        <h4 className="text-white font-medium mb-1">Employee Engagement Trend</h4>
+                        <p className="text-gray-400 text-sm mb-2">
+                          Engagement scores have increased by 12% this month. The new remote work policy appears to be positively impacting team satisfaction.
+                        </p>
+                        <div className="flex items-center space-x-4 text-xs">
+                          <span className="text-green-400"><i className="fas fa-arrow-up mr-1"></i>12% vs last month</span>
+                          <span className="text-gray-500">Based on 156 responses</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-r from-green-500/5 to-transparent rounded-lg">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i className="fas fa-users text-green-400 text-sm"></i>
+                      </div>
+                      <div>
+                        <h4 className="text-white font-medium mb-1">Retention Risk Alert</h4>
+                        <p className="text-gray-400 text-sm mb-2">
+                          3 employees in the Engineering department show signs of potential turnover based on recent activity patterns and engagement metrics.
+                        </p>
+                        <div className="flex items-center space-x-4 text-xs">
+                          <span className="text-yellow-400"><i className="fas fa-exclamation-triangle mr-1"></i>Medium priority</span>
+                          <button 
+                            onClick={() => {
+                              alert('Opening retention management tools...\n\nThis would navigate to a detailed retention dashboard with employee engagement metrics, turnover risk analysis, and intervention strategies.');
+                            }}
+                            className="text-teal-400 hover:text-teal-300 transition-colors"
+                          >
+                            Take Action →
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-r from-yellow-500/5 to-transparent rounded-lg">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 bg-yellow-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i className="fas fa-lightbulb text-yellow-400 text-sm"></i>
+                      </div>
+                      <div>
+                        <h4 className="text-white font-medium mb-1">Skills Gap Analysis</h4>
+                        <p className="text-gray-400 text-sm mb-2">
+                          Consider upskilling 5 team members in cloud technologies. Current demand exceeds available expertise by 40%.
+                        </p>
+                        <div className="flex items-center space-x-4 text-xs">
+                          <span className="text-blue-400"><i className="fas fa-graduation-cap mr-1"></i>Training opportunity</span>
+                          <button 
+                            onClick={() => {
+                              alert('Opening training management system...\n\nThis would navigate to a training dashboard with skills gap analysis, course recommendations, and employee development plans.');
+                            }}
+                            className="text-teal-400 hover:text-teal-300 transition-colors"
+                          >
+                            View Details →
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Manager sees team-specific insights */}
+              {isManager && (
+                <>
+                  <div className="p-4 bg-gradient-to-r from-blue-500/5 to-transparent rounded-lg">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i className="fas fa-chart-line text-blue-400 text-sm"></i>
+                      </div>
+                      <div>
+                        <h4 className="text-white font-medium mb-1">Team Performance Update</h4>
+                        <p className="text-gray-400 text-sm mb-2">
+                          Your team's productivity increased by 8% this week. All project milestones are on track.
+                        </p>
+                        <div className="flex items-center space-x-4 text-xs">
+                          <span className="text-green-400"><i className="fas fa-arrow-up mr-1"></i>8% vs last week</span>
+                          <span className="text-gray-500">Based on team metrics</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-r from-green-500/5 to-transparent rounded-lg">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i className="fas fa-calendar-check text-green-400 text-sm"></i>
+                      </div>
+                      <div>
+                        <h4 className="text-white font-medium mb-1">Leave Balance Alert</h4>
+                        <p className="text-gray-400 text-sm mb-2">
+                          2 team members have low leave balance remaining. Consider planning coverage for upcoming projects.
+                        </p>
+                        <div className="flex items-center space-x-4 text-xs">
+                          <span className="text-yellow-400"><i className="fas fa-exclamation-triangle mr-1"></i>Needs attention</span>
+                          <button 
+                            onClick={() => {
+                              alert('Opening team leave management...\n\nThis would show team leave balances and help plan coverage.');
+                            }}
+                            className="text-teal-400 hover:text-teal-300 transition-colors"
+                          >
+                            View Team Leave →
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-6 animate-fadeIn" style={{ animationDelay: '0.9s' }}>
+            <h3 className="text-lg font-semibold text-white mb-6 flex items-center">
+              <i className="fas fa-bolt text-yellow-400 mr-2"></i>
+              Quick Actions
             </h3>
-            <span className="text-xs text-gray-500">Updated 2 hours ago</span>
-          </div>
-          
-          <div className="space-y-4">
-            <div className="p-4 bg-gradient-to-r from-blue-500/5 to-transparent rounded-lg">
-              <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <i className="fas fa-chart-line text-blue-400 text-sm"></i>
-                </div>
-                <div>
-                  <h4 className="text-white font-medium mb-1">Employee Engagement Trend</h4>
-                  <p className="text-gray-400 text-sm mb-2">
-                    Engagement scores have increased by 12% this month. The new remote work policy appears to be positively impacting team satisfaction.
-                  </p>
-                  <div className="flex items-center space-x-4 text-xs">
-                    <span className="text-green-400"><i className="fas fa-arrow-up mr-1"></i>12% vs last month</span>
-                    <span className="text-gray-500">Based on 156 responses</span>
+            
+            <div className="space-y-3">
+              {isAdmin && (
+                <Link 
+                  to="/permission-management"
+                  className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group block"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-teal-500/20 rounded-lg flex items-center justify-center group-hover:bg-teal-500/30 transition-colors duration-200">
+                      <i className="fas fa-user-plus text-teal-400 text-sm"></i>
+                    </div>
+                    <div>
+                      <p className="text-white font-medium text-sm">Add Employee</p>
+                      <p className="text-gray-500 text-xs">Onboard new team member</p>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 bg-gradient-to-r from-green-500/5 to-transparent rounded-lg">
-              <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <i className="fas fa-users text-green-400 text-sm"></i>
-                </div>
-                <div>
-                  <h4 className="text-white font-medium mb-1">Retention Risk Alert</h4>
-                  <p className="text-gray-400 text-sm mb-2">
-                    3 employees in the Engineering department show signs of potential turnover based on recent activity patterns and engagement metrics.
-                  </p>
-                  <div className="flex items-center space-x-4 text-xs">
-                    <span className="text-yellow-400"><i className="fas fa-exclamation-triangle mr-1"></i>Medium priority</span>
-                    <button 
-                      onClick={() => {
-                        alert('Opening retention management tools...\n\nThis would navigate to a detailed retention dashboard with employee engagement metrics, turnover risk analysis, and intervention strategies.');
-                      }}
-                      className="text-teal-400 hover:text-teal-300 transition-colors"
-                    >
-                      Take Action →
-                    </button>
+                </Link>
+              )}
+              {isHR && (
+                <Link 
+                  to="/directory"
+                  className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group block"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center group-hover:bg-indigo-500/30 transition-colors duration-200">
+                      <i className="fas fa-user-tie text-indigo-400 text-sm"></i>
+                    </div>
+                    <div>
+                      <p className="text-white font-medium text-sm">Manage Employees</p>
+                      <p className="text-gray-500 text-xs">Update employee records</p>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 bg-gradient-to-r from-yellow-500/5 to-transparent rounded-lg">
-              <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 bg-yellow-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <i className="fas fa-lightbulb text-yellow-400 text-sm"></i>
-                </div>
-                <div>
-                  <h4 className="text-white font-medium mb-1">Skills Gap Analysis</h4>
-                  <p className="text-gray-400 text-sm mb-2">
-                    Consider upskilling 5 team members in cloud technologies. Current demand exceeds available expertise by 40%.
-                  </p>
-                  <div className="flex items-center space-x-4 text-xs">
-                    <span className="text-blue-400"><i className="fas fa-graduation-cap mr-1"></i>Training opportunity</span>
-                    <button 
-                      onClick={() => {
-                        alert('Opening training management system...\n\nThis would navigate to a training dashboard with skills gap analysis, course recommendations, and employee development plans.');
-                      }}
-                      className="text-teal-400 hover:text-teal-300 transition-colors"
-                    >
-                      View Details →
-                    </button>
+                </Link>
+              )}
+              {(isAdmin || isHR || isManager) && (
+                <Link 
+                  to="/leave-attendance"
+                  className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group block"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center group-hover:bg-blue-500/30 transition-colors duration-200">
+                      <i className="fas fa-calendar-plus text-blue-400 text-sm"></i>
+                    </div>
+                    <div>
+                      <p className="text-white font-medium text-sm">Approve Leave</p>
+                      <p className="text-gray-500 text-xs">{stats?.leaveStatus?.find(l => l.status === 'Pending')?.count || 0} pending requests</p>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+                </Link>
+              )}
 
-        {/* Quick Actions */}
-        <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-6 animate-fadeIn" style={{ animationDelay: '0.9s' }}>
-          <h3 className="text-lg font-semibold text-white mb-6 flex items-center">
-            <i className="fas fa-bolt text-yellow-400 mr-2"></i>
-            Quick Actions
-          </h3>
-          
-          <div className="space-y-3">
-            {isAdmin && (
-              <Link 
-                to="/permission-management"
-                className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group block"
+              {(isAdmin || isHR) && (
+                <button 
+                  onClick={() => {
+                    alert('Opening report generator...\n\nThis would navigate to a comprehensive report generation tool with customizable templates, data filters, and export options.');
+                  }}
+                  className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center group-hover:bg-purple-500/30 transition-colors duration-200">
+                      <i className="fas fa-chart-bar text-purple-400 text-sm"></i>
+                    </div>
+                    <div>
+                      <p className="text-white font-medium text-sm">Generate Report</p>
+                      <p className="text-gray-500 text-xs">Monthly analytics</p>
+                    </div>
+                  </div>
+                </button>
+              )}
+
+              <button 
+                onClick={() => {
+                  alert('Opening announcement composer...\n\nThis would open a rich text editor for creating company-wide announcements with scheduling and targeting options.');
+                }}
+                className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group"
+                disabled={!isAdmin}
+                title={!isAdmin ? 'Only admins can send announcements' : 'Send announcement'}
               >
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-teal-500/20 rounded-lg flex items-center justify-center group-hover:bg-teal-500/30 transition-colors duration-200">
-                    <i className="fas fa-user-plus text-teal-400 text-sm"></i>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${
+                    isAdmin 
+                      ? 'bg-green-500/20 group-hover:bg-green-500/30' 
+                      : 'bg-gray-500/20 group-hover:bg-gray-500/20'
+                  }`}>
+                    <i className={`fas fa-bullhorn text-sm ${isAdmin ? 'text-green-400' : 'text-gray-400'}`}></i>
                   </div>
                   <div>
-                    <p className="text-white font-medium text-sm">Add Employee</p>
-                    <p className="text-gray-500 text-xs">Onboard new team member</p>
+                    <p className={`font-medium text-sm ${isAdmin ? 'text-white' : 'text-gray-500'}`}>Send Announcement</p>
+                    <p className="text-gray-500 text-xs">{isAdmin ? 'Company-wide notice' : 'Admin only'}</p>
                   </div>
                 </div>
-              </Link>
-            )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Charts Section - Role Based */}
+      {(isAdmin || isHR || isManager) && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Department Distribution Pie Chart - Admin/HR only */}
+          {(isAdmin || isHR) && (
             <Link 
-              to="/leave-attendance"
-              className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group block"
+              to="/directory"
+              onClick={() => handleNavigateToDirectory('departments')}
+              className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
+              style={{ animationDelay: '0.5s' }}
             >
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center group-hover:bg-blue-500/30 transition-colors duration-200">
-                  <i className="fas fa-calendar-plus text-blue-400 text-sm"></i>
-                </div>
-                <div>
-                  <p className="text-white font-medium text-sm">Approve Leave</p>
-                  <p className="text-gray-500 text-xs">{stats?.leaveStatus?.find(l => l.status === 'Pending')?.count || 0} pending requests</p>
-                </div>
-              </div>
+              <h3 className="text-lg font-semibold text-white mb-4">Department Distribution</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={stats?.departmentDistribution || []}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : '0'}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="count"
+                  >
+                    {(stats?.departmentDistribution || []).map((_entry, index) => (
+                      <Cell key={`cell-${index}`} fill={DEPARTMENT_COLORS[index % DEPARTMENT_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1e293b', 
+                      border: '1px solid #475569',
+                      borderRadius: '8px'
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
             </Link>
+          )}
 
-            <button 
-              onClick={() => {
-                alert('Opening report generator...\n\nThis would navigate to a comprehensive report generation tool with customizable templates, data filters, and export options.');
-              }}
-              className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group"
+          {/* Leave Status Bar Chart - All roles except Employee */}
+          <Link 
+            to="/leave-attendance"
+            onClick={() => handleNavigateToLeaveAttendance('leave-status')}
+            className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
+            style={{ animationDelay: '0.6s' }}
+          >
+            <h3 className="text-lg font-semibold text-white mb-4">
+              {isAdmin || isHR ? 'Organization Leave Status' : 'Team Leave Status'}
+            </h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={stats?.leaveStatus || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
+                <XAxis 
+                  dataKey="status" 
+                  stroke="#94a3b8"
+                  tick={{ fill: '#94a3b8' }}
+                />
+                <YAxis 
+                  stroke="#94a3b8"
+                  tick={{ fill: '#94a3b8' }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1e293b', 
+                    border: '1px solid #475569',
+                    borderRadius: '8px'
+                  }}
+                />
+                <Bar 
+                  dataKey="count" 
+                  fill="#3B82F6"
+                  radius={[8, 8, 0, 0]}
+                >
+                  {(stats?.leaveStatus || []).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={LEAVE_STATUS_COLORS[entry.status as keyof typeof LEAVE_STATUS_COLORS] || '#3B82F6'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </Link>
+
+          {/* Leave Trends Line Chart - Admin/HR only */}
+          {(isAdmin || isHR) && (
+            <Link 
+              to="/reports"
+              onClick={() => handleNavigateToReports()}
+              className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
+              style={{ animationDelay: '0.7s' }}
             >
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center group-hover:bg-purple-500/30 transition-colors duration-200">
-                  <i className="fas fa-chart-bar text-purple-400 text-sm"></i>
-                </div>
-                <div>
-                  <p className="text-white font-medium text-sm">Generate Report</p>
-                  <p className="text-gray-500 text-xs">Monthly analytics</p>
-                </div>
-              </div>
-            </button>
-
-            <button 
-              onClick={() => {
-                alert('Opening announcement composer...\n\nThis would open a rich text editor for creating company-wide announcements with scheduling and targeting options.');
-              }}
-              className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group"
-              disabled={!isAdmin}
-              title={!isAdmin ? 'Only admins can send announcements' : 'Send announcement'}
-            >
-              <div className="flex items-center space-x-3">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${
-                  isAdmin 
-                    ? 'bg-green-500/20 group-hover:bg-green-500/30' 
-                    : 'bg-gray-500/20 group-hover:bg-gray-500/20'
-                }`}>
-                  <i className={`fas fa-bullhorn text-sm ${isAdmin ? 'text-green-400' : 'text-gray-400'}`}></i>
-                </div>
-                <div>
-                  <p className={`font-medium text-sm ${isAdmin ? 'text-white' : 'text-gray-500'}`}>Send Announcement</p>
-                  <p className="text-gray-500 text-xs">{isAdmin ? 'Company-wide notice' : 'Admin only'}</p>
-                </div>
-              </div>
-            </button>
-          </div>
+              <h3 className="text-lg font-semibold text-white mb-4">Leave Trends (6 Months)</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={stats?.leaveTrends || []}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
+                  <XAxis 
+                    dataKey="month" 
+                    stroke="#94a3b8"
+                    tick={{ fill: '#94a3b8' }}
+                  />
+                  <YAxis 
+                    stroke="#94a3b8"
+                    tick={{ fill: '#94a3b8' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1e293b', 
+                      border: '1px solid #475569',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Legend 
+                    wrapperStyle={{ color: '#94a3b8' }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="approved" 
+                    stroke={TREND_COLORS.approved} 
+                    strokeWidth={2}
+                    dot={{ fill: TREND_COLORS.approved, r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="pending" 
+                    stroke={TREND_COLORS.pending} 
+                    strokeWidth={2}
+                    dot={{ fill: TREND_COLORS.pending, r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="rejected" 
+                    stroke={TREND_COLORS.rejected} 
+                    strokeWidth={2}
+                    dot={{ fill: TREND_COLORS.rejected, r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </Link>
+          )}
         </div>
-      </div>
+      )}
 
-      {/* Performance Trend Chart */}
-      <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-6 mb-8 animate-fadeIn" style={{ animationDelay: '1.0s' }}>
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-white flex items-center">
-            <i className="fas fa-chart-area text-blue-400 mr-2"></i>
-            Performance Trends
-          </h3>
-          <div className="flex space-x-2">
-            <button className="px-3 py-1 text-xs bg-teal-600 text-white rounded-lg">6M</button>
-            <button className="px-3 py-1 text-xs text-gray-400 hover:text-white hover:bg-slate-700/50 rounded-lg">1Y</button>
-            <button className="px-3 py-1 text-xs text-gray-400 hover:text-white hover:bg-slate-700/50 rounded-lg">All</button>
-          </div>
-        </div>
-        
-        <ResponsiveContainer width="100%" height={250}>
-          <AreaChart data={[
-            { month: 'Jan', performance: 82, target: 85, engagement: 78 },
-            { month: 'Feb', performance: 84, target: 85, engagement: 80 },
-            { month: 'Mar', performance: 83, target: 85, engagement: 82 },
-            { month: 'Apr', performance: 86, target: 85, engagement: 84 },
-            { month: 'May', performance: 87, target: 85, engagement: 85 },
-            { month: 'Jun', performance: 89, target: 85, engagement: 87 }
-          ]}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
-            <XAxis 
-              dataKey="month" 
-              stroke="#94a3b8"
-              tick={{ fill: '#94a3b8' }}
-            />
-            <YAxis 
-              stroke="#94a3b8"
-              tick={{ fill: '#94a3b8' }}
-            />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: '#1e293b', 
-                border: '1px solid #475569',
-                borderRadius: '8px'
-              }}
-            />
-            <Legend 
-              wrapperStyle={{ color: '#94a3b8' }}
-            />
-            <Area 
-              type="monotone" 
-              dataKey="performance" 
-              stackId="1"
-              stroke="#3B82F6" 
-              fill="#3B82F6"
-              fillOpacity={0.6}
-            />
-            <Area 
-              type="monotone" 
-              dataKey="engagement" 
-              stackId="2"
-              stroke="#10B981" 
-              fill="#10B981"
-              fillOpacity={0.6}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="target" 
-              stroke="#F59E0B" 
-              strokeDasharray="5 5"
-              strokeWidth={2}
-              dot={false}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Department Distribution Pie Chart */}
+      {/* Recent Employees - Admin/HR only */}
+      {(isAdmin || isHR) && (
         <Link 
           to="/directory"
-          onClick={() => handleNavigateToDirectory('departments')}
+          onClick={() => handleNavigateToDirectory()}
           className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
-          style={{ animationDelay: '0.5s' }}
+          style={{ animationDelay: '0.8s' }}
         >
-          <h3 className="text-lg font-semibold text-white mb-4">Department Distribution</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={stats?.departmentDistribution || []}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : '0'}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="count"
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-white">Recent Employees</h2>
+            <span className="text-sm text-gray-400">Last 5 added</span>
+          </div>
+
+          <div className="space-y-4">
+            {stats?.recentEmployees?.map((employee, index) => (
+              <div
+                key={employee.id}
+                className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg border border-slate-600/50 table-row-hover animate-fadeIn"
+                style={{ animationDelay: `${0.9 + index * 0.1}s` }}
               >
-                {(stats?.departmentDistribution || []).map((_entry, index) => (
-                  <Cell key={`cell-${index}`} fill={DEPARTMENT_COLORS[index % DEPARTMENT_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1e293b', 
-                  border: '1px solid #475569',
-                  borderRadius: '8px'
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </Link>
-
-        {/* Leave Status Bar Chart */}
-        <Link 
-          to="/leave-attendance"
-          onClick={() => handleNavigateToLeaveAttendance('leave-status')}
-          className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
-          style={{ animationDelay: '0.6s' }}
-        >
-          <h3 className="text-lg font-semibold text-white mb-4">Leave Status Overview</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={stats?.leaveStatus || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
-              <XAxis 
-                dataKey="status" 
-                stroke="#94a3b8"
-                tick={{ fill: '#94a3b8' }}
-              />
-              <YAxis 
-                stroke="#94a3b8"
-                tick={{ fill: '#94a3b8' }}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1e293b', 
-                  border: '1px solid #475569',
-                  borderRadius: '8px'
-                }}
-              />
-              <Bar 
-                dataKey="count" 
-                fill="#3B82F6"
-                radius={[8, 8, 0, 0]}
-              >
-                {(stats?.leaveStatus || []).map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={LEAVE_STATUS_COLORS[entry.status as keyof typeof LEAVE_STATUS_COLORS] || '#3B82F6'} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </Link>
-
-        {/* Leave Trends Line Chart */}
-        <Link 
-          to="/reports"
-          onClick={() => handleNavigateToReports()}
-          className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
-          style={{ animationDelay: '0.7s' }}
-        >
-          <h3 className="text-lg font-semibold text-white mb-4">Leave Trends (6 Months)</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={stats?.leaveTrends || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
-              <XAxis 
-                dataKey="month" 
-                stroke="#94a3b8"
-                tick={{ fill: '#94a3b8' }}
-              />
-              <YAxis 
-                stroke="#94a3b8"
-                tick={{ fill: '#94a3b8' }}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1e293b', 
-                  border: '1px solid #475569',
-                  borderRadius: '8px'
-                }}
-              />
-              <Legend 
-                wrapperStyle={{ color: '#94a3b8' }}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="approved" 
-                stroke={TREND_COLORS.approved} 
-                strokeWidth={2}
-                dot={{ fill: TREND_COLORS.approved, r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="pending" 
-                stroke={TREND_COLORS.pending} 
-                strokeWidth={2}
-                dot={{ fill: TREND_COLORS.pending, r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="rejected" 
-                stroke={TREND_COLORS.rejected} 
-                strokeWidth={2}
-                dot={{ fill: TREND_COLORS.rejected, r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </Link>
-      </div>
-
-      {/* Recent Employees */}
-      <Link 
-        to="/directory"
-        onClick={() => handleNavigateToDirectory()}
-        className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
-        style={{ animationDelay: '0.8s' }}
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-white">Recent Employees</h2>
-          <span className="text-sm text-gray-400">Last 5 added</span>
-        </div>
-
-        <div className="space-y-4">
-          {stats?.recentEmployees?.map((employee, index) => (
-            <div
-              key={employee.id}
-              className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg border border-slate-600/50 table-row-hover animate-fadeIn"
-              style={{ animationDelay: `${0.9 + index * 0.1}s` }}
-            >
-              <div className="flex items-center space-x-4">
-                <img
-                  src={`https://picsum.photos/seed/${employee.id}/40/40.jpg`}
-                  alt={employee.name}
-                  className="w-10 h-10 rounded-full border-2 border-slate-600 transition-transform duration-200 hover:scale-110"
-                />
-                <div>
-                  <p className="text-white font-medium">{employee.name}</p>
-                  <p className="text-gray-400 text-sm">{employee.jobTitle}</p>
-                  {employee.department && (
-                    <p className="text-gray-500 text-xs">{employee.department}</p>
-                  )}
+                <div className="flex items-center space-x-4">
+                  <img
+                    src={`https://picsum.photos/seed/${employee.id}/40/40.jpg`}
+                    alt={employee.name}
+                    className="w-10 h-10 rounded-full border-2 border-slate-600 transition-transform duration-200 hover:scale-110"
+                  />
+                  <div>
+                    <p className="text-white font-medium">{employee.name}</p>
+                    <p className="text-gray-400 text-sm">{employee.jobTitle}</p>
+                    {employee.department && (
+                      <p className="text-gray-500 text-xs">{employee.department}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <span className="badge-hover">
+                    <StatusBadge status={employee.status} />
+                  </span>
+                  <span className="text-gray-500 text-sm">
+                    {new Date(employee.createdAt).toLocaleDateString()}
+                  </span>
                 </div>
               </div>
-              <div className="flex items-center space-x-3">
-                <span className="badge-hover">
-                  <StatusBadge status={employee.status} />
-                </span>
-                <span className="text-gray-500 text-sm">
-                  {new Date(employee.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Link>
+            ))}
+          </div>
+        </Link>
+      )}
 
-      {/* Activity Feed */}
-      <ActivityFeed />
+      {/* Activity Feed - Role Restricted */}
+      {(isAdmin || isHR || isManager) && (
+        <ActivityFeed />
+      )}
 
       {/* Advanced Analytics - Only for Admin, HR, Manager */}
-      {(isAdmin || userRole === 'hr' || userRole === 'manager') && (
+      {(isAdmin || isHR || isManager) && (
         <div className="mt-8">
           <AdvancedAnalytics />
         </div>

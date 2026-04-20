@@ -55,7 +55,23 @@ export const apiClient = {
     if (!res.ok) {
       const errorText = await res.text();
       console.error(`❌ API GET error: ${res.status} ${res.statusText}`, errorText);
-      throw new Error(`API GET error: ${res.status} ${res.statusText}`);
+      
+      // Try to parse error response as JSON to get the actual error message
+      let errorMessage = `API GET error: ${res.status} ${res.statusText}`;
+      
+      try {
+        const errorResponse = JSON.parse(errorText);
+        console.log('Parsed error response:', errorResponse);
+        errorMessage = errorResponse.message || errorResponse.error || errorMessage;
+      } catch (parseError) {
+        console.log('Failed to parse error as JSON:', parseError);
+        // If parsing fails, try to use the raw error text if it exists
+        if (errorText && errorText.trim()) {
+          errorMessage = errorText;
+        }
+      }
+      
+      throw new Error(errorMessage);
     }
     
     const result = await res.json();
@@ -77,7 +93,23 @@ export const apiClient = {
     if (!res.ok) {
       const errorText = await res.text();
       console.error(`❌ API POST error: ${res.status} ${res.statusText}`, errorText);
-      throw new Error(`API POST error: ${res.status} ${res.statusText}`);
+      
+      // Try to parse error response as JSON to get the actual error message
+      let errorMessage = `API POST error: ${res.status} ${res.statusText}`;
+      
+      try {
+        const errorResponse = JSON.parse(errorText);
+        console.log('Parsed error response:', errorResponse);
+        errorMessage = errorResponse.message || errorResponse.error || errorMessage;
+      } catch (parseError) {
+        console.log('Failed to parse error as JSON:', parseError);
+        // If parsing fails, try to use the raw error text if it exists
+        if (errorText && errorText.trim()) {
+          errorMessage = errorText;
+        }
+      }
+      
+      throw new Error(errorMessage);
     }
     
     const result = await res.json();
@@ -99,7 +131,23 @@ export const apiClient = {
     if (!res.ok) {
       const errorText = await res.text();
       console.error(`❌ API PUT error: ${res.status} ${res.statusText}`, errorText);
-      throw new Error(`API PUT error: ${res.status} ${res.statusText}`);
+      
+      // Try to parse error response as JSON to get the actual error message
+      let errorMessage = `API PUT error: ${res.status} ${res.statusText}`;
+      
+      try {
+        const errorResponse = JSON.parse(errorText);
+        console.log('Parsed error response:', errorResponse);
+        errorMessage = errorResponse.message || errorResponse.error || errorMessage;
+      } catch (parseError) {
+        console.log('Failed to parse error as JSON:', parseError);
+        // If parsing fails, try to use the raw error text if it exists
+        if (errorText && errorText.trim()) {
+          errorMessage = errorText;
+        }
+      }
+      
+      throw new Error(errorMessage);
     }
     
     const result = await res.json();
@@ -120,7 +168,23 @@ export const apiClient = {
     if (!res.ok) {
       const errorText = await res.text();
       console.error(`❌ API DELETE error: ${res.status} ${res.statusText}`, errorText);
-      throw new Error(`API DELETE error: ${res.status} ${res.statusText}`);
+      
+      // Try to parse error response as JSON to get the actual error message
+      let errorMessage = `API DELETE error: ${res.status} ${res.statusText}`;
+      
+      try {
+        const errorResponse = JSON.parse(errorText);
+        console.log('Parsed error response:', errorResponse);
+        errorMessage = errorResponse.message || errorResponse.error || errorMessage;
+      } catch (parseError) {
+        console.log('Failed to parse error as JSON:', parseError);
+        // If parsing fails, try to use the raw error text if it exists
+        if (errorText && errorText.trim()) {
+          errorMessage = errorText;
+        }
+      }
+      
+      throw new Error(errorMessage);
     }
     
     const result = await res.json();

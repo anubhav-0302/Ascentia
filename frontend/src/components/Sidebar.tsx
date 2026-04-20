@@ -276,10 +276,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
                   <ul className="space-y-1">
                 {accessibleItems.map((item) => {
                   const Icon = item.icon;
-                  const active = isActive(item.path);
+                  const active = item.path ? isActive(item.path) : false;
                   
                   return (
-                    <li key={item.path}>
+                    <li key={item.path || item.name}>
                       {item.onClick ? (
                         <button
                           onClick={item.onClick}
@@ -306,7 +306,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
                         </button>
                       ) : (
                         <Link
-                          to={item.path}
+                          to={item.path || '#'}
                           onClick={() => {
                             if (onClose) onClose();
                           }}

@@ -21,7 +21,6 @@ import StatusBadge from './StatusBadge';
 import { EnhancedModal } from './EnhancedModal';
 import { employeeApi, type Employee, type UpdateEmployeeRequest } from '../api/employeeApi';
 import { documentsApi } from '../api/documentsApi';
-import { changePassword, setupTwoFactor, disableTwoFactor } from '../api/userApi';
 import { performanceReviewApi } from '../api/performanceReviewApi';
 import PayslipView from './PayslipView';
 import toast from 'react-hot-toast';
@@ -49,16 +48,6 @@ const EmployeeProfile: React.FC = () => {
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [uploadingDocument, setUploadingDocument] = useState(false);
   
-  // Password change and 2FA states (only for own profile)
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [show2FAModal, setShow2FAModal] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
-  const [authLoading, setAuthLoading] = useState(false);
-  const [twoFactorSetupData, setTwoFactorSetupData] = useState<any>(null);
   
   // Performance Reviews state
   const [reviews, setReviews] = useState<any[]>([]);
@@ -388,72 +377,6 @@ const EmployeeProfile: React.FC = () => {
     }
   };
 
-  // Password change handler (only for own profile)
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.error('New passwords do not match');
-      return;
-    }
-    
-    if (passwordForm.newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters long');
-      return;
-    }
-    
-    if (!passwordForm.currentPassword) {
-      toast.error('Current password is required');
-      return;
-    }
-    
-    setAuthLoading(true);
-    try {
-      await changePassword({
-        currentPassword: passwordForm.currentPassword,
-        newPassword: passwordForm.newPassword
-      });
-      toast.success('Password changed successfully');
-      setShowPasswordModal(false);
-      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to change password');
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
-  // 2FA setup handler (only for own profile)
-  const handle2FASetup = async () => {
-    if (employee?.twoFactorEnabled) {
-      // Disable 2FA
-      setAuthLoading(true);
-      try {
-        await disableTwoFactor();
-        toast.success('2FA disabled successfully');
-        if (employee) {
-          const updatedEmployee = { ...employee, twoFactorEnabled: false };
-          setEmployee(updatedEmployee);
-        }
-      } catch (error: any) {
-        toast.error(error.message || 'Failed to disable 2FA');
-      } finally {
-        setAuthLoading(false);
-      }
-    } else {
-      // Enable 2FA
-      setAuthLoading(true);
-      try {
-        const response = await setupTwoFactor();
-        setTwoFactorSetupData(response);
-        setShow2FAModal(true);
-      } catch (error: any) {
-        toast.error(error.message || 'Failed to setup 2FA');
-      } finally {
-        setAuthLoading(false);
-      }
-    }
-  };
 
   if (loading) {
     return (
@@ -671,54 +594,7 @@ const EmployeeProfile: React.FC = () => {
                 )}
 
                 {/* Account Security Section - Only for own profile */}
-                {isOwnProfile && (
-                  <Card className="bg-slate-800/60 rounded-2xl p-6 shadow-lg">
-                    <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
-                      <User className="w-5 h-5 mr-2 text-teal-400" />
-                      Account Security
-                    </h2>
-                    
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
-                        <div>
-                          <p className="text-white font-medium">Password</p>
-                          <p className="text-gray-400 text-sm">
-                            {employee?.lastPasswordChange 
-                              ? `Last changed ${new Date(employee.lastPasswordChange).toLocaleDateString()}`
-                              : 'Never changed'
-                            }
-                          </p>
-                        </div>
-                        <button 
-                          onClick={() => setShowPasswordModal(true)}
-                          className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg text-sm transition-colors"
-                        >
-                          Change
-                        </button>
-                      </div>
-                      <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
-                        <div>
-                          <p className="text-white font-medium">Two-Factor Authentication</p>
-                          <p className="text-gray-400 text-sm">
-                            {employee?.twoFactorEnabled ? 'Enabled - Extra security active' : 'Add an extra layer of security'}
-                          </p>
-                        </div>
-                        <button 
-                          onClick={handle2FASetup}
-                          disabled={authLoading}
-                          className={`px-4 py-2 rounded-lg text-sm transition-colors ${
-                            employee?.twoFactorEnabled 
-                              ? 'bg-red-600 hover:bg-red-500 text-white' 
-                              : 'bg-teal-600 hover:bg-teal-500 text-white'
-                          } ${authLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                          {authLoading ? 'Processing...' : (employee?.twoFactorEnabled ? 'Disable' : 'Enable')}
-                        </button>
-                      </div>
-                    </div>
-                  </Card>
-                )}
-
+                
                 {/* Performance Reviews Section */}
                 <Card className="bg-slate-800/60 rounded-2xl p-6 shadow-lg">
                   <div className="flex items-center justify-between mb-4">
@@ -964,117 +840,7 @@ const EmployeeProfile: React.FC = () => {
         />
       </EnhancedModal>
 
-      {/* Password Change Modal - Only for own profile */}
-      {isOwnProfile && (
-        <EnhancedModal
-          isOpen={showPasswordModal}
-          onClose={() => setShowPasswordModal(false)}
-          title="Change Password"
-        >
-          <form onSubmit={handlePasswordChange} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Current Password</label>
-              <input
-                type="password"
-                value={passwordForm.currentPassword}
-                onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">New Password</label>
-              <input
-                type="password"
-                value={passwordForm.newPassword}
-                onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-                required
-                minLength={6}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Confirm New Password</label>
-              <input
-                type="password"
-                value={passwordForm.confirmPassword}
-                onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-                required
-                minLength={6}
-              />
-            </div>
-            <div className="flex space-x-3 pt-4">
-              <Button 
-                type="button" 
-                onClick={() => setShowPasswordModal(false)}
-                variant="secondary"
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                loading={authLoading}
-                className="flex-1"
-                loadingText="Changing..."
-              >
-                Change Password
-              </Button>
-            </div>
-          </form>
-        </EnhancedModal>
-      )}
-
-      {/* 2FA Setup Modal - Only for own profile */}
-      {isOwnProfile && twoFactorSetupData && (
-        <EnhancedModal
-          isOpen={show2FAModal}
-          onClose={() => setShow2FAModal(false)}
-          title="Setup Two-Factor Authentication"
-        >
-          <div className="space-y-4">
-            <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-4">
-                {/* QR Code would go here - for now showing placeholder */}
-                <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
-                  <span className="text-gray-500">QR Code</span>
-                </div>
-              </div>
-              <p className="text-gray-300 mb-2">Scan this QR code with your authenticator app</p>
-              <p className="text-gray-400 text-sm">Or enter this code manually:</p>
-              <code className="block bg-slate-700 px-3 py-2 rounded mt-2 text-teal-400">
-                {twoFactorSetupData.secret || 'ABC123DEF456'}
-              </code>
-            </div>
-            <div className="flex space-x-3 pt-4">
-              <Button 
-                onClick={() => setShow2FAModal(false)}
-                variant="secondary"
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={() => {
-                  // Complete 2FA setup
-                  setShow2FAModal(false);
-                  setTwoFactorSetupData(null);
-                  if (employee) {
-                    const updatedEmployee = { ...employee, twoFactorEnabled: true };
-                    setEmployee(updatedEmployee);
-                  }
-                  toast.success('2FA enabled successfully');
-                }}
-                className="flex-1"
-              >
-                Complete Setup
-              </Button>
-            </div>
-          </div>
-        </EnhancedModal>
-      )}
-
+      
       {/* Performance Review Modal - Only for admins/managers */}
       {(isAdmin || user?.role === 'manager') && !isOwnProfile && (
         <EnhancedModal

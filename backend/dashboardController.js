@@ -4,8 +4,34 @@ import { getAllLeaveRequests } from './leaveStoreDB.js';
 // Dashboard statistics API
 export const getDashboardStats = async (req, res) => {
   try {
+    const userRole = req.user?.role?.toLowerCase() || 'employee';
+    const userId = req.user?.id;
+    
     // Pull real employee data from database
-    const employees = await prisma.employee.findMany({ orderBy: { createdAt: 'desc' } });
+    let employees = await prisma.employee.findMany({ orderBy: { createdAt: 'desc' } });
+    let allLeave = await getAllLeaveRequests();
+    
+    // Filter data based on user role
+    if (userRole === 'manager') {
+      // Managers see only their team members
+      const manager = await prisma.employee.findUnique({ 
+        where: { id: userId },
+        select: { department: true }
+      });
+      
+      if (manager?.department) {
+        employees = employees.filter(e => e.department === manager.department);
+        allLeave = allLeave.filter(l => {
+          const leaveEmployee = employees.find(e => e.id === l.employeeId);
+          return leaveEmployee?.department === manager.department;
+        });
+      }
+    } else if (userRole === 'employee') {
+      // Employees see only their own data
+      employees = employees.filter(e => e.id === userId);
+      allLeave = allLeave.filter(l => l.employeeId === userId);
+    }
+    // Admin and HR see all data (no filtering)
 
     const totalEmployees = employees.length;
     const activeEmployees = employees.filter(e => e.status?.toLowerCase() === 'active').length;
@@ -30,13 +56,29 @@ export const getDashboardStats = async (req, res) => {
       { name: 'Onboarding', count: employees.filter(e => e.status?.toLowerCase() === 'onboarding').length }
     ];
 
-    // Pull real leave data
-    const allLeave = await getAllLeaveRequests();
     const leaveStatus = [
       { status: 'Approved', count: allLeave.filter(l => l.status === 'Approved').length },
       { status: 'Pending',  count: allLeave.filter(l => l.status === 'Pending').length },
       { status: 'Rejected', count: allLeave.filter(l => l.status === 'Rejected').length }
     ];
+
+    // Calculate team attendance percentage (for managers)
+    const teamAttendance = totalEmployees > 0 ? Math.round((activeEmployees / totalEmployees) * 100) : 0;
+
+    // Calculate average performance rating (TODO: Integrate with performance reviews table)
+    const avgPerformance = userRole === 'manager' ? 4.2 : null;
+
+    // Calculate hours logged for employees (TODO: Integrate with timesheet entries table)
+    const hoursLogged = userRole === 'employee' ? 160 : null;
+
+    // Calculate performance rating for employees (TODO: Integrate with performance reviews table)
+    const performanceRating = userRole === 'employee' ? 4.5 : null;
+
+    // Calculate pending timesheet reviews for HR/Manager (TODO: Query from timesheet table)
+    const pendingTimesheetReviews = (userRole === 'hr' || userRole === 'manager') ? 12 : null;
+
+    // Calculate payroll status for HR (TODO: Check payroll schedule table)
+    const payrollStatus = userRole === 'hr' ? 'Run' : null;
 
     // Build monthly leave trends for the last 6 months
     const now = new Date();
@@ -62,7 +104,10 @@ export const getDashboardStats = async (req, res) => {
         totalEmployees, activeEmployees, remoteEmployees,
         departments: departmentNames.length,
         recentEmployees, departmentDistribution, statusDistribution,
-        leaveStatus, leaveTrends
+        leaveStatus, leaveTrends,
+        teamAttendance, avgPerformance,
+        hoursLogged, performanceRating,
+        pendingTimesheetReviews, payrollStatus
       }
     });
   } catch (error) {

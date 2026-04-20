@@ -29,6 +29,13 @@ export interface DashboardStats {
     pending: number;
     rejected: number;
   }>;
+  // Role-specific data
+  teamAttendance?: number;
+  avgPerformance?: number;
+  hoursLogged?: number;
+  performanceRating?: number;
+  pendingTimesheetReviews?: number;
+  payrollStatus?: string;
 }
 
 // Get dashboard statistics
