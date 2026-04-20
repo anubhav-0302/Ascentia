@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import prisma from "./lib/prisma.js";
+import { validateEmail } from "./utils/emailValidator.js";
 
 // Login: database only - now works with Employee model
 export const login = async (req, res) => {
@@ -9,6 +10,12 @@ export const login = async (req, res) => {
 
     if (!email || !password)
       return res.status(400).json({ message: "Missing credentials" });
+
+    // Validate email format
+    const emailValidation = validateEmail(email, { requireProfessionalTLD: true });
+    if (!emailValidation.isValid) {
+      return res.status(400).json({ message: emailValidation.error });
+    }
 
     const employee = await prisma.employee.findFirst({ where: { email } });
     if (!employee || !employee.password) {
@@ -53,12 +60,51 @@ export const login = async (req, res) => {
 };
 
 // Register: database only - now works with Employee model
+// Verify password for sensitive data access
+export const verifyPassword = async (req, res) => {
+  try {
+    const { password } = req.body;
+    const userId = req.user.id;
+
+    if (!password) {
+      return res.status(400).json({ success: false, message: "Password is required" });
+    }
+
+    const employee = await prisma.employee.findUnique({ where: { id: userId } });
+    if (!employee || !employee.password) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const validPassword = await bcrypt.compare(password, employee.password);
+    if (!validPassword) {
+      return res.status(401).json({ success: false, message: "Invalid password" });
+    }
+
+    // Password verified successfully
+    return res.json({
+      success: true,
+      message: "Password verified successfully",
+      timestamp: new Date().toISOString() // For session tracking
+    });
+  } catch (err) {
+    console.error("❌ PASSWORD VERIFICATION ERROR:", err.message);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+// Register: database only - now works with Employee model
 export const register = async (req, res) => {
   try {
     const { name, email, password, role = 'employee', jobTitle, department } = req.body;
 
     if (!name || !email || !password)
       return res.status(400).json({ success: false, message: "Name, email, and password are required" });
+
+    // Validate email format
+    const emailValidation = validateEmail(email, { requireProfessionalTLD: true });
+    if (!emailValidation.isValid) {
+      return res.status(400).json({ success: false, message: emailValidation.error });
+    }
 
     const existing = await prisma.employee.findFirst({ where: { email } });
     if (existing)

@@ -1,6 +1,7 @@
 import prisma from './lib/prisma.js';
 import bcrypt from 'bcryptjs';
 import { logDatabaseOperation } from './databaseLogger.js';
+import { validateEmail } from './utils/emailValidator.js';
 
 // GET /api/employees - Get all employees from database
 export const getEmployees = async (req, res) => {
@@ -154,6 +155,15 @@ export const createEmployee = async (req, res) => {
       });
     }
 
+    // Validate email format
+    const emailValidation = validateEmail(email, { requireProfessionalTLD: true });
+    if (!emailValidation.isValid) {
+      return res.status(400).json({ 
+        success: false, 
+        message: emailValidation.error 
+      });
+    }
+
     // Check if employee already exists
     const existingEmployee = await prisma.employee.findFirst({
       where: { email }
@@ -253,7 +263,17 @@ export const updateEmployee = async (req, res) => {
 
     const updateData = {};
     if (name) updateData.name = name;
-    if (email) updateData.email = email;
+    if (email) {
+      // Validate email format
+      const emailValidation = validateEmail(email, { requireProfessionalTLD: true });
+      if (!emailValidation.isValid) {
+        return res.status(400).json({ 
+          success: false, 
+          message: emailValidation.error 
+        });
+      }
+      updateData.email = email;
+    }
     if (jobTitle) updateData.jobTitle = jobTitle;
     if (department) updateData.department = department;
     if (location) updateData.location = location;

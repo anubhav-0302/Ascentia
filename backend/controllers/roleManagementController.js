@@ -173,7 +173,30 @@ export const updateRolePermissions = async (req, res) => {
           console.log(`✅ Permission updated in DB: ID ${result.id}, isEnabled: ${result.isEnabled}`);
         }
       } else {
-        console.log(`⚠️ Permission not found: ${permission.module}.${permission.action}`);
+        // Create permission if it doesn't exist
+        console.log(`📝 Creating missing permission: ${permission.module}.${permission.action}`);
+        
+        const result = await prisma.permission.create({
+          data: {
+            roleId: parseInt(id),
+            module: permission.module,
+            action: permission.action,
+            isEnabled: permission.isEnabled
+          }
+        });
+        
+        // Log the creation
+        auditLogs.push({
+          roleId: parseInt(id),
+          changedBy: adminId,
+          module: permission.module,
+          action: permission.action,
+          previousValue: null,
+          newValue: permission.isEnabled,
+          reason: reason || null
+        });
+        
+        console.log(`✅ Permission created in DB: ID ${result.id}, isEnabled: ${result.isEnabled}`);
       }
     }
 

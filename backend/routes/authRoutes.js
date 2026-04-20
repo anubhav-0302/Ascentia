@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, getCurrentUser, forgotPassword } from '../simpleAuthController.js';
+import { register, login, getCurrentUser, forgotPassword, verifyPassword } from '../simpleAuthController.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -15,7 +15,8 @@ router.post('/register', register);
 router.post('/login', login);
 router.post('/forgot-password', forgotPassword);
 
-// Protected route (authentication required)
+// Protected routes (authentication required)
 router.get('/me', requireAuth, getCurrentUser);
+router.post('/verify-password', requireAuth, verifyPassword);
 
 export default router;

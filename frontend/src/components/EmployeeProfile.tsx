@@ -9,7 +9,7 @@ declare global {
 }
 
 import { StandardLayout } from './StandardLayout';
-import { User, Calendar, MapPin, Briefcase, Edit, Trash2, Clock, AlertCircle, FileText, Download, Upload } from 'lucide-react';
+import { User, Calendar, MapPin, Briefcase, Edit, Trash2, Clock, AlertCircle, FileText, Download, Upload, Lock, Eye } from 'lucide-react';
 import Card from './Card';
 import { PageTransition, FadeIn } from './PageTransition';
 import { useEmployeeStore } from '../store/useEmployeeStore';
@@ -23,6 +23,7 @@ import { employeeApi, type Employee, type UpdateEmployeeRequest } from '../api/e
 import { documentsApi } from '../api/documentsApi';
 import { performanceReviewApi } from '../api/performanceReviewApi';
 import PayslipView from './PayslipView';
+import PasswordVerificationModal from './PasswordVerificationModal';
 import toast from 'react-hot-toast';
 
 const EmployeeProfile: React.FC = () => {
@@ -59,6 +60,43 @@ const EmployeeProfile: React.FC = () => {
     type: 'General'
   });
   const [submittingReview, setSubmittingReview] = useState(false);
+
+  // Salary protection state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [salaryUnlocked, setSalaryUnlocked] = useState(false);
+  const [salaryUnlockTime, setSalaryUnlockTime] = useState<number | null>(null);
+  const SALARY_ACCESS_DURATION = 10 * 60 * 1000; // 10 minutes
+
+  // Check if salary access is still valid
+  useEffect(() => {
+    if (salaryUnlockTime) {
+      const timeElapsed = Date.now() - salaryUnlockTime;
+      if (timeElapsed > SALARY_ACCESS_DURATION) {
+        setSalaryUnlocked(false);
+        setSalaryUnlockTime(null);
+      } else {
+        // Set timeout to lock salary after remaining time
+        const remainingTime = SALARY_ACCESS_DURATION - timeElapsed;
+        const timer = setTimeout(() => {
+          setSalaryUnlocked(false);
+          setSalaryUnlockTime(null);
+        }, remainingTime);
+        
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [salaryUnlockTime]);
+
+  const handleSalaryClick = () => {
+    if (!salaryUnlocked) {
+      setShowPasswordModal(true);
+    }
+  };
+
+  const handlePasswordSuccess = () => {
+    setSalaryUnlocked(true);
+    setSalaryUnlockTime(Date.now());
+  };
 
   // Find employee from store or fetch if not available
   useEffect(() => {
@@ -817,11 +855,56 @@ const EmployeeProfile: React.FC = () => {
               </div>
             </div>
 
-            {/* Salary Details Section */}
-            <PayslipView 
-              employeeId={employee.id} 
-              employeeName={employee.name}
-            />
+            {/* Salary Details Section - Password Protected */}
+            {isOwnProfile ? (
+              <Card className="bg-slate-800/60 rounded-2xl p-6 shadow-lg">
+                <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <Briefcase className="w-5 h-5 mr-2 text-teal-400" />
+                  Salary Details
+                  {salaryUnlocked && (
+                    <span className="ml-3 text-xs text-teal-400 bg-teal-500/20 px-2 py-1 rounded-full">
+                      Access expires in {Math.ceil((SALARY_ACCESS_DURATION - (Date.now() - (salaryUnlockTime || 0))) / 60000)} min
+                    </span>
+                  )}
+                </h2>
+                
+                {!salaryUnlocked ? (
+                  <div 
+                    onClick={handleSalaryClick}
+                    className="relative group cursor-pointer"
+                  >
+                    <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm rounded-lg flex items-center justify-center transition-all duration-300 group-hover:bg-slate-900/90">
+                      <div className="text-center">
+                        <Lock className="w-12 h-12 text-teal-400 mx-auto mb-3" />
+                        <p className="text-white font-medium mb-1">Restricted Content</p>
+                        <p className="text-gray-400 text-sm">Click to verify password and view salary details</p>
+                        <Button size="sm" className="mt-3">
+                          <Eye className="w-4 h-4 mr-2" />
+                          View Salary
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="blur-sm">
+                      <PayslipView 
+                        employeeId={employee.id} 
+                        employeeName={employee.name}
+                        preview={true}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <PayslipView 
+                    employeeId={employee.id} 
+                    employeeName={employee.name}
+                  />
+                )}
+              </Card>
+            ) : (
+              <PayslipView 
+                employeeId={employee.id} 
+                employeeName={employee.name}
+              />
+            )}
           </div>
         </FadeIn>
       </StandardLayout>
@@ -834,107 +917,114 @@ const EmployeeProfile: React.FC = () => {
       >
         <EmployeeEditForm
           employee={employee}
-          onSave={handleUpdateEmployee}
+          onSubmit={handleUpdateEmployee}
           onCancel={() => setShowEditModal(false)}
           loading={editLoading}
         />
       </EnhancedModal>
 
-      
-      {/* Performance Review Modal - Only for admins/managers */}
-      {(isAdmin || user?.role === 'manager' || user?.role === 'teamlead') && !isOwnProfile && (
-        <EnhancedModal
-          isOpen={showReviewModal}
-          onClose={() => setShowReviewModal(false)}
-          title={`Add Performance Review - ${employee?.name}`}
-        >
-          <form onSubmit={handleSubmitReview} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Rating</label>
-              <div className="flex items-center space-x-2">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => setReviewForm({ ...reviewForm, rating: star })}
-                    className="focus:outline-none"
+      {/* Review Modal */}
+      <EnhancedModal
+        isOpen={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        title="Add Performance Review"
+      >
+        <form onSubmit={handleSubmitReview} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Rating</label>
+            <div className="flex items-center space-x-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                  className={`transition-colors ${
+                    star <= reviewForm.rating ? 'text-yellow-400' : 'text-gray-600'
+                  }`}
+                >
+                  <svg
+                    className="w-8 h-8"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
                   >
-                    <svg
-                      className={`w-8 h-8 ${
-                        star <= reviewForm.rating ? 'text-yellow-400' : 'text-gray-600'
-                      } hover:text-yellow-400 transition-colors`}
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  </button>
-                ))}
-              </div>
-              <p className="text-gray-400 text-sm mt-1">Selected: {reviewForm.rating} out of 5</p>
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                </button>
+              ))}
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Review Type</label>
-              <select
-                value={reviewForm.type}
-                onChange={(e) => setReviewForm({ ...reviewForm, type: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-              >
-                <option value="General">General</option>
-                <option value="Quarterly">Quarterly</option>
-                <option value="Annual">Annual</option>
-                <option value="Project">Project</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Feedback</label>
-              <textarea
-                value={reviewForm.feedback}
-                onChange={(e) => setReviewForm({ ...reviewForm, feedback: e.target.value })}
-                placeholder="Provide detailed feedback..."
-                rows={4}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
-            </div>
-            
-            <div className="flex space-x-3 pt-4">
-              <Button 
-                type="button" 
-                onClick={() => setShowReviewModal(false)}
-                variant="secondary"
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                loading={submittingReview}
-                className="flex-1"
-                loadingText="Submitting..."
-              >
-                Submit Review
-              </Button>
-            </div>
-          </form>
-        </EnhancedModal>
-      )}
+            <p className="text-gray-400 text-sm mt-1">Selected: {reviewForm.rating} out of 5</p>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Review Type</label>
+            <select
+              value={reviewForm.type}
+              onChange={(e) => setReviewForm({ ...reviewForm, type: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+            >
+              <option value="General">General</option>
+              <option value="Quarterly">Quarterly</option>
+              <option value="Annual">Annual</option>
+              <option value="Project">Project</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Feedback</label>
+            <textarea
+              value={reviewForm.feedback}
+              onChange={(e) => setReviewForm({ ...reviewForm, feedback: e.target.value })}
+              placeholder="Provide detailed feedback..."
+              rows={4}
+              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+          
+          <div className="flex space-x-3 pt-4">
+            <Button 
+              type="button" 
+              onClick={() => setShowReviewModal(false)}
+              variant="secondary"
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              loading={submittingReview}
+              className="flex-1"
+              loadingText="Submitting..."
+            >
+              Submit Review
+            </Button>
+          </div>
+        </form>
+      </EnhancedModal>
+
+      {/* Password Verification Modal */}
+      <PasswordVerificationModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        onSuccess={handlePasswordSuccess}
+        title="Verify Password to View Salary"
+        message="Please enter your password to access your confidential salary information"
+      />
     </PageTransition>
   );
+
 };
 
 // Employee Edit Form Component
 interface EmployeeEditFormProps {
   employee: Employee;
-  onSave: (data: UpdateEmployeeRequest) => Promise<void>;
+  onSubmit: (data: UpdateEmployeeRequest) => Promise<void>;
   onCancel: () => void;
   loading: boolean;
 }
 
 const EmployeeEditForm: React.FC<EmployeeEditFormProps> = ({
   employee,
-  onSave,
+  onSubmit,
   onCancel,
   loading
 }) => {
@@ -950,7 +1040,7 @@ const EmployeeEditForm: React.FC<EmployeeEditFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSave(formData);
+    await onSubmit(formData);
   };
 
   return (
@@ -1048,6 +1138,7 @@ const EmployeeEditForm: React.FC<EmployeeEditFormProps> = ({
       </div>
     </form>
   );
+
 };
 
 export default EmployeeProfile;

@@ -9,9 +9,10 @@ import toast from 'react-hot-toast';
 interface PayslipViewProps {
   employeeId: number;
   employeeName: string;
+  preview?: boolean;
 }
 
-const PayslipView: React.FC<PayslipViewProps> = ({ employeeId, employeeName }) => {
+const PayslipView: React.FC<PayslipViewProps> = ({ employeeId, employeeName, preview = false }) => {
   const { user } = useAuthStore();
   const [salaryData, setSalaryData] = useState<EmployeeSalary[]>([]);
   const [loading, setLoading] = useState(false);
@@ -61,6 +62,11 @@ const PayslipView: React.FC<PayslipViewProps> = ({ employeeId, employeeName }) =
       totalDeductions,
       netSalary
     };
+  };
+
+  // Mask sensitive values in preview mode
+  const maskValue = (value: number) => {
+    return preview ? 'XXX,XXX.XX' : value.toFixed(2);
   };
 
   const salary = calculateSalary();
@@ -166,14 +172,7 @@ NET SALARY: ${salary.netSalary.toFixed(2)}
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-semibold text-white flex items-center">
-            <DollarSign className="w-5 h-5 mr-2 text-teal-400" />
-            Salary Details
-          </h3>
-          <p className="text-sm text-gray-400 mt-1">{employeeName}</p>
-        </div>
+      <div className="flex justify-end items-center">
         <Button
           onClick={handleDownloadPayslip}
           icon={<Download className="w-4 h-4" />}
@@ -189,10 +188,10 @@ NET SALARY: ${salary.netSalary.toFixed(2)}
         <div className="text-center">
           <p className="text-gray-300 text-sm mb-2">NET SALARY</p>
           <p className="text-4xl font-bold text-teal-400">
-            ₹{salary.netSalary.toFixed(2)}
+            ₹{maskValue(salary.netSalary)}
           </p>
           <p className="text-xs text-gray-400 mt-2">
-            {salary.totalEarnings.toFixed(2)} - {salary.totalDeductions.toFixed(2)}
+            {maskValue(salary.totalEarnings)} - {maskValue(salary.totalDeductions)}
           </p>
         </div>
       </Card>
@@ -212,14 +211,14 @@ NET SALARY: ${salary.netSalary.toFixed(2)}
                 <div key={salary.id} className="flex justify-between items-center">
                   <span className="text-sm text-gray-300">{salary.component?.name}</span>
                   <span className="text-sm font-medium text-green-400">
-                    ₹{salary.amount.toFixed(2)}
+                    ₹{maskValue(salary.amount)}
                   </span>
                 </div>
               ))}
             <div className="border-t border-slate-700/50 pt-3 mt-3 flex justify-between items-center">
               <span className="text-sm font-semibold text-white">Total Earnings</span>
               <span className="text-sm font-semibold text-green-400">
-                ₹{salary.totalEarnings.toFixed(2)}
+                ₹{maskValue(salary.totalEarnings)}
               </span>
             </div>
           </div>
@@ -242,21 +241,20 @@ NET SALARY: ${salary.netSalary.toFixed(2)}
                     <div key={salary.id} className="flex justify-between items-center">
                       <span className="text-sm text-gray-300">{salary.component?.name}</span>
                       <span className="text-sm font-medium text-red-400">
-                        -₹{salary.amount.toFixed(2)}
+                        -₹{maskValue(salary.amount)}
                       </span>
                     </div>
                   ))}
                 <div className="border-t border-slate-700/50 pt-3 mt-3 flex justify-between items-center">
                   <span className="text-sm font-semibold text-white">Total Deductions</span>
                   <span className="text-sm font-semibold text-red-400">
-                    -₹{salary.totalDeductions.toFixed(2)}
+                    -₹{maskValue(salary.totalDeductions)}
                   </span>
                 </div>
               </>
             )}
           </div>
         </Card>
-      </div>
 
       {/* Salary Components Details */}
       <Card className="p-6 bg-slate-800/60">
@@ -284,7 +282,7 @@ NET SALARY: ${salary.netSalary.toFixed(2)}
                       {salary.component?.type}
                     </span>
                   </td>
-                  <td className="py-3 px-3 text-white font-medium">₹{salary.amount.toFixed(2)}</td>
+                  <td className="py-3 px-3 text-white font-medium">₹{maskValue(salary.amount)}</td>
                   <td className="py-3 px-3 text-gray-400">
                     {new Date(salary.effectiveDate).toLocaleDateString()}
                   </td>
@@ -299,6 +297,7 @@ NET SALARY: ${salary.netSalary.toFixed(2)}
       <div className="text-xs text-gray-500 text-center">
         <p>This is a summary view of your salary structure. For detailed payslips, please contact HR.</p>
       </div>
+    </div>
     </div>
   );
 };

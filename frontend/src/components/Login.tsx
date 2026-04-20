@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/useAuthStore';
+import { validateEmail } from '../utils/emailValidator';
 
 const Login = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -17,6 +18,13 @@ const Login = () => {
     e.preventDefault();
     clearError();
 
+    // Validate email format
+    const emailValidation = validateEmail(formData.email, { requireProfessionalTLD: true });
+    if (!emailValidation.isValid) {
+      toast.error(emailValidation.error || 'Please enter a valid email address');
+      return;
+    }
+
     try {
       await login(formData.email, formData.password);
       toast.success('Login successful!');
@@ -32,6 +40,13 @@ const Login = () => {
     
     if (!forgotPasswordEmail) {
       toast.error('Please enter your email address');
+      return;
+    }
+
+    // Validate email format
+    const emailValidation = validateEmail(forgotPasswordEmail, { requireProfessionalTLD: true });
+    if (!emailValidation.isValid) {
+      toast.error(emailValidation.error || 'Please enter a valid email address');
       return;
     }
 

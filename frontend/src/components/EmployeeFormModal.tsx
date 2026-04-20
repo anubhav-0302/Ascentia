@@ -4,6 +4,7 @@ import Button from './Button';
 import Input from './Input';
 import UnifiedDropdown from './UnifiedDropdown';
 import { type Employee, type CreateEmployeeRequest, type UpdateEmployeeRequest } from '../api/employeeApi';
+import { validateEmail } from '../utils/emailValidator';
 
 interface EmployeeFormModalProps {
   employee: Employee | null;
@@ -61,6 +62,14 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate email format
+    const emailValidation = validateEmail(formData.email, { requireProfessionalTLD: true });
+    if (!emailValidation.isValid) {
+      setError(emailValidation.error || 'Please enter a valid email address');
+      return;
+    }
+    
     setLoading(true);
     try {
       console.log('🔍 Submitting form data:', formData);
