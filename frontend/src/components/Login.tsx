@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/useAuthStore';
+import { useOrganizationStore } from '../store/useOrganizationStore';
 import { validateEmail } from '../utils/emailValidator';
+import { getAssignedOrganization, getAvailableOrganizations } from '../api/orgApi';
 
 const Login = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -13,6 +15,7 @@ const Login = () => {
   });
   
   const { login, loading, error, clearError } = useAuthStore();
+  const { setCurrentOrgId, setCurrentOrg } = useOrganizationStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +31,35 @@ const Login = () => {
     try {
       await login(formData.email, formData.password);
       toast.success('Login successful!');
+      
+      // Get auth state after login
+      const authStore = useAuthStore.getState();
+      const { token: authToken, user: authUser } = authStore;
+      
+      // Handle Org Admin context
+      if (authUser?.role === 'orgAdmin' && authToken) {
+        try {
+          const assignedOrg = await getAssignedOrganization(authToken);
+          setCurrentOrgId(assignedOrg.id);
+          setCurrentOrg(assignedOrg);
+        } catch (error) {
+          console.error('Error fetching assigned organization:', error);
+        }
+      }
+      
+      // Handle Super Admin context
+      if (authUser?.role === 'superAdmin' && authToken) {
+        try {
+          const availableOrgs = await getAvailableOrganizations(authToken);
+          if (availableOrgs.length > 0) {
+            setCurrentOrgId(availableOrgs[0].id);
+            setCurrentOrg(availableOrgs[0]);
+          }
+        } catch (error) {
+          console.error('Error fetching available organizations:', error);
+        }
+      }
+      
       // Navigation will be handled by the auth state change
     } catch (err) {
       // Error is already handled in the store

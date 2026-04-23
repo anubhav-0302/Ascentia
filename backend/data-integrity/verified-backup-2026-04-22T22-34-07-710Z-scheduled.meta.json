@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-04-22T22:34:07.932Z",
+  "description": "scheduled",
+  "originalSize": 253952,
+  "compressedSize": 23303,
+  "compressionRatio": "0.91",
+  "backupPath": "E:\\Ascentia\\backend\\backups\\verified-backup-2026-04-22T22-34-07-710Z-scheduled.db.gz",
+  "verified": true,
+  "dataIntegrity": "PASS",
+  "checksums": {
+    "size": 23303,
+    "mtime": "2026-04-22T22:34:07.857Z"
+  }
+}

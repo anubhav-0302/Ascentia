@@ -1,5 +1,7 @@
 import { getMyLeaveRequests as getMyLeaveRequestsFromDB, getAllLeaveRequests as getAllLeaveRequestsFromDB, createLeaveRequest as createLeaveRequestInDB, updateLeaveRequestStatus as updateLeaveRequestStatusInDB, cancelLeaveRequest as cancelLeaveRequestFromDB, initializeLeaveData } from './leaveStoreDB.js';
 import { createLeaveRequestNotifications, createLeaveStatusUpdateNotifications } from './notificationStoreDB.js';
+import { tenantWhere, tenantWhereWith } from './helpers/tenantHelper.js';
+import prisma from './lib/prisma.js';
 
 // Initialize database on module load
 initializeLeaveData().catch(console.error);
@@ -33,12 +35,19 @@ export const getAllLeaveRequests = async (req, res) => {
     
     let leaveRequests = await getAllLeaveRequestsFromDB();
     
+    // Filter by tenant first
+    const orgEmployees = await prisma.employee.findMany({
+      where: tenantWhere(req),
+      select: { id: true }
+    });
+    const orgEmployeeIds = orgEmployees.map(emp => emp.id);
+    leaveRequests = leaveRequests.filter(l => orgEmployeeIds.includes(l.employeeId));
+    
     // Filter data based on user role
     if (userRole === 'manager' || userRole === 'teamlead') {
       // Managers and Team Leads see only their direct reports
-      const prisma = await import('./lib/prisma.js').then(m => m.default);
       const directReports = await prisma.employee.findMany({
-        where: { managerId: userId },
+        where: tenantWhereWith(req, { managerId: userId }),
         select: { id: true }
       });
       const directReportIds = directReports.map(emp => emp.id);
@@ -47,7 +56,7 @@ export const getAllLeaveRequests = async (req, res) => {
       // Employees see only their own data (shouldn't reach here due to permissions)
       leaveRequests = leaveRequests.filter(l => l.employeeId === userId);
     }
-    // Admin and HR see all data (no filtering)
+    // Admin and HR see all data (no additional filtering)
     
     res.json({
       success: true,

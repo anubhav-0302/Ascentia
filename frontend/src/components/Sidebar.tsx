@@ -12,11 +12,14 @@ import {
   Command,
   GitBranch,
   Building,
+  Building2,
   User,
   Clock,
   Target,
   Database,
-  Shield
+  Shield,
+  Crown,
+  HardDrive
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { getSidebarPermissions } from '../api/roleManagementApi';
@@ -52,8 +55,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
 
   // Load sidebar permissions from database on every render
   // This ensures users always see the latest permissions
+  // Skip for SuperAdmin - they have access to everything
   useEffect(() => {
     const loadSidebarPermissions = async () => {
+      // SuperAdmin doesn't need permission checks
+      if (userRole === 'superadmin') {
+        setSidebarPermissions({}); // Empty object means all items accessible
+        return;
+      }
+      
       if (token) {
         try {
           const permissions = await getSidebarPermissions(token);
@@ -67,7 +77,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
     };
     
     loadSidebarPermissions();
-  }, [token, location.pathname]);
+  }, [token, location.pathname, userRole]);
 
   const handleProfileClick = () => {
     navigate('/profile');
@@ -78,8 +88,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
   };
 
   // Check if user has access to a nav item
-  // ONLY use database permissions - no fallback
   const hasAccess = (item: NavItem): boolean => {
+    // SuperAdmin has access to everything - no permission checks needed
+    if (userRole === 'superadmin') {
+      return true;
+    }
+    
     // If permissions loaded and item has menuKey, check database
     if (sidebarPermissions !== null && item.menuKey) {
       return sidebarPermissions[item.menuKey] === true;
@@ -226,6 +240,33 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
     }
   ];
 
+  // Platform-owner focused nav for SuperAdmin. Intentionally does NOT include
+  // org-scoped HR screens (timesheet, leaves, payroll, etc.). SuperAdmin
+  // operates at the platform level; to see org-scoped data they use the
+  // org switcher in the header (sets X-Organization-Id and navigates in).
+  const superAdminSections: NavSection[] = [
+    {
+      title: 'PLATFORM',
+      items: [
+        { name: 'Platform Dashboard', path: '/superadmin',        icon: Crown },
+        { name: 'Organizations',      path: '/organizations',     icon: Building2 },
+        { name: 'Org Admins',         path: '/superadmin/admins', icon: Shield },
+        { name: 'Platform Audit Logs',path: '/audit-logs',        icon: Database },
+        { name: 'Data Protection',    path: '/data-protection',   icon: HardDrive },
+      ],
+    },
+    {
+      title: 'ACCOUNT',
+      items: [
+        { name: 'Profile',  path: '/profile',  icon: User,     onClick: handleProfileClick },
+        { name: 'Settings', path: '/settings', icon: Settings, onClick: handleSettingsClick },
+      ],
+    },
+  ];
+
+  // Decide which nav the user sees. SuperAdmin gets its own focused tree.
+  const sectionsToRender = userRole === 'superadmin' ? superAdminSections : navSections;
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -263,7 +304,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
 
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900 py-4">
-            {navSections.map((section, index) => {
+            {sectionsToRender.map((section, index) => {
               const accessibleItems = section.items.filter(hasAccess);
               
               if (accessibleItems.length === 0) return null;

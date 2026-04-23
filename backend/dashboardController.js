@@ -1,5 +1,6 @@
 import prisma from './lib/prisma.js';
 import { getAllLeaveRequests } from './leaveStoreDB.js';
+import { tenantWhere, tenantWhereWith } from './helpers/tenantHelper.js';
 
 // Dashboard statistics API
 export const getDashboardStats = async (req, res) => {
@@ -8,14 +9,20 @@ export const getDashboardStats = async (req, res) => {
     const userId = req.user?.id;
     
     // Pull real employee data from database
-    let employees = await prisma.employee.findMany({ orderBy: { createdAt: 'desc' } });
+    let employees = await prisma.employee.findMany({ 
+      where: tenantWhere(req),
+      orderBy: { createdAt: 'desc' } 
+    });
     let allLeave = await getAllLeaveRequests();
     
     // Filter data based on user role
     if (userRole === 'manager') {
       // Managers see only their team members
       const manager = await prisma.employee.findUnique({ 
-        where: { id: userId },
+        where: { 
+          id: userId,
+          ...tenantWhere(req)
+        },
         select: { department: true }
       });
       

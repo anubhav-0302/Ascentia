@@ -19,6 +19,10 @@ import EmployeeProfile from './components/EmployeeProfile';
 import Settings from './components/Settings';
 import PermissionManagement from './components/PermissionManagement';
 import RoleManagementPage from './components/RoleManagementPage';
+import OrganizationManagement from './components/OrganizationManagement';
+import SuperAdminDashboard from './components/SuperAdminDashboard';
+import OrgAdminsPage from './components/OrgAdminsPage';
+import DataProtectionPage from './components/DataProtectionPage';
 import Login from './components/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -28,14 +32,21 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { CompactViewProvider } from './contexts/CompactViewContext';
 import { useAuthStore, useAuthInitialized, useIsAuthenticated } from './store/useAuthStore';
 import { useSettingsStore } from './store/useSettingsStore';
+import { useOrganizationStore } from './store/useOrganizationStore';
 import './styles/globals.css';
 import './styles/theme.css';
 
 function App() {
-  const { initializeAuth } = useAuthStore();
+  const { initializeAuth, token } = useAuthStore();
   const authInitialized = useAuthInitialized();
   const isAuthenticated = useIsAuthenticated();
   const { fetchSettings } = useSettingsStore();
+  // Subscribe to the SuperAdmin's active org id. Used as a React `key` on the
+  // Routes tree so switching orgs forces unmount+remount of every page, which
+  // causes all `useEffect`-driven fetches to re-run with the new
+  // X-Organization-Id header. For non-SuperAdmins this value stays null and
+  // the key is stable, so nothing remounts.
+  const currentOrgId = useOrganizationStore((s) => s.currentOrgId);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Initialize authentication on app load
@@ -90,9 +101,9 @@ function App() {
               <main className="mt-16 px-4 lg:px-6 py-4 lg:py-6 flex-1 overflow-y-auto scrollbar-hide">
                 <div className="max-w-full lg:max-w-7xl mx-auto pb-24">
                   <ProtectedRoute>
-                    <Routes>
-                      <Route path="/" element={<Dashboard />} />
-                      <Route path="/dashboard" element={<Dashboard />} />
+                    <Routes key={currentOrgId ?? 'platform'}>
+                      <Route path="/" element={<HomeRedirect />} />
+                      <Route path="/dashboard" element={<HomeRedirect />} />
                       <Route path="/directory" element={<Directory />} />
                       <Route path="/command-center" element={
                         <ProtectedRoute requiredRoles={['admin']}>
@@ -117,6 +128,10 @@ function App() {
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/permission-management" element={<PermissionManagement />} />
                       <Route path="/role-management" element={<RoleManagementPage />} />
+                      <Route path="/organizations" element={<OrganizationManagement token={token || ''} />} />
+                      <Route path="/superadmin" element={<SuperAdminDashboard />} />
+                      <Route path="/superadmin/admins" element={<OrgAdminsPage />} />
+                      <Route path="/data-protection" element={<DataProtectionPage />} />
                       <Route path="/login" element={<Navigate to="/dashboard" replace />} />
                       <Route path="*" element={<Navigate to="/dashboard" replace />} />
                     </Routes>
@@ -168,6 +183,15 @@ function App() {
       </ThemeProvider>
     </ErrorBoundary>
   );
+}
+
+// Route-level home redirect. SuperAdmin → Platform Dashboard; everyone else → employee Dashboard.
+function HomeRedirect() {
+  const { user } = useAuthStore();
+  if (user?.role === 'superAdmin') {
+    return <Navigate to="/superadmin" replace />;
+  }
+  return <Dashboard />;
 }
 
 export default App;

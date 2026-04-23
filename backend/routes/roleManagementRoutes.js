@@ -19,11 +19,9 @@ router.use((req, res, next) => {
   next();
 });
 
-// GET /api/admin/roles - Get all roles (admin only)
-router.get('/', requireAuth, authorize('admin'), getRoles);
-
-// GET /api/admin/permissions/audit - Get permission audit log (admin only)
-router.get('/audit/logs', requireAuth, authorize('admin'), getPermissionAuditLog);
+// Specific routes BEFORE dynamic :id routes
+// GET /api/admin/permissions/audit - Get permission audit log (admin or superAdmin)
+router.get('/audit/logs', requireAuth, authorize('admin', 'superAdmin'), getPermissionAuditLog);
 
 // GET /api/admin/permissions/check - Check user permission (authenticated users)
 router.get('/check/permission', requireAuth, checkUserPermission);
@@ -31,8 +29,12 @@ router.get('/check/permission', requireAuth, checkUserPermission);
 // GET /api/admin/permissions/sidebar - Get sidebar permissions for current user
 router.get('/sidebar/permissions', requireAuth, getSidebarPermissions);
 
-// GET /api/admin/roles/:id - Get role with permissions (admin only)
-router.get('/:id', requireAuth, authorize('admin'), getRolePermissions);
+// Generic routes AFTER specific routes
+// GET /api/admin/roles - Get all roles (admin or superAdmin)
+router.get('/', requireAuth, authorize('admin', 'superAdmin'), getRoles);
+
+// GET /api/admin/roles/:id - Get role with permissions (admin or superAdmin)
+router.get('/:id', requireAuth, authorize('admin', 'superAdmin'), getRolePermissions);
 
 // PUT /api/admin/roles/:id/permissions - Update role permissions (admin only)
 router.put('/:id/permissions', (req, res, next) => {

@@ -11,7 +11,7 @@ router.use((req, res, next) => {
 });
 
 // Get all audit logs with pagination (admin only)
-router.get('/', requireAuth, authorize('admin'), async (req, res) => {
+router.get('/', requireAuth, authorize('admin', 'superAdmin'), async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 50;
@@ -111,7 +111,7 @@ router.get('/', requireAuth, authorize('admin'), async (req, res) => {
 });
 
 // Get log statistics (admin only)
-router.get('/statistics', requireAuth, authorize('admin'), async (req, res) => {
+router.get('/statistics', requireAuth, authorize('admin', 'superAdmin'), async (req, res) => {
   try {
     // Get all logs first
     const allLogsResult = await getAllLogs(1, 10000); // Get all logs with high limit

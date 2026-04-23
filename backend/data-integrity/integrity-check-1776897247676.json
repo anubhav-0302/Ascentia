@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-04-22T22:34:07.252Z",
+  "checks": {
+    "employees": {
+      "total": 12,
+      "issues": 0,
+      "status": "PASS"
+    },
+    "organizations": {
+      "total": 5,
+      "issues": 0,
+      "status": "PASS"
+    },
+    "leaves": {
+      "total": 0,
+      "issues": 0,
+      "status": "PASS"
+    },
+    "timesheets": {
+      "total": 0,
+      "issues": 0,
+      "status": "PASS"
+    },
+    "foreignKeys": {
+      "issues": 0,
+      "status": "PASS"
+    }
+  },
+  "status": "PASS",
+  "issues": []
+}

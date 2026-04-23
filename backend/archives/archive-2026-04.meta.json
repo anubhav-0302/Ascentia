@@ -1,0 +1,63 @@
+{
+  "timestamp": "2026-04-22T22:35:33.330Z",
+  "month": "2026-04",
+  "backupCount": 11,
+  "archivePath": "E:\\Ascentia\\backend\\archives\\archive-2026-04.tar.gz",
+  "backups": [
+    {
+      "name": "dev-db-backup-2026-04-16T17-51-42-170Z-complete-app-backup-all-data.db.gz",
+      "size": 11977,
+      "created": "2026-04-16T17:51:42.216Z"
+    },
+    {
+      "name": "dev-db-backup-2026-04-16T17-51-42-170Z-complete-app-backup-all-data.json",
+      "size": 263,
+      "created": "2026-04-16T17:51:42.220Z"
+    },
+    {
+      "name": "dev-db-backup-2026-04-17T20-30-00-304Z-daily-auto.db.gz",
+      "size": 12776,
+      "created": "2026-04-17T20:30:00.457Z"
+    },
+    {
+      "name": "dev-db-backup-2026-04-17T20-30-00-304Z-daily-auto.meta.json",
+      "size": 184,
+      "created": "2026-04-17T20:30:01.602Z"
+    },
+    {
+      "name": "dev-db-backup-2026-04-20T20-30-00-077Z-daily-auto.db.gz",
+      "size": 25675,
+      "created": "2026-04-20T20:30:00.150Z"
+    },
+    {
+      "name": "dev-db-backup-2026-04-20T20-30-00-077Z-daily-auto.meta.json",
+      "size": 184,
+      "created": "2026-04-20T20:30:01.582Z"
+    },
+    {
+      "name": "dev-db-backup-2026-04-21T20-30-00-058Z-daily-auto.db.gz",
+      "size": 6628,
+      "created": "2026-04-21T20:30:00.110Z"
+    },
+    {
+      "name": "dev-db-backup-2026-04-21T20-30-00-058Z-daily-auto.meta.json",
+      "size": 183,
+      "created": "2026-04-21T20:30:02.625Z"
+    },
+    {
+      "name": "verified-backup-2026-04-22T22-34-07-710Z-scheduled.db.gz",
+      "size": 23303,
+      "created": "2026-04-22T22:34:07.857Z"
+    },
+    {
+      "name": "verified-backup-2026-04-22T22-34-43-994Z-scheduled.db.gz",
+      "size": 23303,
+      "created": "2026-04-22T22:34:44.109Z"
+    },
+    {
+      "name": "verified-backup-2026-04-22T22-35-32-814Z-scheduled.db.gz",
+      "size": 23303,
+      "created": "2026-04-22T22:35:32.931Z"
+    }
+  ]
+}

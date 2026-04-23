@@ -1,4 +1,4 @@
-import { apiClient, BASE_URL } from "./apiClient";
+import { apiClient, BASE_URL, getActiveOrgHeader } from "./apiClient";
 
 export interface User {
   id: number;
@@ -89,22 +89,32 @@ export const disableTwoFactor = async () => {
 };
 
 // Upload profile picture (authenticated user)
+// NOTE: token lives inside the Zustand persist blob "auth-storage", NOT a top-level
+// "token" key. The original code read localStorage.getItem('token') which was always
+// null, so this endpoint was silently broken. Fixed to parse auth-storage.
 export const uploadProfilePicture = async (file: File) => {
   const formData = new FormData();
   formData.append('profilePicture', file);
-  
+
+  let token: string | null = null;
+  try {
+    const storage = localStorage.getItem('auth-storage');
+    if (storage) token = JSON.parse(storage).state?.token ?? null;
+  } catch { /* ignore */ }
+
   const response = await fetch(`${BASE_URL}/users/me/profile-picture`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getActiveOrgHeader(),
     },
     body: formData,
   });
-  
+
   if (!response.ok) {
     throw new Error('Failed to upload profile picture');
   }
-  
+
   return response.json();
 };
 

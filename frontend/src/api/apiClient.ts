@@ -17,11 +17,56 @@ const getToken = (): string | null => {
   return null;
 };
 
+// Get current user role from localStorage
+const getUserRole = (): string | null => {
+  if (typeof window !== 'undefined') {
+    try {
+      const storage = localStorage.getItem('auth-storage');
+      if (storage) {
+        const parsed = JSON.parse(storage);
+        return parsed.state?.user?.role || null;
+      }
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
+// Get the SuperAdmin's currently-selected org id (from useOrganizationStore persist)
+const getActiveOrgId = (): number | null => {
+  if (typeof window !== 'undefined') {
+    try {
+      const storage = localStorage.getItem('organization-storage');
+      if (storage) {
+        const parsed = JSON.parse(storage);
+        return parsed.state?.currentOrgId ?? null;
+      }
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
 // Clear token cache (for logout)
 export const clearTokenCache = (): void => {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('auth-storage');
   }
+};
+
+// Returns the X-Organization-Id header map when the logged-in user is a
+// SuperAdmin AND they have selected an active org via the org switcher.
+// Exported so API modules that bypass apiClient (raw fetch/axios) can
+// include it too — keeping tenant scoping consistent across the app.
+export const getActiveOrgHeader = (): Record<string, string> => {
+  const role = getUserRole();
+  const orgId = getActiveOrgId();
+  if (role === 'superAdmin' && orgId) {
+    return { 'X-Organization-Id': String(orgId) };
+  }
+  return {};
 };
 
 // Helper to get authorization headers
@@ -33,11 +78,11 @@ const getAuthHeaders = (): Record<string, string> => {
   const token = getToken();
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
-    console.log('🔑 Adding Authorization header for protected request');
-  } else {
-    console.log('⚠️ No token found - request may fail for protected endpoints');
   }
-  
+
+  // Include X-Organization-Id for SuperAdmin acting inside a specific org.
+  Object.assign(headers, getActiveOrgHeader());
+
   return headers;
 };
 

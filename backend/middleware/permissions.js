@@ -7,8 +7,8 @@ const loadUserPermissions = async (req) => {
     return req.user.permissions;
   }
 
-  // Admin always has all permissions
-  if (req.user.role === 'admin') {
+  // Admin and SuperAdmin always have all permissions
+  if (req.user.role === 'admin' || req.user.role === 'superAdmin') {
     req.user.permissions = { all: true };
     return req.user.permissions;
   }

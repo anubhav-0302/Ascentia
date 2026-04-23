@@ -1,12 +1,13 @@
 import prisma from './lib/prisma.js';
 import { logDatabaseOperation } from './databaseLogger.js';
+import { tenantWhere, tenantWhereWith } from './helpers/tenantHelper.js';
 
 // GET /api/payroll/salary-components - Get all salary components
 const getSalaryComponents = async (req, res) => {
   try {
     const { type, category, status } = req.query;
     
-    const whereClause = {};
+    const whereClause = tenantWhere(req);
     
     if (type) whereClause.type = type;
     if (category) whereClause.category = category;
@@ -83,7 +84,8 @@ const createSalaryComponent = async (req, res) => {
         category,
         amount: parseFloat(amount),
         isPercentage: Boolean(isPercentage),
-        isTaxable: Boolean(isTaxable)
+        isTaxable: Boolean(isTaxable),
+        organizationId: req.user.organizationId
       }
     });
     
@@ -108,7 +110,10 @@ const updateSalaryComponent = async (req, res) => {
     const { name, type, category, amount, isPercentage, isTaxable, status } = req.body;
     
     const existingComponent = await prisma.salaryComponent.findFirst({
-      where: { id: parseInt(id) }
+      where: { 
+        id: parseInt(id),
+        ...tenantWhere(req)
+      }
     });
     
     if (!existingComponent) {
@@ -189,7 +194,10 @@ const deleteSalaryComponent = async (req, res) => {
     const { id } = req.params;
     
     const existingComponent = await prisma.salaryComponent.findFirst({
-      where: { id: parseInt(id) },
+      where: { 
+        id: parseInt(id),
+        ...tenantWhere(req)
+      },
       include: {
         employeeSalaries: {
           select: { id: true }
@@ -243,16 +251,15 @@ const getEmployeeSalaries = async (req, res) => {
   try {
     const { employeeId, status } = req.query;
     
+    // EmployeeSalary doesn't have organizationId, so we filter by employee's organization
     const whereClause = {};
     
-    if (employeeId) {
-      whereClause.employeeId = parseInt(employeeId);
-    } else if (!['admin', 'hr'].includes(req.user.role)) {
+    if (employeeId) whereClause.employeeId = parseInt(employeeId);
+    if (status) whereClause.status = status;
+    if (!['admin', 'hr'].includes(req.user.role)) {
       // Employees can only see their own salary structure
       whereClause.employeeId = req.user.id;
     }
-    
-    if (status) whereClause.status = status;
     
     const salaries = await prisma.employeeSalary.findMany({
       where: whereClause,
@@ -293,7 +300,10 @@ const assignSalaryToEmployee = async (req, res) => {
     
     // Verify component exists
     const component = await prisma.salaryComponent.findFirst({
-      where: { id: parseInt(componentId) }
+      where: { 
+        id: parseInt(componentId),
+        ...tenantWhere(req)
+      }
     });
     
     if (!component) {
@@ -305,7 +315,10 @@ const assignSalaryToEmployee = async (req, res) => {
     
     // Verify employee exists
     const employee = await prisma.employee.findFirst({
-      where: { id: parseInt(employeeId) }
+      where: { 
+        id: parseInt(employeeId),
+        ...tenantWhere(req)
+      }
     });
     
     if (!employee) {
@@ -354,7 +367,9 @@ const updateEmployeeSalary = async (req, res) => {
     const { amount, effectiveDate, endDate, status } = req.body;
     
     const existingSalary = await prisma.employeeSalary.findFirst({
-      where: { id: parseInt(id) }
+      where: { 
+        id: parseInt(id)
+      }
     });
     
     if (!existingSalary) {

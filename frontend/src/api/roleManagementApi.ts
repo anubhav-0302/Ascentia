@@ -1,6 +1,13 @@
 import axios from 'axios';
+import { getActiveOrgHeader } from './apiClient';
 
 const API_BASE_URL = 'http://localhost:5000/api';
+
+// Build headers with Authorization + optional X-Organization-Id for SuperAdmin scoping
+const authHeaders = (token?: string): Record<string, string> => ({
+  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  ...getActiveOrgHeader(),
+});
 
 export interface Role {
   id: number;
@@ -63,7 +70,7 @@ export interface AuditLogResponse {
 export const getRoles = async (token: string): Promise<Role[]> => {
   try {
     const response = await axios.get(`${API_BASE_URL}/admin/roles`, {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: authHeaders(token)
     });
     return response.data.data;
   } catch (error) {
@@ -76,7 +83,7 @@ export const getRoles = async (token: string): Promise<Role[]> => {
 export const getRolePermissions = async (roleId: number, token: string): Promise<RolePermissions> => {
   try {
     const response = await axios.get(`${API_BASE_URL}/admin/roles/${roleId}`, {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: authHeaders(token)
     });
     return response.data.data;
   } catch (error) {
@@ -96,7 +103,7 @@ export const updateRolePermissions = async (
     const response = await axios.put(
       `${API_BASE_URL}/admin/roles/${roleId}/permissions`,
       { permissions, reason },
-      { headers: { Authorization: `Bearer ${token}` } }
+      { headers: authHeaders(token) }
     );
     return response.data.data;
   } catch (error) {
@@ -115,7 +122,7 @@ export const createCustomRole = async (
     const response = await axios.post(
       `${API_BASE_URL}/admin/roles`,
       { name, description },
-      { headers: { Authorization: `Bearer ${token}` } }
+      { headers: authHeaders(token) }
     );
     return response.data.data;
   } catch (error) {
@@ -148,7 +155,7 @@ export const getSidebarPermissions = async (token: string): Promise<{ [key: stri
 export const deleteCustomRole = async (roleId: number, token: string): Promise<void> => {
   try {
     await axios.delete(`${API_BASE_URL}/admin/roles/${roleId}`, {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: authHeaders(token)
     });
   } catch (error) {
     console.error('Error deleting custom role:', error);
@@ -170,7 +177,7 @@ export const getPermissionAuditLog = async (
     }
 
     const response = await axios.get(url, {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: authHeaders(token)
     });
     return response.data.data;
   } catch (error) {
@@ -188,7 +195,7 @@ export const checkUserPermission = async (
   try {
     const response = await axios.get(
       `${API_BASE_URL}/admin/permissions/check?module=${module}&action=${action}`,
-      { headers: { Authorization: `Bearer ${token}` } }
+      { headers: authHeaders(token) }
     );
     return response.data.data;
   } catch (error) {

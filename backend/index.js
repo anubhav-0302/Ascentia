@@ -1,3 +1,4 @@
+import { env } from './config/env.js';
 import express from 'express';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
@@ -17,13 +18,14 @@ import documentRoutes from './routes/documentRoutes.js';
 import roleManagementRoutes from './routes/roleManagementRoutes.js';
 import dataProtectionRoutes from './routes/dataProtectionRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
+import orgRoutes from './routes/orgRoutes.js';
 import { requireAuth } from './middleware/auth.js';
 import { initializeLeaveData } from './leaveStoreDB.js';
 import { setupScheduledBackups } from './scripts/backup-system.js';
 import prisma from './lib/prisma.js';
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = env.PORT;
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static('uploads'));
@@ -35,52 +37,101 @@ const initializeDatabase = async () => {
     console.log("🔧 Initializing database...");
     await initializeLeaveData();
     
+    // All seed config comes from the centralized env module
+    const saltRounds = env.BCRYPT_SALT_ROUNDS;
+
+    // Seed default organization if not exists
+    let org = await prisma.organization.findFirst();
+    if (!org) {
+      org = await prisma.organization.create({
+        data: {
+          name: env.DEFAULT_ORG_NAME,
+          subscriptionPlan: env.DEFAULT_ORG_PLAN,
+          isActive: true
+        }
+      });
+      console.log("✅ Created default organization:", env.DEFAULT_ORG_NAME);
+    }
+    
     // Seed default admin employee if not exists
-    const adminEmail = 'admin@ascentia.com';
     const existingAdmin = await prisma.employee.findFirst({
-      where: { email: adminEmail }
+      where: { email: env.ADMIN_EMAIL }
     });
     
     if (!existingAdmin) {
-      const hashedPassword = await bcrypt.hash('admin123', 10);
+      const hashedPassword = await bcrypt.hash(env.ADMIN_PASSWORD, saltRounds);
       await prisma.employee.create({
         data: {
-          name: 'Admin User',
-          email: adminEmail,
+          name: env.ADMIN_NAME,
+          email: env.ADMIN_EMAIL,
           password: hashedPassword,
           role: 'admin',
           status: 'active',
           jobTitle: 'System Administrator',
           department: 'IT',
-          location: 'Main Office'
+          location: 'Main Office',
+          organizationId: org.id
         }
       });
-      console.log("✅ Created default admin employee:", adminEmail);
+      console.log("✅ Created default admin employee:", env.ADMIN_EMAIL);
+    }
+    
+    // Seed default SuperAdmin if not exists
+    const existingSuperAdmin = await prisma.employee.findFirst({
+      where: { email: env.SUPERADMIN_EMAIL }
+    });
+    
+    if (!existingSuperAdmin) {
+      const hashedPassword = await bcrypt.hash(env.SUPERADMIN_PASSWORD, saltRounds);
+      await prisma.employee.create({
+        data: {
+          name: env.SUPERADMIN_NAME,
+          email: env.SUPERADMIN_EMAIL,
+          password: hashedPassword,
+          role: 'superAdmin',
+          status: 'active',
+          jobTitle: 'Super Administrator',
+          department: 'IT',
+          location: 'Remote'
+          // Super Admin not tied to any organization
+        }
+      });
+      console.log("✅ Created default SuperAdmin:", env.SUPERADMIN_EMAIL);
     }
     
     // Seed default employee if not exists
-    const employeeEmail = 'employee@ascentia.com';
     const existingEmployee = await prisma.employee.findFirst({
-      where: { email: employeeEmail }
+      where: { email: env.EMPLOYEE_EMAIL }
     });
     
     if (!existingEmployee) {
-      const hashedPassword = await bcrypt.hash('123456', 10);
+      const hashedPassword = await bcrypt.hash(env.EMPLOYEE_PASSWORD, saltRounds);
       await prisma.employee.create({
         data: {
-          name: 'John Doe',
-          email: employeeEmail,
+          name: env.EMPLOYEE_NAME,
+          email: env.EMPLOYEE_EMAIL,
           password: hashedPassword,
           role: 'employee',
           status: 'active',
           jobTitle: 'Software Engineer',
           department: 'Engineering',
-          location: 'Main Office'
+          location: 'Main Office',
+          organizationId: org.id
         }
       });
-      console.log("✅ Created default employee:", employeeEmail);
+      console.log("✅ Created default employee:", env.EMPLOYEE_EMAIL);
     }
     
+    // Check if roles need to be seeded
+    const roleCount = await prisma.roleConfig.count();
+    if (roleCount === 0) {
+      console.log("🌱 No roles found, seeding default roles and permissions...");
+      const { execSync } = await import('child_process');
+      execSync('node scripts/seedRoleConfig.js', { 
+        cwd: process.cwd(),
+        stdio: 'inherit' 
+      });
+    }
     
     console.log("✅ Database initialized successfully");
   } catch (error) {
@@ -133,6 +184,7 @@ app.use('/api/documents', requireAuth, documentRoutes);
 app.use('/api/admin/roles', roleManagementRoutes);
 app.use('/api/data-protection', requireAuth, dataProtectionRoutes);
 app.use('/api/analytics', requireAuth, analyticsRoutes);
+app.use('/api/organizations', orgRoutes);
 
 // Start server
 app.listen(PORT, async () => {

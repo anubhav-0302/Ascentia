@@ -1,10 +1,12 @@
 import prisma from './lib/prisma.js';
 import { logDatabaseOperation } from './databaseLogger.js';
+import { tenantWhere, tenantWhereWith } from './helpers/tenantHelper.js';
 
 // GET /api/performance/cycles - Get all performance cycles
 const getPerformanceCycles = async (req, res) => {
   try {
     const cycles = await prisma.performanceCycle.findMany({
+      where: tenantWhere(req),
       orderBy: { createdAt: 'desc' },
       include: {
         goals: {
@@ -45,7 +47,8 @@ const createPerformanceCycle = async (req, res) => {
         name,
         description: description || null,
         startDate: new Date(startDate),
-        endDate: new Date(endDate)
+        endDate: new Date(endDate),
+        organizationId: req.user.organizationId
       }
     });
     
@@ -68,16 +71,15 @@ const getPerformanceGoals = async (req, res) => {
   try {
     const { cycleId, employeeId, status } = req.query;
     
+    // PerformanceGoal doesn't have organizationId, so we filter differently
     const whereClause = {};
     
-    if (cycleId) {
-      whereClause.cycleId = parseInt(cycleId);
-    }
+    if (cycleId) whereClause.cycleId = parseInt(cycleId);
+    if (employeeId) whereClause.employeeId = parseInt(employeeId);
+    if (status) whereClause.status = status;
     
-    if (employeeId) {
-      whereClause.employeeId = parseInt(employeeId);
-    } else if (req.user.role === 'employee') {
-      // Employees can only see their own goals
+    // Non-admin users can only see their own goals
+    if (req.user.role !== 'admin') {
       whereClause.employeeId = req.user.id;
     }
     // Admins and managers can see all goals (no filter)
@@ -128,7 +130,10 @@ const createPerformanceGoal = async (req, res) => {
     
     // Verify cycle exists
     const cycle = await prisma.performanceCycle.findFirst({
-      where: { id: parseInt(cycleId) }
+      where: { 
+        id: parseInt(cycleId),
+        ...tenantWhere(req)
+      }
     });
     
     if (!cycle) {
@@ -144,7 +149,8 @@ const createPerformanceGoal = async (req, res) => {
         employeeId: parseInt(employeeId),
         title,
         description: description || null,
-        targetDate: new Date(targetDate)
+        targetDate: new Date(targetDate),
+        organizationId: req.user.organizationId
       },
       include: {
         cycle: {
@@ -234,6 +240,7 @@ const getPerformanceReviews = async (req, res) => {
   try {
     const { cycleId, goalId, employeeId, reviewerId, type, status } = req.query;
     
+    // PerformanceReview doesn't have organizationId, so we filter differently
     const whereClause = {};
     
     if (cycleId) whereClause.cycleId = parseInt(cycleId);
@@ -313,7 +320,8 @@ const createPerformanceReview = async (req, res) => {
       where: {
         goalId: parseInt(goalId),
         reviewerId: req.user.id,
-        type
+        type,
+        ...tenantWhere(req)
       }
     });
     
@@ -332,7 +340,9 @@ const createPerformanceReview = async (req, res) => {
         reviewerId: req.user.id,
         type,
         rating: parseInt(rating),
-        comments: comments || null
+        comments: comments || null,
+        status: 'Pending',
+        organizationId: req.user.organizationId
       },
       include: {
         cycle: {

@@ -18,21 +18,21 @@ router.use((req, res, next) => {
 });
 
 // GET /api/data-protection/backups - Get all backups (admin only)
-router.get('/backups', requireAuth, authorize('admin'), getBackups);
+router.get('/backups', requireAuth, authorize('admin', 'superAdmin'), getBackups);
 
 // POST /api/data-protection/backups - Create manual backup (admin only)
-router.post('/backups', requireAuth, authorize('admin'), createManualBackup);
+router.post('/backups', requireAuth, authorize('admin', 'superAdmin'), createManualBackup);
 
 // POST /api/data-protection/restore - Restore from backup (admin only, requires password)
-router.post('/restore', requireAuth, authorize('admin'), restoreFromBackup);
+router.post('/restore', requireAuth, authorize('admin', 'superAdmin'), restoreFromBackup);
 
 // DELETE /api/data-protection/employees/:id - Delete employee with password (admin only)
-router.delete('/employees/:id', requireAuth, authorize('admin'), deleteEmployeeWithProtection);
+router.delete('/employees/:id', requireAuth, authorize('admin', 'superAdmin'), deleteEmployeeWithProtection);
 
 // GET /api/data-protection/deletion-logs - Get deletion logs (admin only)
-router.get('/deletion-logs', requireAuth, authorize('admin'), getDeletionLogs);
+router.get('/deletion-logs', requireAuth, authorize('admin', 'superAdmin'), getDeletionLogs);
 
 // GET /api/data-protection/stats - Get database statistics (admin only)
-router.get('/stats', requireAuth, authorize('admin'), getDatabaseStats);
+router.get('/stats', requireAuth, authorize('admin', 'superAdmin'), getDatabaseStats);
 
 export default router;

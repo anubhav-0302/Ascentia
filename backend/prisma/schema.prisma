@@ -6,8 +6,32 @@ datasource db {
   provider = "sqlite"
 }
 
+model Organization {
+  id              Int      @id @default(autoincrement())
+  name            String   @unique
+  code            String?
+  subscriptionPlan String? @default("free")
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  employees        Employee[]
+  leaveRequests    LeaveRequest[]
+  timesheets       Timesheet[]
+  performanceCycles PerformanceCycle[]
+  salaryComponents SalaryComponent[]
+  documents        Document[]
+  roleConfigs      RoleConfig[]
+  permissionAudits PermissionAudit[]
+  auditLogs        AuditLog[]
+  
+  @@index([isActive])
+  @@index([code])
+}
+
 model Employee {
   id                  Int                     @id @default(autoincrement())
+  organizationId      Int                      @default(1)
   name                String
   email               String                  @unique
   password            String?
@@ -30,17 +54,22 @@ model Employee {
   settings            Json?
   manager             Employee?               @relation("EmployeeManager", fields: [managerId], references: [id])
   directReports       Employee[]              @relation("EmployeeManager")
+  organization        Organization             @relation(fields: [organizationId], references: [id])
+  ActivityMaster      ActivityMaster[]
+  documents           Document[]
   salaries            EmployeeSalary[]
   leaveRequests       LeaveRequest[]
-  passwordChangesMade PasswordChangeHistory[] @relation("PasswordChanger")
   passwordChanges     PasswordChangeHistory[]
+  passwordChangesMade PasswordChangeHistory[] @relation("PasswordChanger")
   goals               PerformanceGoal[]       @relation("EmployeeGoals")
-  writtenReviews      PerformanceReview[]     @relation("PerformanceReviewer")
   reviews             PerformanceReview[]
-  approvedTimesheets  Timesheet[]             @relation("TimesheetApprover")
-  timesheets          Timesheet[]
-  documents           Document[]
+  writtenReviews      PerformanceReview[]     @relation("PerformanceReviewer")
   permissionAuditLogs PermissionAudit[]
+  timesheets          Timesheet[]
+  approvedTimesheets  Timesheet[]             @relation("TimesheetApprover")
+  
+  @@index([organizationId])
+  @@index([email, organizationId])
 }
 
 model PasswordChangeHistory {
@@ -49,51 +78,65 @@ model PasswordChangeHistory {
   changedAt  DateTime @default(now())
   changedBy  Int
   reason     String?
-  changer    Employee @relation("PasswordChanger", fields: [changedBy], references: [id])
   employee   Employee @relation(fields: [employeeId], references: [id])
+  changer    Employee @relation("PasswordChanger", fields: [changedBy], references: [id])
 
   @@index([employeeId])
   @@index([changedAt])
 }
 
 model LeaveRequest {
-  id         Int      @id @default(autoincrement())
-  employeeId Int
-  type       String
-  startDate  DateTime
-  endDate    DateTime
-  reason     String
-  status     String   @default("Pending")
-  createdAt  DateTime @default(now())
-  employee   Employee @relation(fields: [employeeId], references: [id])
+  id            Int      @id @default(autoincrement())
+  organizationId Int     @default(1)
+  employeeId    Int
+  type          String
+  startDate     DateTime
+  endDate       DateTime
+  reason        String
+  status        String   @default("Pending")
+  createdAt     DateTime @default(now())
+  employee      Employee @relation(fields: [employeeId], references: [id])
+  organization  Organization @relation(fields: [organizationId], references: [id])
+  
+  @@index([organizationId])
 }
 
 model Timesheet {
-  id          Int       @id @default(autoincrement())
-  employeeId  Int
-  date        DateTime
-  hours       Float
-  description String?
-  status      String    @default("Pending")
-  approvedBy  Int?
-  approvedAt  DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  approver    Employee? @relation("TimesheetApprover", fields: [approvedBy], references: [id])
-  employee    Employee  @relation(fields: [employeeId], references: [id])
+  id            Int       @id @default(autoincrement())
+  organizationId Int      @default(1)
+  employeeId    Int
+  date          DateTime
+  hours         Float
+  description   String?
+  activityId    Int?
+  status        String    @default("Pending")
+  approvedBy    Int?
+  approvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  ActivityMaster ActivityMaster? @relation(fields: [activityId], references: [id])
+  employee      Employee  @relation(fields: [employeeId], references: [id])
+  approver      Employee? @relation("TimesheetApprover", fields: [approvedBy], references: [id])
+  organization  Organization @relation(fields: [organizationId], references: [id])
+  
+  @@index([organizationId])
 }
 
 model PerformanceCycle {
-  id          Int                 @id @default(autoincrement())
-  name        String
-  description String?
-  startDate   DateTime
-  endDate     DateTime
-  status      String              @default("Active")
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  goals       PerformanceGoal[]
-  reviews     PerformanceReview[]
+  id            Int                 @id @default(autoincrement())
+  organizationId Int                @default(1)
+  name          String
+  description   String?
+  startDate     DateTime
+  endDate       DateTime
+  status        String              @default("Active")
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  organization  Organization        @relation(fields: [organizationId], references: [id])
+  goals         PerformanceGoal[]
+  reviews       PerformanceReview[]
+  
+  @@index([organizationId])
 }
 
 model PerformanceGoal {
@@ -106,48 +149,49 @@ model PerformanceGoal {
   status      String              @default("Active")
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
-  employee    Employee            @relation("EmployeeGoals", fields: [employeeId], references: [id])
-  cycle       PerformanceCycle    @relation(fields: [cycleId], references: [id])
-  reviews     PerformanceReview[]
   kras        KRA[]
+  cycle       PerformanceCycle    @relation(fields: [cycleId], references: [id])
+  employee    Employee            @relation("EmployeeGoals", fields: [employeeId], references: [id])
+  reviews     PerformanceReview[]
 }
 
 model KRA {
-  id            Int       @id @default(autoincrement())
+  id            Int             @id @default(autoincrement())
   goalId        Int
   title         String
   description   String?
   targetValue   String?
   actualValue   String?
-  weightage     Float     @default(1.0)
-  status        String    @default("Pending")
+  weightage     Float           @default(1.0)
+  status        String          @default("Pending")
   dueDate       DateTime?
   completedDate DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
   goal          PerformanceGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
 }
 
 model PerformanceReview {
-  id         Int              @id @default(autoincrement())
+  id         Int               @id @default(autoincrement())
   cycleId    Int?
   goalId     Int?
   employeeId Int
   reviewerId Int
   type       String
   rating     Int
-  feedback   String?          @map("comments")
-  status     String           @default("Pending")
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
-  reviewer   Employee         @relation("PerformanceReviewer", fields: [reviewerId], references: [id])
-  employee   Employee         @relation(fields: [employeeId], references: [id])
-  goal       PerformanceGoal? @relation(fields: [goalId], references: [id])
+  feedback   String?           @map("comments")
+  status     String            @default("Pending")
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
   cycle      PerformanceCycle? @relation(fields: [cycleId], references: [id])
+  goal       PerformanceGoal?  @relation(fields: [goalId], references: [id])
+  employee   Employee          @relation(fields: [employeeId], references: [id])
+  reviewer   Employee          @relation("PerformanceReviewer", fields: [reviewerId], references: [id])
 }
 
 model SalaryComponent {
   id               Int              @id @default(autoincrement())
+  organizationId   Int              @default(1)
   name             String
   type             String
   category         String
@@ -157,7 +201,10 @@ model SalaryComponent {
   status           String           @default("Active")
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
+  organization     Organization     @relation(fields: [organizationId], references: [id])
   employeeSalaries EmployeeSalary[]
+  
+  @@index([organizationId])
 }
 
 model EmployeeSalary {
@@ -170,48 +217,52 @@ model EmployeeSalary {
   status        String          @default("Active")
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
-  component     SalaryComponent @relation(fields: [componentId], references: [id])
   employee      Employee        @relation(fields: [employeeId], references: [id])
+  component     SalaryComponent @relation(fields: [componentId], references: [id])
 }
 
 model Document {
-  id          Int      @id @default(autoincrement())
-  employeeId  Int
-  fileName    String
-  originalName String
-  fileUrl     String
-  fileSize    Int
-  uploadedAt  DateTime @default(now())
-  employee    Employee @relation(fields: [employeeId], references: [id])
+  id            Int      @id @default(autoincrement())
+  organizationId Int     @default(1)
+  employeeId    Int
+  fileName      String
+  originalName  String
+  fileUrl       String
+  fileSize      Int
+  uploadedAt    DateTime @default(now())
+  employee      Employee @relation(fields: [employeeId], references: [id])
+  organization  Organization @relation(fields: [organizationId], references: [id])
 
   @@index([employeeId])
+  @@index([organizationId])
 }
 
 model RoleConfig {
-  id          Int          @id @default(autoincrement())
-  name        String       @unique
-  description String?
-  isCustom    Boolean      @default(false)
-  isActive    Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  
-  permissions Permission[]
-  auditLogs   PermissionAudit[]
+  id            Int               @id @default(autoincrement())
+  organizationId Int              @default(1)
+  name          String            @unique
+  description   String?
+  isCustom      Boolean           @default(false)
+  isActive      Boolean           @default(true)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  organization  Organization     @relation(fields: [organizationId], references: [id])
+  permissions   Permission[]
+  auditLogs     PermissionAudit[]
 
   @@index([name])
+  @@index([organizationId])
 }
 
 model Permission {
-  id          Int      @id @default(autoincrement())
-  roleId      Int
-  module      String
-  action      String
-  isEnabled   Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  role RoleConfig @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  id        Int        @id @default(autoincrement())
+  roleId    Int
+  module    String
+  action    String
+  isEnabled Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  role      RoleConfig @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@unique([roleId, module, action])
   @@index([roleId])
@@ -219,7 +270,8 @@ model Permission {
 }
 
 model PermissionAudit {
-  id            Int      @id @default(autoincrement())
+  id            Int        @id @default(autoincrement())
+  organizationId Int       @default(1)
   roleId        Int
   changedBy     Int
   module        String
@@ -227,12 +279,45 @@ model PermissionAudit {
   previousValue Boolean
   newValue      Boolean
   reason        String?
-  changedAt     DateTime @default(now())
-  
-  role RoleConfig @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  changedByUser Employee @relation(fields: [changedBy], references: [id])
+  changedAt     DateTime   @default(now())
+  organization  Organization @relation(fields: [organizationId], references: [id])
+  changedByUser Employee   @relation(fields: [changedBy], references: [id])
+  role          RoleConfig @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@index([roleId])
   @@index([changedBy])
   @@index([changedAt])
+  @@index([organizationId])
+}
+
+model ActivityMaster {
+  id          Int         @id @default(autoincrement())
+  name        String
+  description String?
+  createdBy   Int
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime
+  Employee    Employee    @relation(fields: [createdBy], references: [id])
+  Timesheet   Timesheet[]
+
+  @@index([isActive])
+}
+
+model AuditLog {
+  id            Int        @id @default(autoincrement())
+  organizationId Int       @default(1)
+  userId        Int
+  action        String
+  entityType    String
+  entityId      Int?
+  changes       String?
+  ipAddress     String?
+  userAgent     String?
+  timestamp     DateTime   @default(now())
+  organization  Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([userId])
+  @@index([timestamp])
+  @@index([organizationId])
 }

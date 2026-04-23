@@ -2,6 +2,7 @@ import prisma from './lib/prisma.js';
 import bcrypt from 'bcryptjs';
 import { logDatabaseOperation } from './databaseLogger.js';
 import { validateEmail } from './utils/emailValidator.js';
+import { tenantWhere, tenantWhereWith } from './helpers/tenantHelper.js';
 
 // GET /api/employees - Get all employees from database
 export const getEmployees = async (req, res) => {
@@ -12,12 +13,12 @@ export const getEmployees = async (req, res) => {
     
     console.log(`📊 getEmployees: role=${userRole}, scope=${scope || 'default'}`);
     
-    let whereClause = {};
-    
-    // Role-based filtering
+    let whereClause = tenantWhere(req);
+
+    // Role-based filtering (in addition to tenant isolation)
     if (scope === 'all' && (userRole === 'admin' || userRole === 'hr')) {
       // Admin and HR can explicitly request all employees
-      whereClause = {};
+      // Just use tenant filter
     } else if (scope === 'team' || (userRole === 'manager' || userRole === 'teamlead')) {
       // Managers and Team Leads see only their direct reports (or anyone requesting team scope)
       whereClause.managerId = userId;
@@ -26,6 +27,14 @@ export const getEmployees = async (req, res) => {
       whereClause.id = userId;
     }
     // Default: Admin and HR see all, others see their team
+
+    // Platform-level users (SuperAdmin) must NEVER appear in org-scoped
+    // employee listings. They are not tenant members and showing them in an
+    // admin's Permission Management / Directory is misleading. Only another
+    // SuperAdmin viewing the raw list can see SuperAdmin rows.
+    if (userRole !== 'superadmin') {
+      whereClause.role = { not: 'superAdmin' };
+    }
     
     const employees = await prisma.employee.findMany({ 
       where: whereClause,
@@ -89,8 +98,11 @@ export const getEmployee = async (req, res) => {
       });
     }
 
-    const employee = await prisma.employee.findUnique({
-      where: { id: employeeId },
+    const employee = await prisma.employee.findFirst({ 
+      where: { 
+        id: parseInt(employeeId),
+        ...tenantWhere(req)
+      },
       select: {
         id: true,
         name: true,
@@ -164,9 +176,12 @@ export const createEmployee = async (req, res) => {
       });
     }
 
-    // Check if employee already exists
+    // Check if employee already exists (within the same organization)
     const existingEmployee = await prisma.employee.findFirst({
-      where: { email }
+      where: { 
+        email,
+        ...tenantWhere(req)
+      }
     });
 
     if (existingEmployee) {
@@ -215,7 +230,8 @@ export const createEmployee = async (req, res) => {
         role: role || 'employee',
         password: hashedPassword,
         managerId: managerId ? parseInt(managerId) : null,
-        needsPasswordChange: needsPasswordChange
+        needsPasswordChange: needsPasswordChange,
+        organizationId: req.user.organizationId
       }
     });
 
@@ -258,7 +274,12 @@ export const updateEmployee = async (req, res) => {
 
     const { name, email, jobTitle, department, location, status, role, password, managerId } = req.body;
 
-    const existing = await prisma.employee.findUnique({ where: { id } });
+    const existing = await prisma.employee.findFirst({ 
+      where: { 
+        id,
+        ...tenantWhere(req)
+      }
+    });
     if (!existing) return res.status(404).json({ success: false, message: 'Employee not found' });
 
     const updateData = {};
@@ -328,7 +349,12 @@ export const deleteEmployee = async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid employee ID' });
 
-    const existing = await prisma.employee.findUnique({ where: { id } });
+    const existing = await prisma.employee.findFirst({ 
+      where: { 
+        id,
+        ...tenantWhere(req)
+      }
+    });
     if (!existing) return res.status(404).json({ success: false, message: 'Employee not found' });
 
     await prisma.employee.delete({ where: { id } });

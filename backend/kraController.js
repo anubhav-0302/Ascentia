@@ -1,5 +1,6 @@
 import prisma from './lib/prisma.js';
 import { logDatabaseOperation } from './databaseLogger.js';
+import { tenantWhere, tenantWhereWith } from './helpers/tenantHelper.js';
 
 // GET /api/kras/goal/:goalId - Get all KRAs for a goal
 const getKRAsByGoal = async (req, res) => {
@@ -15,7 +16,9 @@ const getKRAsByGoal = async (req, res) => {
     }
     
     const kras = await prisma.kRA.findMany({
-      where: { goalId: gId },
+      where: { 
+        goalId: gId
+      },
       orderBy: { createdAt: 'desc' }
     });
     
@@ -44,8 +47,10 @@ const createKRA = async (req, res) => {
     }
     
     // Verify goal exists
-    const goal = await prisma.performanceGoal.findUnique({
-      where: { id: parseInt(goalId) }
+    const goal = await prisma.performanceGoal.findFirst({
+      where: { 
+        id: parseInt(goalId)
+      }
     });
     
     if (!goal) {
@@ -95,8 +100,10 @@ const updateKRA = async (req, res) => {
     }
     
     // Check if KRA exists
-    const existingKRA = await prisma.kRA.findUnique({
-      where: { id: kraId }
+    const existingKRA = await prisma.kRA.findFirst({
+      where: { 
+        id: kraId
+      }
     });
     
     if (!existingKRA) {
@@ -148,8 +155,10 @@ const deleteKRA = async (req, res) => {
     }
     
     // Check if KRA exists
-    const kra = await prisma.kRA.findUnique({
-      where: { id: kraId }
+    const kra = await prisma.kRA.findFirst({
+      where: { 
+        id: kraId
+      }
     });
     
     if (!kra) {

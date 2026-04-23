@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import prisma from "./lib/prisma.js";
 import { validateEmail } from "./utils/emailValidator.js";
+import { env } from "./config/env.js";
 
 // Login: database only - now works with Employee model
 export const login = async (req, res) => {
@@ -35,7 +36,7 @@ export const login = async (req, res) => {
       data: { lastLogin: new Date() }
     });
 
-    const token = jwt.sign({ id: employee.id, role: employee.role }, "secret123", { expiresIn: "7d" });
+    const token = jwt.sign({ id: employee.id, role: employee.role }, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN });
 
     console.log("✅ Login successful:", employee.email);
     return res.json({
@@ -111,6 +112,22 @@ export const register = async (req, res) => {
       return res.status(400).json({ success: false, message: "User with this email already exists" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Get or create default organization
+    let organization = await prisma.organization.findFirst({
+      where: { name: 'Ascentia Default Organization' }
+    });
+    
+    if (!organization) {
+      organization = await prisma.organization.create({
+        data: {
+          name: 'Ascentia Default Organization',
+          subscriptionPlan: 'free',
+          isActive: true
+        }
+      });
+    }
+    
     const employee = await prisma.employee.create({
       data: { 
         name, 
@@ -120,11 +137,12 @@ export const register = async (req, res) => {
         status: 'active',
         jobTitle: jobTitle || 'Employee',
         department: department || 'General',
-        location: 'Main Office'
+        location: 'Main Office',
+        organizationId: organization.id
       }
     });
 
-    const token = jwt.sign({ id: employee.id, role: employee.role }, "secret123", { expiresIn: "7d" });
+    const token = jwt.sign({ id: employee.id, role: employee.role }, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN });
 
     console.log("✅ Employee registered in database:", employee.email);
     return res.status(201).json({

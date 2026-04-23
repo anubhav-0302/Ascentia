@@ -16,7 +16,15 @@
     "backup:list": "node scripts/backup-system.js list",
     "backup:restore": "node scripts/backup-system.js restore",
     "backup:schedule": "node scripts/backup-system.js schedule",
-    "seed": "node prisma/seed.js"
+    "protect:run": "node scripts/data-protection.js",
+    "protect:integrity": "node scripts/data-protection.js integrity",
+    "protect:validate": "node scripts/data-protection.js validate",
+    "recover:list": "node scripts/disaster-recovery.js list",
+    "recover:verify": "node scripts/disaster-recovery.js verify",
+    "recover:restore": "node scripts/disaster-recovery.js restore",
+    "recover:test": "node scripts/disaster-recovery.js test",
+    "seed": "node prisma/seed.js",
+    "test:regression": "node tests/regression-api.js"
   },
   "keywords": [],
   "author": "",

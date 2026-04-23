@@ -1,4 +1,4 @@
-import { apiClient, BASE_URL } from './apiClient';
+import { apiClient, BASE_URL, getActiveOrgHeader } from './apiClient';
 
 // Shared utility for authenticated fetch requests (used for CSV export)
 const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
@@ -28,6 +28,9 @@ const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
+
+  // Include X-Organization-Id for SuperAdmin acting inside a specific org.
+  Object.assign(headers, getActiveOrgHeader());
 
   return fetch(`${BASE_URL}${url}`, {
     ...options,

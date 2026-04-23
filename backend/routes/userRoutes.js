@@ -69,21 +69,21 @@ router.post('/me/2fa/disable', requireAuth, disableTwoFactor);
 router.post('/me/profile-picture', requireAuth, upload.single('profilePicture'), uploadProfilePicture);
 
 // GET /api/users - Get all users (admin only)
-router.get('/', requireAuth, authorize('admin'), getAllUsers);
+router.get('/', requireAuth, authorize('admin', 'superAdmin'), getAllUsers);
 
 // GET /api/users/:id - Get specific user (admin only)
-router.get('/:id', requireAuth, authorize('admin'), getUserById);
+router.get('/:id', requireAuth, authorize('admin', 'superAdmin'), getUserById);
 
 // POST /api/users - Create new user (admin only)
-router.post('/', requireAuth, authorize('admin'), createNewUser);
+router.post('/', requireAuth, authorize('admin', 'superAdmin'), createNewUser);
 
 // PUT /api/users/:id - Update user (admin only)
-router.put('/:id', requireAuth, authorize('admin'), updateUser);
+router.put('/:id', requireAuth, authorize('admin', 'superAdmin'), updateUser);
 
 // PUT /api/users/:id/password - Reset user password (admin only)
-router.put('/:id/password', requireAuth, authorize('admin'), resetUserPassword);
+router.put('/:id/password', requireAuth, authorize('admin', 'superAdmin'), resetUserPassword);
 
 // DELETE /api/users/:id - Delete user (admin only)
-router.delete('/:id', requireAuth, authorize('admin'), deleteUser);
+router.delete('/:id', requireAuth, authorize('admin', 'superAdmin'), deleteUser);
 
 export default router;

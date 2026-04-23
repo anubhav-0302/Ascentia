@@ -1,4 +1,4 @@
-import { apiClient } from './apiClient';
+import { apiClient, getActiveOrgHeader } from './apiClient';
 
 export const documentsApi = {
   // Upload a document
@@ -15,6 +15,7 @@ export const documentsApi = {
       method: 'POST',
       headers: {
         'Authorization': token ? `Bearer ${token}` : '',
+        ...getActiveOrgHeader(),
       },
       body: formData,
     });
@@ -48,6 +49,7 @@ export const documentsApi = {
     const response = await fetch(`http://localhost:5000/api/documents/${documentId}/download`, {
       headers: {
         'Authorization': token ? `Bearer ${token}` : '',
+        ...getActiveOrgHeader(),
       },
     });
     

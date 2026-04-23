@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { User, Settings, LogOut, ChevronDown, Menu } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
 import HeaderSearch from './HeaderSearch';
+import OrganizationSwitcher from './OrganizationSwitcher';
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -12,7 +13,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const [showProfile, setShowProfile] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
-  const { user, logout } = useAuthStore();
+  const { user, logout, token } = useAuthStore();
   const navigate = useNavigate();
 
   const handleProfileClick = () => {
@@ -62,6 +63,14 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
           {/* Separator */}
           <div className="h-6 w-px bg-slate-700/50"></div>
+
+          {/* Organization Switcher - Only for Super Admin */}
+          {user?.role === 'superAdmin' && token && (
+            <>
+              <OrganizationSwitcher token={token} />
+              <div className="h-6 w-px bg-slate-700/50"></div>
+            </>
+          )}
 
           {/* Notification Bell */}
           <div className="relative">

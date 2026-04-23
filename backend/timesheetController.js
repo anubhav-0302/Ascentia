@@ -1,14 +1,15 @@
 import prisma from './lib/prisma.js';
 import { logDatabaseOperation } from './databaseLogger.js';
+import { tenantWhere, tenantWhereWith } from './helpers/tenantHelper.js';
 
 // GET /api/timesheet - Get timesheet entries for current user
 const getMyTimesheet = async (req, res) => {
   try {
     const { startDate, endDate, page = 1, limit = 50 } = req.query;
     
-    const whereClause = {
+    const whereClause = tenantWhereWith(req, {
       employeeId: req.user.id
-    };
+    });
     
     if (startDate && endDate) {
       whereClause.date = {
@@ -69,13 +70,13 @@ const getAllTimesheets = async (req, res) => {
     const userRole = req.user.role.toLowerCase();
     const userId = req.user.id;
     
-    const whereClause = {};
+    const whereClause = tenantWhere(req);
     
-    // Role-based filtering
+    // Role-based filtering (in addition to tenant isolation)
     if (userRole === 'manager' || userRole === 'teamlead') {
       // Managers and Team Leads see only their direct reports
       const directReports = await prisma.employee.findMany({
-        where: { managerId: userId },
+        where: tenantWhereWith(req, { managerId: userId }),
         select: { id: true }
       });
       const directReportIds = directReports.map(emp => emp.id);
@@ -197,10 +198,10 @@ const createTimesheetEntry = async (req, res) => {
     
     // Check if entry already exists for this date
     const existingEntry = await prisma.timesheet.findFirst({
-      where: {
+      where: tenantWhereWith(req, {
         employeeId: req.user.id,
         date: new Date(date)
-      }
+      })
     });
     
     let timesheet;
@@ -235,7 +236,8 @@ const createTimesheetEntry = async (req, res) => {
           employeeId: req.user.id,
           date: new Date(date),
           hours: parseFloat(hours),
-          description: description || null
+          description: description || null,
+          organizationId: req.user.organizationId
         },
         include: {
           employee: {
@@ -269,7 +271,10 @@ const updateTimesheetEntry = async (req, res) => {
     const { hours, description } = req.body;
     
     const existingEntry = await prisma.timesheet.findFirst({
-      where: { id: parseInt(id) }
+      where: { 
+        id: parseInt(id),
+        ...tenantWhere(req)
+      }
     });
     
     if (!existingEntry) {
@@ -406,7 +411,10 @@ const deleteTimesheetEntry = async (req, res) => {
     const { id } = req.params;
     
     const existingEntry = await prisma.timesheet.findFirst({
-      where: { id: parseInt(id) }
+      where: { 
+        id: parseInt(id),
+        ...tenantWhere(req)
+      }
     });
     
     if (!existingEntry) {
