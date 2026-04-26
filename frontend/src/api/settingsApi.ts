@@ -22,24 +22,6 @@ export const settingsApi = {
     return response.data;
   },
 
-  // Setup 2FA
-  setup2FA: async () => {
-    const response = await apiClient.post('/settings/2fa/setup', {});
-    return response.data;
-  },
-
-  // Verify and enable 2FA
-  verify2FA: async (token: string) => {
-    const response = await apiClient.post('/settings/2fa/verify', { token });
-    return response.data;
-  },
-
-  // Disable 2FA
-  disable2FA: async () => {
-    const response = await apiClient.delete('/settings/2fa');
-    return response.data;
-  },
-
   // Delete account
   deleteAccount: async (_password: string) => {
     const response = await apiClient.delete('/settings/account');

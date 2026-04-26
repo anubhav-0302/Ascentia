@@ -1,4 +1,8 @@
 import prisma from '../lib/prisma.js';
+import {
+  MODULE_ACTIONS,
+  SIDEBAR_ITEMS,
+} from '../config/permissionRegistry.js';
 
 // GET /api/admin/roles - Get all roles with permission counts
 export const getRoles = async (req, res) => {
@@ -17,7 +21,7 @@ export const getRoles = async (req, res) => {
       orderBy: { createdAt: 'asc' }
     });
 
-    console.log(`✅ Retrieved ${roles.length} roles`);
+    // console.log(`✅ Retrieved ${roles.length} roles`);
 
     res.json({
       success: true,
@@ -63,7 +67,7 @@ export const getRolePermissions = async (req, res) => {
       });
     }
 
-    // Group permissions by module
+    // Group existing permissions by module
     const permissionsByModule = {};
     role.permissions.forEach(perm => {
       if (!permissionsByModule[perm.module]) {
@@ -76,7 +80,23 @@ export const getRolePermissions = async (req, res) => {
       });
     });
 
-    console.log(`✅ Retrieved permissions for role: ${role.name}`);
+    // Ensure every canonical (module, action) from the registry is present
+    // in the response — if syncPermissions hasn't yet inserted a row, return
+    // an unchecked placeholder so the UI shows the full matrix consistently.
+    for (const [module, actions] of Object.entries(MODULE_ACTIONS)) {
+      if (!permissionsByModule[module]) permissionsByModule[module] = [];
+      for (const action of actions) {
+        if (!permissionsByModule[module].find(p => p.action === action)) {
+          permissionsByModule[module].push({ id: null, action, isEnabled: false });
+        }
+      }
+    }
+    if (!permissionsByModule.sidebar) permissionsByModule.sidebar = [];
+    for (const key of Object.keys(SIDEBAR_ITEMS)) {
+      if (!permissionsByModule.sidebar.find(p => p.action === key)) {
+        permissionsByModule.sidebar.push({ id: null, action: key, isEnabled: false });
+      }
+    }
 
     res.json({
       success: true,
@@ -102,17 +122,26 @@ export const getRolePermissions = async (req, res) => {
 // PUT /api/admin/roles/:id/permissions - Update permissions for a role
 export const updateRolePermissions = async (req, res) => {
   try {
-    console.log('🔥 UPDATE ROLE PERMISSIONS REQUEST RECEIVED');
+    // console.log('🔥 UPDATE ROLE PERMISSIONS REQUEST RECEIVED');
     const { id } = req.params;
     const { permissions, reason } = req.body;
     const adminId = req.user.id;
     
-    console.log(`📋 Request details:`, {
-      roleId: id,
-      permissionsCount: permissions?.length || 0,
-      reason: reason,
-      adminId: adminId
-    });
+    // Validate permissions is an array
+    if (!permissions || !Array.isArray(permissions)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Permissions must be an array',
+        error: 'Expected permissions array in request body'
+      });
+    }
+    
+    // console.log(`📋 Request details:`, {
+    //   roleId: id,
+    //   permissionsCount: permissions?.length || 0,
+    //   reason: reason,
+    //   adminId: adminId
+    // });
 
     // Verify role exists
     const role = await prisma.roleConfig.findUnique({
@@ -144,60 +173,49 @@ export const updateRolePermissions = async (req, res) => {
     const auditLogs = [];
 
     // Update permissions
-    console.log(`🔍 Processing ${permissions.length} permission updates for role ${role.name}`);
+    // console.log(`🔍 Processing ${permissions.length} permission updates for role ${role.name}`);
     for (const permission of permissions) {
       const existingPerm = role.permissions.find(
         p => p.module === permission.module && p.action === permission.action
       );
 
-      if (existingPerm) {
-        if (existingPerm.isEnabled !== permission.isEnabled) {
-          console.log(`📝 Updating permission: ${permission.module}.${permission.action} from ${existingPerm.isEnabled} to ${permission.isEnabled}`);
-          
-          // Log the change
-          auditLogs.push({
-            roleId: parseInt(id),
-            changedBy: adminId,
-            module: permission.module,
-            action: permission.action,
-            previousValue: existingPerm.isEnabled,
-            newValue: permission.isEnabled,
-            reason: reason || null
-          });
-
-          // Update permission
-          const result = await prisma.permission.update({
-            where: { id: existingPerm.id },
-            data: { isEnabled: permission.isEnabled }
-          });
-          console.log(`✅ Permission updated in DB: ID ${result.id}, isEnabled: ${result.isEnabled}`);
-        }
-      } else {
-        // Create permission if it doesn't exist
-        console.log(`📝 Creating missing permission: ${permission.module}.${permission.action}`);
-        
-        const result = await prisma.permission.create({
-          data: {
+      // Use upsert to handle both create and update cases atomically
+      const result = await prisma.permission.upsert({
+        where: {
+          roleId_module_action: {
             roleId: parseInt(id),
             module: permission.module,
-            action: permission.action,
-            isEnabled: permission.isEnabled
+            action: permission.action
           }
-        });
-        
-        // Log the creation
+        },
+        update: {
+          isEnabled: permission.isEnabled
+        },
+        create: {
+          roleId: parseInt(id),
+          module: permission.module,
+          action: permission.action,
+          isEnabled: permission.isEnabled
+        }
+      });
+
+      // Log the change if the value actually changed.
+      // PermissionAudit.previousValue is a non-nullable Boolean in the
+      // schema, so coerce missing rows to `false` (effectively "was off").
+      const previousValue = existingPerm ? existingPerm.isEnabled : false;
+      if (previousValue !== permission.isEnabled) {
         auditLogs.push({
           roleId: parseInt(id),
           changedBy: adminId,
           module: permission.module,
           action: permission.action,
-          previousValue: null,
+          previousValue,
           newValue: permission.isEnabled,
           reason: reason || null
         });
-        
-        console.log(`✅ Permission created in DB: ID ${result.id}, isEnabled: ${result.isEnabled}`);
       }
+      
+      // console.log(`✅ Permission upserted in DB: ID ${result.id}, isEnabled: ${result.isEnabled}`);
     }
 
     // Create audit logs
@@ -207,7 +225,7 @@ export const updateRolePermissions = async (req, res) => {
       });
     }
 
-    console.log(`✅ Updated ${auditLogs.length} permissions for role: ${role.name}`);
+    // console.log(`✅ Updated ${auditLogs.length} permissions for role: ${role.name}`);
 
     res.json({
       success: true,
@@ -219,6 +237,13 @@ export const updateRolePermissions = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Error updating role permissions:', error);
+    console.error('❌ Error details:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+      stack: error.stack
+    });
     res.status(500).json({
       success: false,
       message: 'Failed to update role permissions',
@@ -261,7 +286,7 @@ export const createCustomRole = async (req, res) => {
       }
     });
 
-    console.log(`✅ Created custom role: ${newRole.name}`);
+    // console.log(`✅ Created custom role: ${newRole.name}`);
 
     res.status(201).json({
       success: true,
@@ -312,7 +337,7 @@ export const deleteCustomRole = async (req, res) => {
       where: { id: parseInt(id) }
     });
 
-    console.log(`✅ Deleted custom role: ${role.name}`);
+    // console.log(`✅ Deleted custom role: ${role.name}`);
 
     res.json({
       success: true,
@@ -350,7 +375,7 @@ export const getPermissionAuditLog = async (req, res) => {
 
     const total = await prisma.permissionAudit.count({ where });
 
-    console.log(`✅ Retrieved ${auditLogs.length} audit logs`);
+    // console.log(`✅ Retrieved ${auditLogs.length} audit logs`);
 
     res.json({
       success: true,
@@ -508,6 +533,30 @@ export const getSidebarPermissions = async (req, res) => {
       success: false,
       message: 'Failed to fetch sidebar permissions',
       error: error.message
+    });
+  }
+};
+
+// GET /api/admin/roles/registry - Expose the canonical permission registry.
+// Frontend Role Management UI reads this so the matrix is always in sync
+// with the backend's source of truth (config/permissionRegistry.js).
+// When a new module/action/sidebar item is added there, the UI picks it up
+// automatically — no frontend code change required.
+export const getPermissionRegistry = async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      data: {
+        moduleActions: MODULE_ACTIONS,
+        sidebarItems: SIDEBAR_ITEMS,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Error fetching permission registry:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch permission registry',
+      error: error.message,
     });
   }
 };

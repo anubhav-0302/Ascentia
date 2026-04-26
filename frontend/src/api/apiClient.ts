@@ -5,9 +5,12 @@ const getToken = (): string | null => {
   if (typeof window !== 'undefined') {
     try {
       const storage = localStorage.getItem('auth-storage');
+      console.log('Raw auth-storage:', storage);
       if (storage) {
         const parsed = JSON.parse(storage);
-        return parsed.state?.token || null;
+        const token = parsed.state?.token || null;
+        console.log('Retrieved token:', token ? 'YES' : 'NO');
+        return token;
       }
     } catch (error) {
       console.error('Error parsing token from localStorage:', error);
@@ -76,8 +79,12 @@ const getAuthHeaders = (): Record<string, string> => {
   };
   
   const token = getToken();
+  console.log('getAuthHeaders - token exists:', !!token);
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+    console.log('Authorization header set');
+  } else {
+    console.log('No token found - Authorization header not set');
   }
 
   // Include X-Organization-Id for SuperAdmin acting inside a specific org.

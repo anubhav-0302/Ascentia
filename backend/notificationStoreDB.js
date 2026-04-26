@@ -99,12 +99,12 @@ export const createNotification = async (notificationData) => {
       type: type || 'info'
     });
     
-    console.log("✅ Notifications created:", {
-      count: newNotifications.length,
-      title,
-      targetUserIds,
-      targetUserDetails: targetUserIds.map(id => ({ id, role: 'unknown' }))
-    });
+    // console.log("✅ Notifications created:", {
+    //   count: newNotifications.length,
+    //   title,
+    //   targetUserIds,
+    //   targetUserDetails: targetUserIds.map(id => ({ id, role: 'unknown' }))
+    // });
     
     return newNotifications;
   } catch (error) {
@@ -136,7 +136,7 @@ export const markNotificationAsRead = async (notificationId, userId) => {
     if (notification) {
       notification.read = true;
       writeNotifications(notifications);
-      console.log("✅ Notification marked as read:", notificationId);
+      // console.log("✅ Notification marked as read:", notificationId);
       return notification;
     }
     
@@ -157,7 +157,7 @@ export const markAllNotificationsAsRead = async (userId) => {
     });
     
     writeNotifications(notifications);
-    console.log("✅ All notifications marked as read for user:", userId);
+    // console.log("✅ All notifications marked as read for user:", userId);
     return userNotifications.length;
   } catch (error) {
     console.error("❌ Error marking all notifications as read:", error);
@@ -174,7 +174,7 @@ export const clearUserNotifications = async (userId) => {
     writeNotifications(filteredNotifications);
     const clearedCount = beforeCount - filteredNotifications.length;
     
-    console.log("✅ Cleared notifications for user:", { userId, count: clearedCount });
+    // console.log("✅ Cleared notifications for user:", { userId, count: clearedCount });
     return clearedCount;
   } catch (error) {
     console.error("❌ Error clearing user notifications:", error);
@@ -204,7 +204,7 @@ export const createLeaveRequestNotifications = async (leaveRequest) => {
     const adminUsers = await getAdminUsers();
     
     if (adminUsers.length === 0) {
-      console.log("⚠️ No admin users found to notify");
+      // console.log("⚠️ No admin users found to notify");
       return [];
     }
     
@@ -214,7 +214,7 @@ export const createLeaveRequestNotifications = async (leaveRequest) => {
       .map(admin => admin.id);
     
     if (adminUserIds.length === 0) {
-      console.log("⚠️ No other admin users to notify (requester is the only admin)");
+      // console.log("⚠️ No other admin users to notify (requester is the only admin)");
       return [];
     }
     
@@ -230,12 +230,12 @@ export const createLeaveRequestNotifications = async (leaveRequest) => {
       actionUrl: '/leave-attendance'
     });
     
-    console.log("✅ Leave request notifications sent to admins only:", {
-      requestingUserId: leaveRequest.userId,
-      requestingUserName: userName,
-      notifiedAdminIds: adminUserIds,
-      notificationCount: notifications.length
-    });
+    // console.log("✅ Leave request notifications sent to admins only:", {
+    //   requestingUserId: leaveRequest.userId,
+    //   requestingUserName: userName,
+    //   notifiedAdminIds: adminUserIds,
+    //   notificationCount: notifications.length
+    // });
     
     return notifications;
   } catch (error) {
@@ -279,14 +279,14 @@ export const createLeaveStatusUpdateNotifications = async (leaveRequest, newStat
       }));
     }
     
-    console.log("✅ Leave status update notifications sent:", {
-      leaveRequestId: leaveRequest.id,
-      status: newStatus,
-      employeeNotified: true,
-      otherAdminsNotified: otherAdmins.length > 0,
-      currentAdminId: currentAdminId,
-      totalNotifications: notifications.flat().length
-    });
+    // console.log("✅ Leave status update notifications sent:", {
+    //   leaveRequestId: leaveRequest.id,
+    //   status: newStatus,
+    //   employeeNotified: true,
+    //   otherAdminsNotified: otherAdmins.length > 0,
+    //   currentAdminId: currentAdminId,
+    //   totalNotifications: notifications.flat().length
+    // });
     
     return notifications.flat();
   } catch (error) {

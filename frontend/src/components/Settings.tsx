@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StandardLayout } from './StandardLayout';
-import { Settings as SettingsIcon, Bell, Shield, Palette, Database, Moon, Sun, Mail, Smartphone, Calendar, AlertCircle, Eye, BarChart3 } from 'lucide-react';
-import { setupTwoFactor, disableTwoFactor } from '../api/userApi';
+import { Settings as SettingsIcon, Bell, Shield, Palette, Database, Moon, Sun, Mail, Smartphone, Calendar, AlertCircle, Eye, BarChart3, Download, Upload, RefreshCw, History, Server } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import Card from './Card';
 import UnifiedDropdown from './UnifiedDropdown';
@@ -13,20 +12,30 @@ import { PageTransition, FadeIn } from './PageTransition';
 import type { UserSettings } from '../store/useSettingsStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import toast from 'react-hot-toast';
+import { apiClient } from '../api/apiClient';
 
 const Settings: React.FC = () => {
   const [activeSection, setActiveSection] = useState('general');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [show2FAModal, setShow2FAModal] = useState(false);
-  const [twoFactorData, setTwoFactorData] = useState<{ secret: string; qrCode: string } | null>(null);
-  const [twoFactorToken, setTwoFactorToken] = useState('');
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [deletePassword, setDeletePassword] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [passwordErrors, setPasswordErrors] = useState<{ currentPassword?: string; newPassword?: string; general?: string }>({});
   
-  const { settings, loading, fetchSettings, updateSetting, resetSettings, changePassword, verify2FA: storeVerify2FA, deleteAccount, exportData } = useSettingsStore();
+  // Backup/Restore state
+  const [showBackupModal, setShowBackupModal] = useState(false);
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [backupDescription, setBackupDescription] = useState('');
+  const [restorePassword, setRestorePassword] = useState('');
+  const [selectedBackup, setSelectedBackup] = useState<any>(null);
+  const [backups, setBackups] = useState<any[]>([]);
+  const [dbStats, setDbStats] = useState<any>(null);
+  const [deletionLogs, setDeletionLogs] = useState<any[]>([]);
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [restoreConfirmation, setRestoreConfirmation] = useState('');
+  
+  const { settings, loading, fetchSettings, updateSetting, resetSettings, changePassword, deleteAccount, exportData } = useSettingsStore();
   const { user } = useAuthStore();
 
   // Helper to safely get setting values
@@ -38,6 +47,105 @@ const Settings: React.FC = () => {
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
+
+  // Fetch backup data when admin user accesses privacy section
+  useEffect(() => {
+    if (activeSection === 'privacy' && user?.role === 'admin') {
+      fetchBackupData();
+    }
+  }, [activeSection, user?.role]);
+
+  // Fetch backup data
+  const fetchBackupData = async () => {
+    try {
+      const [backupsRes, statsRes, logsRes] = await Promise.all([
+        apiClient.get('/data-protection/backups'),
+        apiClient.get('/data-protection/stats'),
+        apiClient.get('/data-protection/deletion-logs')
+      ]);
+      
+      setBackups(backupsRes.data || []);
+      setDbStats(statsRes.data);
+      setDeletionLogs(logsRes.data || []);
+    } catch (error) {
+      console.error('Failed to fetch backup data:', error);
+    }
+  };
+
+  // Create backup
+  const handleCreateBackup = async () => {
+    if (!backupDescription.trim()) {
+      toast.error('Backup description is required');
+      return;
+    }
+
+    setBackupLoading(true);
+    try {
+      await apiClient.post('/data-protection/backups', {
+        description: backupDescription
+      });
+      
+      toast.success('Backup created successfully');
+      setShowBackupModal(false);
+      setBackupDescription('');
+      fetchBackupData();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create backup');
+    } finally {
+      setBackupLoading(false);
+    }
+  };
+
+  // Restore backup
+  const handleRestoreBackup = async () => {
+    if (!selectedBackup || !restorePassword) {
+      toast.error('Please select a backup and enter your password');
+      return;
+    }
+
+    if (restoreConfirmation !== selectedBackup.filename) {
+      toast.error('Backup filename does not match');
+      return;
+    }
+
+    setBackupLoading(true);
+    try {
+      await apiClient.post('/data-protection/restore', {
+        filename: selectedBackup.filename,
+        password: restorePassword
+      });
+      
+      toast.success('Database restored successfully');
+      setShowRestoreModal(false);
+      setSelectedBackup(null);
+      setRestorePassword('');
+      setRestoreConfirmation('');
+      fetchBackupData();
+      
+      // Refresh page after successful restore
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to restore backup');
+    } finally {
+      setBackupLoading(false);
+    }
+  };
+
+  // Format file size
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString();
+  };
 
   const handleExportData = async () => {
     try {
@@ -155,53 +263,6 @@ const Settings: React.FC = () => {
       }
     } finally {
       setAuthLoading(false);
-    }
-  };
-
-  const handle2FASetup = async () => {
-    if (user?.twoFactorEnabled) {
-      // Disable 2FA
-      setAuthLoading(true);
-      try {
-        await disableTwoFactor();
-        toast.success('2FA disabled successfully');
-        // Update user state
-        const updatedUser = { ...user, twoFactorEnabled: false };
-        useAuthStore.setState({ user: updatedUser });
-      } catch (error: any) {
-        toast.error(error.message || 'Failed to disable 2FA');
-      } finally {
-        setAuthLoading(false);
-      }
-    } else {
-      // Enable 2FA
-      setAuthLoading(true);
-      try {
-        const response = await setupTwoFactor();
-        setTwoFactorData(response);
-        setShow2FAModal(true);
-      } catch (error: any) {
-        toast.error(error.message || 'Failed to setup 2FA');
-      } finally {
-        setAuthLoading(false);
-      }
-    }
-  };
-  
-  const handle2FAVerify = async () => {
-    try {
-      await storeVerify2FA(twoFactorToken);
-      toast.success('2FA enabled successfully');
-      setShow2FAModal(false);
-      setTwoFactorToken('');
-      setTwoFactorData(null);
-      // Update user state
-      if (user) {
-        const updatedUser = { ...user, twoFactorEnabled: true };
-        useAuthStore.setState({ user: updatedUser });
-      }
-    } catch (error) {
-      toast.error('Invalid verification code');
     }
   };
 
@@ -477,28 +538,6 @@ const Settings: React.FC = () => {
                             Change Password
                           </Button>
                         </div>
-
-                        <div className="border-t border-slate-700 pt-6">
-                          <h4 className="text-white font-medium mb-4">Two-Factor Authentication</h4>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-gray-300">
-                                {user?.twoFactorEnabled ? 'Enabled - Extra security active' : 'Add an extra layer of security to your account'}
-                              </p>
-                            </div>
-                            <Button 
-                              onClick={handle2FASetup}
-                              disabled={authLoading}
-                              className={`${
-                                user?.twoFactorEnabled 
-                                  ? 'bg-red-600 hover:bg-red-500 text-white' 
-                                  : 'bg-teal-600 hover:bg-teal-500 text-white'
-                              } ${authLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                              {authLoading ? 'Processing...' : (user?.twoFactorEnabled ? 'Disable' : 'Enable')}
-                            </Button>
-                          </div>
-                        </div>
                       </div>
                     </Card>
                   </FadeIn>
@@ -607,6 +646,112 @@ const Settings: React.FC = () => {
                           </div>
                         </div>
 
+                        {/* Admin-only Backup & Restore Section */}
+                        {user?.role === 'admin' && (
+                          <div className="border-t border-slate-700 pt-6">
+                            <h4 className="text-white font-medium mb-4 flex items-center">
+                              <Server className="w-4 h-4 mr-2 text-teal-400" />
+                              Backup & Restore
+                            </h4>
+                            
+                            {/* Database Statistics */}
+                            {dbStats && (
+                              <div className="mb-6 p-4 bg-slate-800/50 rounded-lg">
+                                <h5 className="text-sm font-medium text-gray-300 mb-3">Database Statistics</h5>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                  <div>
+                                    <p className="text-gray-400">Employees</p>
+                                    <p className="text-white font-medium">{dbStats.records?.employees || 0}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-gray-400">Leave Requests</p>
+                                    <p className="text-white font-medium">{dbStats.records?.leaveRequests || 0}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-gray-400">Timesheets</p>
+                                    <p className="text-white font-medium">{dbStats.records?.timesheets || 0}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-gray-400">Documents</p>
+                                    <p className="text-white font-medium">{dbStats.records?.documents || 0}</p>
+                                  </div>
+                                </div>
+                                <div className="mt-3 pt-3 border-t border-slate-700">
+                                  <p className="text-gray-400 text-sm">
+                                    Database Size: <span className="text-white">{formatFileSize(dbStats.database?.size || 0)}</span>
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Backup Controls */}
+                            <div className="flex flex-wrap gap-3 mb-6">
+                              <Button onClick={() => setShowBackupModal(true)} variant="secondary" className="flex items-center">
+                                <Download className="w-4 h-4 mr-2" />
+                                Create Backup
+                              </Button>
+                              <Button onClick={() => setShowRestoreModal(true)} variant="secondary" className="flex items-center">
+                                <Upload className="w-4 h-4 mr-2" />
+                                Restore Backup
+                              </Button>
+                              <Button onClick={fetchBackupData} variant="secondary" className="flex items-center">
+                                <RefreshCw className="w-4 h-4 mr-2" />
+                                Refresh
+                              </Button>
+                            </div>
+                            
+                            {/* Backups List */}
+                            {backups.length > 0 && (
+                              <div className="space-y-3">
+                                <h5 className="text-sm font-medium text-gray-300">Available Backups</h5>
+                                <div className="space-y-2 max-h-64 overflow-y-auto">
+                                  {backups.map((backup, index) => (
+                                    <div key={index} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                                      <div className="flex-1">
+                                        <p className="text-white text-sm font-medium">{backup.filename}</p>
+                                        <p className="text-gray-400 text-xs">
+                                          {backup.metadata?.description || 'No description'} • {formatFileSize(backup.size)}
+                                        </p>
+                                        <p className="text-gray-500 text-xs">{formatDate(backup.createdAt)}</p>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        {backup.metadata?.compressionRatio && (
+                                          <span className="text-xs text-teal-400">
+                                            {backup.metadata.compressionRatio}% compressed
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Deletion Logs */}
+                            {deletionLogs.length > 0 && (
+                              <div className="mt-6 pt-6 border-t border-slate-700">
+                                <h5 className="text-sm font-medium text-gray-300 mb-3 flex items-center">
+                                  <History className="w-4 h-4 mr-2" />
+                                  Recent Deletion Logs
+                                </h5>
+                                <div className="space-y-2 max-h-48 overflow-y-auto">
+                                  {deletionLogs.slice(0, 5).map((log, index) => (
+                                    <div key={index} className="p-2 bg-slate-800/30 rounded text-xs">
+                                      <p className="text-gray-300">
+                                        {log.deletedEmployee?.name} ({log.deletedEmployee?.email})
+                                      </p>
+                                      <p className="text-gray-500">
+                                        Deleted by {log.deletedBy} • {formatDate(log.timestamp)}
+                                      </p>
+                                      <p className="text-gray-600">Reason: {log.reason}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
                         <div className="border-t border-slate-700 pt-6">
                           <h4 className="text-white font-medium mb-4">Data Management</h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -783,55 +928,152 @@ const Settings: React.FC = () => {
         </Modal>
       )}
 
-      {/* 2FA Setup Modal */}
-      {show2FAModal && twoFactorData && (
-        <Modal isOpen={show2FAModal} onClose={() => setShow2FAModal(false)}>
-          <h3 className="text-lg font-semibold text-white mb-4">Setup Two-Factor Authentication</h3>
+      {/* Backup Creation Modal */}
+      {showBackupModal && (
+        <Modal isOpen={showBackupModal} onClose={() => {
+          setShowBackupModal(false);
+          setBackupDescription('');
+        }}>
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+            <Download className="w-5 h-5 mr-2 text-teal-400" />
+            Create Backup
+          </h3>
           <div className="space-y-4">
             <div>
-              <p className="text-gray-300 mb-4">Scan the QR code below with your authenticator app:</p>
-              <div className="flex justify-center mb-4">
-                <img src={twoFactorData.qrCode} alt="2FA QR Code" className="w-48 h-48" />
-              </div>
-            </div>
-            
-            <div>
-              <p className="text-gray-300 text-sm mb-2">Or enter this code manually:</p>
-              <code className="block p-2 bg-slate-700 rounded text-teal-400 text-sm">
-                {twoFactorData.secret}
-              </code>
-            </div>
-            
-            <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Enter 6-digit verification code
+                Backup Description
               </label>
               <Input
                 type="text"
-                value={twoFactorToken}
-                onChange={(e) => setTwoFactorToken(e.target.value)}
-                placeholder="000000"
-                maxLength={6}
-                pattern="[0-9]{6}"
+                value={backupDescription}
+                onChange={(e) => setBackupDescription(e.target.value)}
+                placeholder="e.g., Before major update, End of month backup"
+                required
               />
+              <p className="mt-1 text-xs text-gray-500">
+                This description will help you identify the backup later
+              </p>
+            </div>
+            
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+              <p className="text-amber-300 text-sm">
+                <strong>Note:</strong> This will create a compressed backup of the entire database.
+                The process may take a few moments depending on data size.
+              </p>
             </div>
             
             <div className="flex justify-end space-x-3 pt-4">
               <Button
                 variant="secondary"
                 onClick={() => {
-                  setShow2FAModal(false);
-                  setTwoFactorToken('');
-                  setTwoFactorData(null);
+                  setShowBackupModal(false);
+                  setBackupDescription('');
                 }}
               >
                 Cancel
               </Button>
               <Button
-                onClick={handle2FAVerify}
-                disabled={twoFactorToken.length !== 6}
+                onClick={handleCreateBackup}
+                disabled={backupLoading || !backupDescription.trim()}
               >
-                Verify & Enable
+                {backupLoading ? 'Creating...' : 'Create Backup'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Restore Backup Modal */}
+      {showRestoreModal && (
+        <Modal isOpen={showRestoreModal} onClose={() => {
+          setShowRestoreModal(false);
+          setSelectedBackup(null);
+          setRestorePassword('');
+          setRestoreConfirmation('');
+        }}>
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+            <Upload className="w-5 h-5 mr-2 text-red-400" />
+            Restore Backup
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Select Backup
+              </label>
+              <select
+                value={selectedBackup?.filename || ''}
+                onChange={(e) => {
+                  const backup = backups.find(b => b.filename === e.target.value);
+                  setSelectedBackup(backup);
+                }}
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                required
+              >
+                <option value="">Choose a backup...</option>
+                {backups.map((backup, index) => (
+                  <option key={index} value={backup.filename}>
+                    {backup.filename} - {formatDate(backup.createdAt)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Your Password
+              </label>
+              <Input
+                type="password"
+                value={restorePassword}
+                onChange={(e) => setRestorePassword(e.target.value)}
+                placeholder="Enter your password to confirm"
+                required
+              />
+            </div>
+
+            {selectedBackup && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Type Backup Filename to Confirm
+                </label>
+                <Input
+                  type="text"
+                  value={restoreConfirmation}
+                  onChange={(e) => setRestoreConfirmation(e.target.value)}
+                  placeholder={selectedBackup.filename}
+                  required
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  This prevents accidental restoration
+                </p>
+              </div>
+            )}
+            
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+              <p className="text-red-300 text-sm font-medium mb-1">⚠️ Warning</p>
+              <p className="text-red-300 text-sm">
+                Restoring a backup will overwrite ALL current data. A backup of the current database will be created automatically before restoration.
+              </p>
+            </div>
+            
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowRestoreModal(false);
+                  setSelectedBackup(null);
+                  setRestorePassword('');
+                  setRestoreConfirmation('');
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleRestoreBackup}
+                disabled={backupLoading || !selectedBackup || !restorePassword || restoreConfirmation !== selectedBackup.filename}
+                className="bg-red-600 hover:bg-red-500"
+              >
+                {backupLoading ? 'Restoring...' : 'Restore Backup'}
               </Button>
             </div>
           </div>

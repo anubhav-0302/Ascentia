@@ -72,7 +72,7 @@ const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
     
     setLoading(true);
     try {
-      console.log('🔍 Submitting form data:', formData);
+      // console.log('🔍 Submitting form data:', formData);
       await onSave(formData);
       onClose();
     } catch (err: any) {

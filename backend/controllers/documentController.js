@@ -40,7 +40,7 @@ export const uploadDocument = async (req, res) => {
       }
     });
     
-    console.log('✅ Document uploaded:', document.id, 'for employee:', employeeId);
+    // console.log('✅ Document uploaded:', document.id, 'for employee:', employeeId);
     
     res.json({
       success: true,
@@ -138,7 +138,7 @@ export const deleteDocument = async (req, res) => {
       where: { id: parseInt(id) }
     });
     
-    console.log('✅ Document deleted:', id);
+    // console.log('✅ Document deleted:', id);
     
     res.json({
       success: true,

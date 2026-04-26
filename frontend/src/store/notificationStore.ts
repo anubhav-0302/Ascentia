@@ -286,7 +286,7 @@ export const useNotificationStore = create<NotificationStore>()(
         },
       },
       onRehydrateStorage: () => (state) => {
-        console.log('🔔 Notification store rehydrated from storage');
+        // console.log('🔔 Notification store rehydrated from storage');
         if (state) {
           state.initializeFromStorage();
         }

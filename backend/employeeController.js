@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { logDatabaseOperation } from './databaseLogger.js';
 import { validateEmail } from './utils/emailValidator.js';
 import { tenantWhere, tenantWhereWith } from './helpers/tenantHelper.js';
+import { buildEmployeeAccessWhere, getAccessibleEmployeeIds } from './helpers/accessControlHelper.js';
 
 // GET /api/employees - Get all employees from database
 export const getEmployees = async (req, res) => {
@@ -11,22 +12,19 @@ export const getEmployees = async (req, res) => {
     const userId = req.user.id;
     const { scope } = req.query; // ?scope=team or ?scope=all
     
-    console.log(`📊 getEmployees: role=${userRole}, scope=${scope || 'default'}`);
+    // console.log(`📊 getEmployees: role=${userRole}, scope=${scope || 'default'}`);
     
     let whereClause = tenantWhere(req);
 
-    // Role-based filtering (in addition to tenant isolation)
+    // Use access control helper to determine which employees this user can see
     if (scope === 'all' && (userRole === 'admin' || userRole === 'hr')) {
       // Admin and HR can explicitly request all employees
       // Just use tenant filter
-    } else if (scope === 'team' || (userRole === 'manager' || userRole === 'teamlead')) {
-      // Managers and Team Leads see only their direct reports (or anyone requesting team scope)
-      whereClause.managerId = userId;
-    } else if (userRole === 'employee') {
-      // Employees see only themselves (shouldn't reach here due to permissions)
-      whereClause.id = userId;
+    } else {
+      // Apply role-based filtering including both hierarchy and project-based access
+      const accessWhere = await buildEmployeeAccessWhere(userId, userRole, req.user.organizationId);
+      whereClause = { ...whereClause, ...accessWhere };
     }
-    // Default: Admin and HR see all, others see their team
 
     // Platform-level users (SuperAdmin) must NEVER appear in org-scoped
     // employee listings. They are not tenant members and showing them in an
@@ -66,7 +64,7 @@ export const getEmployees = async (req, res) => {
         }
       }
     });
-    console.log(`📊 getEmployees: ${employees.length} employees from database`);
+    // console.log(`📊 getEmployees: ${employees.length} employees from database`);
     res.json({ success: true, data: employees });
   } catch (error) {
     console.error("❌ GET EMPLOYEES ERROR:", error.message);
@@ -145,7 +143,7 @@ export const getEmployee = async (req, res) => {
       });
     }
 
-    console.log(`📊 getEmployee: Found employee ${employee.name} (ID: ${employeeId})`);
+    // console.log(`📊 getEmployee: Found employee ${employee.name} (ID: ${employeeId})`);
     res.json({ success: true, data: employee });
   } catch (error) {
     console.error("❌ GET EMPLOYEE ERROR:", error.message);
@@ -156,9 +154,9 @@ export const getEmployee = async (req, res) => {
 // POST /api/employees - Create new employee with optional authentication
 export const createEmployee = async (req, res) => {
   try {
-    console.log('🔍 Received request body:', req.body);
+    // console.log('🔍 Received request body:', req.body);
     const { name, email, jobTitle, department, location, status, role, password, managerId } = req.body;
-    console.log('🔍 Extracted fields:', { name, email, jobTitle, department, location, status, role, password, managerId });
+    // console.log('🔍 Extracted fields:', { name, email, jobTitle, department, location, status, role, password, managerId });
 
     if (!name || !email || !jobTitle || !department || !role) {
       return res.status(400).json({ 
@@ -216,7 +214,7 @@ export const createEmployee = async (req, res) => {
       hashedPassword = await bcrypt.hash(defaultPassword, 10);
       needsPasswordChange = true;
       
-      console.log(`🔐 Generated default password for ${email}: ${defaultPassword}`);
+      // console.log(`🔐 Generated default password for ${email}: ${defaultPassword}`);
     }
 
     const employee = await prisma.employee.create({
@@ -243,7 +241,7 @@ export const createEmployee = async (req, res) => {
       hasPassword: !!password
     }, req.user?.id);
 
-    console.log("✅ Employee created:", employee.id, employee.email, "Has password:", !!password);
+    // console.log("✅ Employee created:", employee.id, employee.email, "Has password:", !!password);
     res.status(201).json({ 
       success: true, 
       message: 'Employee created successfully', 
@@ -335,7 +333,7 @@ export const updateEmployee = async (req, res) => {
       data: updateData
     });
 
-    console.log("✅ Employee updated:", updated.id, updated.email);
+    // console.log("✅ Employee updated:", updated.id, updated.email);
     res.json({ success: true, message: 'Employee updated successfully', data: updated });
   } catch (error) {
     console.error("❌ UPDATE EMPLOYEE ERROR:", error.message);
@@ -359,7 +357,7 @@ export const deleteEmployee = async (req, res) => {
 
     await prisma.employee.delete({ where: { id } });
 
-    console.log("✅ Employee deleted:", id);
+    // console.log("✅ Employee deleted:", id);
     res.json({ success: true, message: 'Employee deleted successfully', data: existing });
   } catch (error) {
     console.error("❌ DELETE EMPLOYEE ERROR:", error.message);

@@ -2,7 +2,7 @@
 export const clearNotificationStorage = () => {
   try {
     localStorage.removeItem('notification-storage');
-    console.log('Notification storage cleared successfully');
+    // console.log('Notification storage cleared successfully');
   } catch (error) {
     console.error('Error clearing notification storage:', error);
   }

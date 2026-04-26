@@ -22,7 +22,7 @@ const getKRAsByGoal = async (req, res) => {
       orderBy: { createdAt: 'desc' }
     });
     
-    console.log(`📊 getKRAsByGoal: ${kras.length} KRAs for goal ${gId}`);
+    // console.log(`📊 getKRAsByGoal: ${kras.length} KRAs for goal ${gId}`);
     res.json({ success: true, data: kras });
   } catch (error) {
     console.error("❌ GET KRAs ERROR:", error);
@@ -73,7 +73,7 @@ const createKRA = async (req, res) => {
     
     await logDatabaseOperation('CREATE', 'kra', kra.id, req.user.id);
     
-    console.log(`✅ Created KRA: ${kra.id}`);
+    // console.log(`✅ Created KRA: ${kra.id}`);
     res.json({ success: true, data: kra });
   } catch (error) {
     console.error("❌ CREATE KRA ERROR:", error);
@@ -129,7 +129,7 @@ const updateKRA = async (req, res) => {
     
     await logDatabaseOperation('UPDATE', 'kra', kra.id, req.user.id);
     
-    console.log(`✅ Updated KRA: ${kra.id}`);
+    // console.log(`✅ Updated KRA: ${kra.id}`);
     res.json({ success: true, data: kra });
   } catch (error) {
     console.error("❌ UPDATE KRA ERROR:", error);
@@ -174,7 +174,7 @@ const deleteKRA = async (req, res) => {
     
     await logDatabaseOperation('DELETE', 'kra', kraId, req.user.id);
     
-    console.log(`✅ Deleted KRA: ${kraId}`);
+    // console.log(`✅ Deleted KRA: ${kraId}`);
     res.json({ success: true, message: 'KRA deleted successfully' });
   } catch (error) {
     console.error("❌ DELETE KRA ERROR:", error);

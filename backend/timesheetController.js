@@ -40,7 +40,7 @@ const getMyTimesheet = async (req, res) => {
       }
     });
     
-    console.log(`📊 getMyTimesheet: ${timesheets.length} entries for user ${req.user.id} (page ${page}, limit ${limit})`);
+    // console.log(`📊 getMyTimesheet: ${timesheets.length} entries for user ${req.user.id} (page ${page}, limit ${limit})`);
     res.json({ 
       success: true, 
       data: timesheets,
@@ -141,7 +141,7 @@ const getAllTimesheets = async (req, res) => {
       }
     });
     
-    console.log(`📊 getAllTimesheets: ${timesheets.length} entries (page ${page}, limit ${limit})`);
+    // console.log(`📊 getAllTimesheets: ${timesheets.length} entries (page ${page}, limit ${limit})`);
     res.json({ 
       success: true, 
       data: timesheets,
@@ -223,7 +223,7 @@ const createTimesheetEntry = async (req, res) => {
       });
       
       await logDatabaseOperation('UPDATE', 'timesheet', timesheet.id, req.user.id);
-      console.log(`✅ Updated timesheet entry: ${timesheet.id}`);
+      // console.log(`✅ Updated timesheet entry: ${timesheet.id}`);
       res.json({ 
         success: true, 
         data: timesheet,
@@ -247,7 +247,7 @@ const createTimesheetEntry = async (req, res) => {
       });
       
       await logDatabaseOperation('CREATE', 'timesheet', timesheet.id, req.user.id);
-      console.log(`✅ Created timesheet entry: ${timesheet.id}`);
+      // console.log(`✅ Created timesheet entry: ${timesheet.id}`);
       res.json({ 
         success: true, 
         data: timesheet,
@@ -329,7 +329,7 @@ const updateTimesheetEntry = async (req, res) => {
     
     await logDatabaseOperation('UPDATE', 'timesheet', timesheet.id, req.user.id);
     
-    console.log(`✅ Updated timesheet entry: ${timesheet.id}`);
+    // console.log(`✅ Updated timesheet entry: ${timesheet.id}`);
     res.json({ success: true, data: timesheet });
   } catch (error) {
     console.error("❌ UPDATE TIMESHEET ERROR:", error);
@@ -393,7 +393,7 @@ const approveTimesheetEntry = async (req, res) => {
     
     await logDatabaseOperation('APPROVE', 'timesheet', timesheet.id, req.user.id);
     
-    console.log(`✅ Approved timesheet entry: ${timesheet.id} with status: ${status}`);
+    // console.log(`✅ Approved timesheet entry: ${timesheet.id} with status: ${status}`);
     res.json({ success: true, data: timesheet });
   } catch (error) {
     console.error("❌ APPROVE TIMESHEET ERROR:", error);
@@ -446,7 +446,7 @@ const deleteTimesheetEntry = async (req, res) => {
     
     await logDatabaseOperation('DELETE', 'timesheet', parseInt(id), req.user.id);
     
-    console.log(`✅ Deleted timesheet entry: ${id}`);
+    // console.log(`✅ Deleted timesheet entry: ${id}`);
     res.json({ success: true, message: 'Timesheet entry deleted successfully' });
   } catch (error) {
     console.error("❌ DELETE TIMESHEET ERROR:", error);
@@ -586,7 +586,7 @@ const bulkApproveTimesheets = async (req, res) => {
     const successCount = results.filter(r => r.success).length;
     const failureCount = results.filter(r => !r.success).length;
     
-    console.log(`✅ Bulk ${status.toLowerCase()}: ${successCount} successful, ${failureCount} failed`);
+    // console.log(`✅ Bulk ${status.toLowerCase()}: ${successCount} successful, ${failureCount} failed`);
     
     res.json({ 
       success: true, 

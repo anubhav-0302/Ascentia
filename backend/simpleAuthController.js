@@ -20,13 +20,13 @@ export const login = async (req, res) => {
 
     const employee = await prisma.employee.findFirst({ where: { email } });
     if (!employee || !employee.password) {
-      console.log("❌ Employee not found or no password:", email);
+      // console.log("❌ Employee not found or no password:", email);
       return res.status(401).json({ message: "User not found" });
     }
 
     const validPassword = await bcrypt.compare(password, employee.password);
     if (!validPassword) {
-      console.log("❌ Invalid password for:", email);
+      // console.log("❌ Invalid password for:", email);
       return res.status(401).json({ message: "Invalid password" });
     }
 
@@ -39,7 +39,9 @@ export const login = async (req, res) => {
     const token = jwt.sign({ id: employee.id, role: employee.role }, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN });
 
     console.log("✅ Login successful:", employee.email);
-    return res.json({
+    console.log("Token generated:", token ? "YES (length: " + token.length + ")" : "NO");
+    
+    const responseData = {
       success: true,
       message: "Login successful",
       data: { 
@@ -53,7 +55,10 @@ export const login = async (req, res) => {
           department: employee.department
         } 
       }
-    });
+    };
+    
+    console.log("Login response data:", JSON.stringify(responseData, null, 2));
+    return res.json(responseData);
   } catch (err) {
     console.error("❌ LOGIN ERROR:", err.message);
     return res.status(500).json({ success: false, message: "Internal server error", error: err.message });
@@ -144,7 +149,7 @@ export const register = async (req, res) => {
 
     const token = jwt.sign({ id: employee.id, role: employee.role }, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN });
 
-    console.log("✅ Employee registered in database:", employee.email);
+    // console.log("✅ Employee registered in database:", employee.email);
     return res.status(201).json({
       success: true,
       message: "User registered successfully",
@@ -243,8 +248,8 @@ export const forgotPassword = async (req, res) => {
     // 2. Save it to the database with an expiry
     // 3. Send an email with the reset link
     // For now, we'll just log it and return success
-    console.log("🔑 Password reset requested for:", email);
-    console.log("📧 In production, send reset email to:", email);
+    // console.log("🔑 Password reset requested for:", email);
+    // console.log("📧 In production, send reset email to:", email);
 
     // For demo purposes, we'll just return success
     // In production, you would integrate with an email service

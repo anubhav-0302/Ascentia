@@ -35,8 +35,13 @@ const ProtectedRoute = ({ children, requiredRoles }: ProtectedRouteProps) => {
   // Check role-based access if requiredRoles is specified
   if (requiredRoles && requiredRoles.length > 0) {
     const userRole = user?.role?.toLowerCase() || 'employee';
-    if (!requiredRoles.includes(userRole)) {
-      // User doesn't have required role - redirect to dashboard
+    // Normalize requiredRoles to lowercase for comparison
+    const normalizedRequiredRoles = requiredRoles.map(role => role.toLowerCase());
+    if (!normalizedRequiredRoles.includes(userRole)) {
+      // User doesn't have required role - redirect appropriately
+      if (userRole === 'superadmin') {
+        return <Navigate to="/superadmin" replace />;
+      }
       return <Navigate to="/dashboard" replace />;
     }
   }

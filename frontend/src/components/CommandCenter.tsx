@@ -1,6 +1,6 @@
 import React from 'react';
 import { StandardLayout } from './StandardLayout';
-import { Zap, Activity, Users, AlertTriangle, Shield } from 'lucide-react';
+import { Activity, AlertTriangle, Zap, Shield, Users } from 'lucide-react';
 import Card from './Card';
 import { PageTransition, FadeIn } from './PageTransition';
 

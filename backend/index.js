@@ -2,7 +2,21 @@ import { env } from './config/env.js';
 import express from 'express';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
+
+console.log('🚀 Starting server initialization...');
+
+import { syncPermissions } from './lib/syncPermissions.js';
 import authRoutes from './routes/authRoutes.js';
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+});
 import employeeRoutes from './routes/employeeRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import leaveRoutes from './routes/leaveRoutes.js';
@@ -19,6 +33,10 @@ import roleManagementRoutes from './routes/roleManagementRoutes.js';
 import dataProtectionRoutes from './routes/dataProtectionRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import orgRoutes from './routes/orgRoutes.js';
+import workflowRoutes from './routes/workflowRoutes.js';
+import recruitingRoutes from './routes/recruitingRoutes.js';
+import commandCenterRoutes from './routes/commandCenterRoutes.js';
+import projectRoutes from './routes/projectRoutes.js';
 import { requireAuth } from './middleware/auth.js';
 import { initializeLeaveData } from './leaveStoreDB.js';
 import { setupScheduledBackups } from './scripts/backup-system.js';
@@ -34,7 +52,7 @@ app.use('/uploads', express.static('uploads'));
 // Initialize database on startup
 const initializeDatabase = async () => {
   try {
-    console.log("🔧 Initializing database...");
+    // console.log("🔧 Initializing database...");
     await initializeLeaveData();
     
     // All seed config comes from the centralized env module
@@ -50,7 +68,7 @@ const initializeDatabase = async () => {
           isActive: true
         }
       });
-      console.log("✅ Created default organization:", env.DEFAULT_ORG_NAME);
+      // console.log("✅ Created default organization:", env.DEFAULT_ORG_NAME);
     }
     
     // Seed default admin employee if not exists
@@ -73,7 +91,7 @@ const initializeDatabase = async () => {
           organizationId: org.id
         }
       });
-      console.log("✅ Created default admin employee:", env.ADMIN_EMAIL);
+      // console.log("✅ Created default admin employee:", env.ADMIN_EMAIL);
     }
     
     // Seed default SuperAdmin if not exists
@@ -96,7 +114,7 @@ const initializeDatabase = async () => {
           // Super Admin not tied to any organization
         }
       });
-      console.log("✅ Created default SuperAdmin:", env.SUPERADMIN_EMAIL);
+      // console.log("✅ Created default SuperAdmin:", env.SUPERADMIN_EMAIL);
     }
     
     // Seed default employee if not exists
@@ -119,19 +137,13 @@ const initializeDatabase = async () => {
           organizationId: org.id
         }
       });
-      console.log("✅ Created default employee:", env.EMPLOYEE_EMAIL);
+      // console.log("✅ Created default employee:", env.EMPLOYEE_EMAIL);
     }
     
-    // Check if roles need to be seeded
-    const roleCount = await prisma.roleConfig.count();
-    if (roleCount === 0) {
-      console.log("🌱 No roles found, seeding default roles and permissions...");
-      const { execSync } = await import('child_process');
-      execSync('node scripts/seedRoleConfig.js', { 
-        cwd: process.cwd(),
-        stdio: 'inherit' 
-      });
-    }
+    // Sync canonical permission registry to DB.
+    // Runs idempotently on every startup: creates missing roles/permissions
+    // without overriding admin's UI customizations.
+    await syncPermissions();
     
     console.log("✅ Database initialized successfully");
   } catch (error) {
@@ -145,7 +157,7 @@ app.use(express.json());
 
 // Debug logging for all requests
 app.use((req, res, next) => {
-  console.log("🔍 REQUEST:", req.method, req.url);
+  // console.log("🔍 REQUEST:", req.method, req.url);
   next();
 });
 
@@ -185,15 +197,23 @@ app.use('/api/admin/roles', roleManagementRoutes);
 app.use('/api/data-protection', requireAuth, dataProtectionRoutes);
 app.use('/api/analytics', requireAuth, analyticsRoutes);
 app.use('/api/organizations', orgRoutes);
+app.use('/api/workflows', workflowRoutes);
+app.use('/api/recruiting', recruitingRoutes);
+app.use('/api/command-center', commandCenterRoutes);
+app.use('/api/projects', projectRoutes);
 
 // Start server
 app.listen(PORT, async () => {
+  console.log('🚀 Server starting...');
   await initializeDatabase();
+  console.log('✅ Database initialized');
   
   // Start automatic backup system
-  console.log('🔄 Starting automatic backup system...');
-  setupScheduledBackups();
-  console.log('✅ Automatic backups scheduled (daily at 2:00 AM)');
+  // console.log('🔄 Starting automatic backup system...');
+  // Temporarily disable backup system to debug startup hang
+  // setupScheduledBackups();
+  console.log('⚠️ Backup system disabled for debugging');
+  // console.log('✅ Automatic backups scheduled (daily at 2:00 AM)');
   
   console.log(`🚀 Ascentia API running on http://localhost:${PORT}`);
   console.log('🔧 Complete API mode with database persistence - all routes available');
@@ -243,6 +263,7 @@ app.listen(PORT, async () => {
   console.log('  GET  /api/payroll/employee-salaries (PROTECTED)');
   console.log('  POST /api/payroll/employee-salaries (PROTECTED)');
   console.log('  PUT  /api/payroll/employee-salaries/:id (PROTECTED)');
+  console.log('✅ Server startup completed!');
 });
 
 export default app;

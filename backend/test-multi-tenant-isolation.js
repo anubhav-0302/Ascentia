@@ -14,10 +14,10 @@ const TEST_ORGS = {
 };
 
 const TEST_USERS = {
-  admin1: { name: 'Admin Org1', email: 'admin1@org1.com', role: 'admin', password: 'test123' },
-  admin2: { name: 'Admin Org2', email: 'admin2@org2.com', role: 'admin', password: 'test123' },
-  emp1: { name: 'Employee Org1', email: 'emp1@org1.com', role: 'employee', password: 'test123' },
-  emp2: { name: 'Employee Org2', email: 'emp2@org2.com', role: 'employee', password: 'test123' }
+  admin1: { name: 'Admin Org1', email: 'admin1@org1.com', role: 'admin', password: process.env.TEST_PASSWORD || 'test123' },
+  admin2: { name: 'Admin Org2', email: 'admin2@org2.com', role: 'admin', password: process.env.TEST_PASSWORD || 'test123' },
+  emp1: { name: 'Employee Org1', email: 'emp1@org1.com', role: 'employee', password: process.env.TEST_PASSWORD || 'test123' },
+  emp2: { name: 'Employee Org2', email: 'emp2@org2.com', role: 'employee', password: process.env.TEST_PASSWORD || 'test123' }
 };
 
 // Helper function to create test data

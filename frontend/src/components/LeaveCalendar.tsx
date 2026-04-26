@@ -133,6 +133,12 @@ const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ className = '', onDateSel
 
     const clickedDate = new Date(calendarData.year, calendarData.month, day);
     
+    // Skip weekends (Saturday = 6, Sunday = 0)
+    const dayOfWeek = clickedDate.getDay();
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      return; // Don't allow selection on weekends
+    }
+    
     if (!isSelecting) {
       // Start selection
       setSelectedStartDate(clickedDate);
@@ -250,14 +256,19 @@ const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ className = '', onDateSel
           const isSelected = isDateInSelectedRange(day);
           const isSelectable = day && onDateSelect;
           
+          // Check if the day is a weekend
+          const isWeekend = day ? new Date(calendarData.year, calendarData.month, day).getDay() === 0 || 
+                                   new Date(calendarData.year, calendarData.month, day).getDay() === 6 : false;
+          
           return (
             <div
               key={index}
               className={`
                 bg-slate-800/40 min-h-[60px] p-1 relative
-                ${day ? (isSelectable ? 'hover:bg-slate-700/30 cursor-pointer' : 'hover:bg-slate-700/30') : ''}
+                ${day ? (isSelectable && !isWeekend ? 'hover:bg-slate-700/30 cursor-pointer' : isWeekend ? 'cursor-not-allowed' : 'hover:bg-slate-700/30') : ''}
                 ${isToday ? 'ring-1 ring-teal-500/50' : ''}
                 ${isSelected ? 'bg-teal-500/20 ring-1 ring-teal-500/50' : ''}
+                ${isWeekend && day ? 'bg-slate-900/60' : ''}
                 transition-colors
               `}
               onClick={() => handleDateClick(day)}
@@ -266,7 +277,7 @@ const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ className = '', onDateSel
                 <>
                   {/* Day number */}
                   <div className={`text-xs font-medium mb-1 ${
-                    isToday ? 'text-teal-400' : isSelected ? 'text-teal-300' : 'text-gray-300'
+                    isToday ? 'text-teal-400' : isSelected ? 'text-teal-300' : isWeekend ? 'text-gray-500' : 'text-gray-300'
                   }`}>
                     {day}
                   </div>

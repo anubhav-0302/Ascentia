@@ -10,7 +10,7 @@ const JWT_SECRET = env.JWT_SECRET;
 // Get user settings
 export const getUserSettings = async (req, res) => {
   try {
-    console.log('Fetching settings for user:', req.user);
+    // console.log('Fetching settings for user:', req.user);
     const userId = req.user.id;
     
     const user = await prisma.employee.findUnique({
@@ -19,11 +19,11 @@ export const getUserSettings = async (req, res) => {
     });
 
     if (!user) {
-      console.log('User not found:', userId);
+      // console.log('User not found:', userId);
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    console.log('User found, settings:', user.settings);
+    // console.log('User found, settings:', user.settings);
 
     // Return default settings if none exist
     const defaultSettings = {

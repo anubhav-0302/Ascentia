@@ -1,6 +1,7 @@
 import { getMyLeaveRequests as getMyLeaveRequestsFromDB, getAllLeaveRequests as getAllLeaveRequestsFromDB, createLeaveRequest as createLeaveRequestInDB, updateLeaveRequestStatus as updateLeaveRequestStatusInDB, cancelLeaveRequest as cancelLeaveRequestFromDB, initializeLeaveData } from './leaveStoreDB.js';
 import { createLeaveRequestNotifications, createLeaveStatusUpdateNotifications } from './notificationStoreDB.js';
 import { tenantWhere, tenantWhereWith } from './helpers/tenantHelper.js';
+import { getAccessibleEmployeeIds } from './helpers/accessControlHelper.js';
 import prisma from './lib/prisma.js';
 
 // Initialize database on module load
@@ -9,7 +10,7 @@ initializeLeaveData().catch(console.error);
 // GET /api/leave/my - Get my leave requests
 export const getMyLeaveRequests = async (req, res) => {
   try {
-    console.log("🔍 Fetching my leave requests for user:", req.user.id);
+    // console.log("🔍 Fetching my leave requests for user:", req.user.id);
     const leaveRequests = await getMyLeaveRequestsFromDB(req.user.id);
     
     res.json({
@@ -31,7 +32,7 @@ export const getAllLeaveRequests = async (req, res) => {
   try {
     const userRole = req.user.role.toLowerCase();
     const userId = req.user.id;
-    console.log(`🔍 Fetching all leave requests for role: ${userRole}`);
+    // console.log(`🔍 Fetching all leave requests for role: ${userRole}`);
     
     let leaveRequests = await getAllLeaveRequestsFromDB();
     
@@ -43,20 +44,12 @@ export const getAllLeaveRequests = async (req, res) => {
     const orgEmployeeIds = orgEmployees.map(emp => emp.id);
     leaveRequests = leaveRequests.filter(l => orgEmployeeIds.includes(l.employeeId));
     
-    // Filter data based on user role
-    if (userRole === 'manager' || userRole === 'teamlead') {
-      // Managers and Team Leads see only their direct reports
-      const directReports = await prisma.employee.findMany({
-        where: tenantWhereWith(req, { managerId: userId }),
-        select: { id: true }
-      });
-      const directReportIds = directReports.map(emp => emp.id);
-      leaveRequests = leaveRequests.filter(l => directReportIds.includes(l.employeeId));
-    } else if (userRole === 'employee') {
-      // Employees see only their own data (shouldn't reach here due to permissions)
-      leaveRequests = leaveRequests.filter(l => l.employeeId === userId);
+    // Filter data based on user role using access control helper
+    if (!['admin', 'hr'].includes(userRole)) {
+      const accessibleIds = await getAccessibleEmployeeIds(userId, userRole, req.user.organizationId);
+      leaveRequests = leaveRequests.filter(l => accessibleIds.includes(l.employeeId));
     }
-    // Admin and HR see all data (no additional filtering)
+    // Admin and HR see all requests (no additional filtering)
     
     res.json({
       success: true,
@@ -75,7 +68,7 @@ export const getAllLeaveRequests = async (req, res) => {
 // POST /api/leave - Create leave request
 export const createLeaveRequest = async (req, res) => {
   try {
-    console.log("🔍 Creating leave request:", req.body);
+    // console.log("🔍 Creating leave request:", req.body);
     const { type, startDate, endDate, reason } = req.body;
     const userId = req.user.id;
     
@@ -125,7 +118,7 @@ export const createLeaveRequest = async (req, res) => {
       reason
     });
     
-    console.log("✅ Leave request created:", { id: newLeaveRequest.id, userId });
+    // console.log("✅ Leave request created:", { id: newLeaveRequest.id, userId });
     
     // Create notifications for admins only (not the requesting employee)
     await createLeaveRequestNotifications(newLeaveRequest);
@@ -168,7 +161,7 @@ export const cancelLeaveRequest = async (req, res) => {
 // PUT /api/leave/:id - Update leave request status (admin only)
 export const updateLeaveRequestStatus = async (req, res) => {
   try {
-    console.log("🔍 Updating leave request status:", req.params.id, req.body);
+    // console.log("🔍 Updating leave request status:", req.params.id, req.body);
     const { id } = req.params;
     const { status } = req.body;
     const adminUserId = req.user.id;
@@ -189,7 +182,7 @@ export const updateLeaveRequestStatus = async (req, res) => {
       });
     }
     
-    console.log("✅ Leave request status updated:", { id: updatedLeaveRequest.id, status });
+    // console.log("✅ Leave request status updated:", { id: updatedLeaveRequest.id, status });
     
     // Create notifications for the employee and other admins
     await createLeaveStatusUpdateNotifications(updatedLeaveRequest, status, adminUserId);

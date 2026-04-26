@@ -17,7 +17,7 @@ export const getAllUsers = async (req, res) => {
         lastLogin: true
       }
     });
-    console.log(`📊 getAllUsers: returned ${users.length} users from database`);
+    // console.log(`📊 getAllUsers: returned ${users.length} users from database`);
     res.json({ success: true, data: users });
   } catch (error) {
     console.error("❌ GET ALL USERS ERROR:", error);
@@ -78,7 +78,7 @@ export const updateUser = async (req, res) => {
     });
 
     await logDatabaseOperation({ operation: 'UPDATE', entityType: 'user', entityId: updated.id, userId: adminUserId, details: { name, email, role, status } });
-    console.log("✅ User updated in database:", updated.id);
+    // console.log("✅ User updated in database:", updated.id);
     res.json({ success: true, message: 'User updated successfully', data: updated });
   } catch (error) {
     console.error("❌ UPDATE USER ERROR:", error);
@@ -106,7 +106,7 @@ export const resetUserPassword = async (req, res) => {
     });
 
     await logDatabaseOperation({ operation: 'UPDATE', entityType: 'user', entityId: parseInt(id), userId: adminUserId, details: { action: 'password_reset' } });
-    console.log("✅ User password reset in database:", id);
+    // console.log("✅ User password reset in database:", id);
     res.json({ success: true, message: 'Password reset successfully', data: { id: parseInt(id), email: existing.email } });
   } catch (error) {
     console.error("❌ RESET PASSWORD ERROR:", error);
@@ -187,7 +187,7 @@ export const changePassword = async (req, res) => {
       details: { action: 'password_change' } 
     });
 
-    console.log("✅ User password changed in database:", userId);
+    // console.log("✅ User password changed in database:", userId);
     res.json({ 
       success: true, 
       message: 'Password changed successfully', 
@@ -217,7 +217,7 @@ export const deleteUser = async (req, res) => {
 
     await prisma.employee.delete({ where: { id: parseInt(id) } });
     await logDatabaseOperation({ operation: 'DELETE', entityType: 'user', entityId: parseInt(id), userId: adminUserId, details: { email: existing.email } });
-    console.log("✅ User deleted from database:", id);
+    // console.log("✅ User deleted from database:", id);
     res.json({ success: true, message: 'User deleted successfully', data: { id: parseInt(id), email: existing.email } });
   } catch (error) {
     console.error("❌ DELETE USER ERROR:", error);
@@ -280,7 +280,7 @@ export const updateProfile = async (req, res) => {
       details: { action: 'profile_update', fields: { name, email, phone, address } } 
     });
 
-    console.log("✅ Profile updated:", userId);
+    // console.log("✅ Profile updated:", userId);
     res.json({ 
       success: true, 
       message: 'Profile updated successfully', 
@@ -321,7 +321,7 @@ export const setupTwoFactor = async (req, res) => {
       details: { action: '2fa_setup' } 
     });
 
-    console.log("✅ 2FA setup completed:", userId);
+    // console.log("✅ 2FA setup completed:", userId);
     res.json({ 
       success: true, 
       message: 'Two-factor authentication enabled successfully', 
@@ -361,7 +361,7 @@ export const disableTwoFactor = async (req, res) => {
       details: { action: '2fa_disable' } 
     });
 
-    console.log("✅ 2FA disabled:", userId);
+    // console.log("✅ 2FA disabled:", userId);
     res.json({ 
       success: true, 
       message: 'Two-factor authentication disabled successfully' 
@@ -411,7 +411,7 @@ export const uploadProfilePicture = async (req, res) => {
       details: { action: 'profile_picture_upload', url: profilePictureUrl } 
     });
 
-    console.log("✅ Profile picture uploaded:", userId, profilePictureUrl);
+    // console.log("✅ Profile picture uploaded:", userId, profilePictureUrl);
     res.json({ 
       success: true, 
       message: 'Profile picture uploaded successfully', 
@@ -451,7 +451,7 @@ export const createNewUser = async (req, res) => {
     });
 
     await logDatabaseOperation({ operation: 'CREATE', entityType: 'user', entityId: newUser.id, userId: adminUserId, details: { name, email, role } });
-    console.log("✅ User created in database:", newUser.id, newUser.email);
+    // console.log("✅ User created in database:", newUser.id, newUser.email);
     res.status(201).json({ success: true, message: 'User created successfully', data: newUser });
   } catch (error) {
     console.error("❌ CREATE USER ERROR:", error);

@@ -9,7 +9,7 @@ import {
 // GET /api/notifications - Get user notifications
 export const getUserNotificationsController = async (req, res) => {
   try {
-    console.log("🔍 Fetching notifications for user:", req.user.id);
+    // console.log("🔍 Fetching notifications for user:", req.user.id);
     const notifications = await getUserNotifications(req.user.id);
     
     res.json({
@@ -29,7 +29,7 @@ export const getUserNotificationsController = async (req, res) => {
 // GET /api/notifications/unread-count - Get unread notification count
 export const getUnreadCountController = async (req, res) => {
   try {
-    console.log("🔍 Fetching unread count for user:", req.user.id);
+    // console.log("🔍 Fetching unread count for user:", req.user.id);
     const unreadCount = await getUnreadNotificationCount(req.user.id);
     
     res.json({
@@ -49,7 +49,7 @@ export const getUnreadCountController = async (req, res) => {
 // PUT /api/notifications/:id/read - Mark notification as read
 export const markAsReadController = async (req, res) => {
   try {
-    console.log("🔍 Marking notification as read:", req.params.id);
+    // console.log("🔍 Marking notification as read:", req.params.id);
     const { id } = req.params;
     const userId = req.user.id;
     
@@ -80,7 +80,7 @@ export const markAsReadController = async (req, res) => {
 // PUT /api/notifications/read-all - Mark all notifications as read
 export const markAllAsReadController = async (req, res) => {
   try {
-    console.log("🔍 Marking all notifications as read for user:", req.user.id);
+    // console.log("🔍 Marking all notifications as read for user:", req.user.id);
     const markedCount = await markAllNotificationsAsRead(req.user.id);
     
     res.json({
@@ -101,7 +101,7 @@ export const markAllAsReadController = async (req, res) => {
 // DELETE /api/notifications - Clear all notifications
 export const clearNotificationsController = async (req, res) => {
   try {
-    console.log("🔍 Clearing all notifications for user:", req.user.id);
+    // console.log("🔍 Clearing all notifications for user:", req.user.id);
     const clearedCount = await clearUserNotifications(req.user.id);
     
     res.json({

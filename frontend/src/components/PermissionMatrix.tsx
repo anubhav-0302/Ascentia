@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Save, RotateCcw, AlertCircle, CheckCircle, Loader } from 'lucide-react';
-import { getRolePermissions, updateRolePermissions, type Role, type PermissionUpdate } from '../api/roleManagementApi';
+import { getRolePermissions, updateRolePermissions, getPermissionRegistry, type Role, type PermissionUpdate } from '../api/roleManagementApi';
+import { SIDEBAR_MENU_ITEMS } from '../constants/menuItems';
 
 interface PermissionMatrixProps {
   role: Role;
@@ -14,46 +15,6 @@ interface PermissionState {
   };
 }
 
-// Define which actions apply to each module based on actual implementation
-const MODULE_ACTIONS: { [module: string]: string[] } = {
-  payroll: ['view', 'create', 'edit', 'delete'],
-  performance: ['view', 'create', 'edit', 'delete'],
-  timesheet: ['view', 'create', 'edit', 'delete', 'approve'],
-  leave: ['view', 'create', 'edit', 'delete', 'approve'],
-  employees: ['view', 'create', 'edit', 'delete'],
-  documents: ['view', 'create', 'delete'],
-  reports: ['view', 'export'],
-  audit: ['view'],
-  settings: ['view', 'edit'],
-  users: ['view', 'create', 'edit', 'delete'],
-  kra: ['view', 'create', 'edit', 'delete'],
-  workflow: ['view', 'create', 'edit', 'delete'],
-  command: ['view', 'create', 'edit', 'delete']
-};
-
-// Sidebar menu items with their required roles (synced with Sidebar.tsx)
-const SIDEBAR_MENU_ITEMS: { [key: string]: { label: string; requiredRoles: string[] } } = {
-  'dashboard': { label: 'Dashboard', requiredRoles: ['admin', 'manager', 'employee'] },
-  'command-center': { label: 'Command Center', requiredRoles: ['admin'] },
-  'workflow-hub': { label: 'Workflow Hub', requiredRoles: ['admin'] },
-  'my-team': { label: 'My Team', requiredRoles: ['admin', 'manager'] },
-  'directory': { label: 'Directory', requiredRoles: ['admin', 'hr'] },
-  'leave-attendance': { label: 'Leave & Attendance', requiredRoles: ['admin', 'manager', 'employee', 'hr'] },
-  'timesheet-entry': { label: 'Timesheet Entry', requiredRoles: ['admin', 'manager', 'employee', 'hr'] },
-  'performance-goals': { label: 'Performance Goals', requiredRoles: ['admin', 'manager', 'employee'] },
-  'payroll-benefits': { label: 'Payroll & Benefits', requiredRoles: ['admin', 'employee', 'hr'] },
-  'recruiting': { label: 'Recruiting', requiredRoles: ['admin'] },
-  'reports': { label: 'Reports', requiredRoles: ['admin', 'manager', 'hr'] },
-  'audit-logs': { label: 'Audit Logs', requiredRoles: ['admin'] },
-  'permission-management': { label: 'Permission Management', requiredRoles: ['admin'] },
-  'role-management': { label: 'Role Management', requiredRoles: ['admin'] },
-  'profile': { label: 'Profile', requiredRoles: ['admin', 'manager', 'employee'] },
-  'settings': { label: 'Settings', requiredRoles: ['admin', 'manager', 'employee'] }
-};
-
-const MODULES = Object.keys(MODULE_ACTIONS);
-const ALL_ACTIONS = Array.from(new Set(Object.values(MODULE_ACTIONS).flat()));
-
 const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ role, token, onSuccess }) => {
   const [permissions, setPermissions] = useState<PermissionState>({});
   const [originalPermissions, setOriginalPermissions] = useState<PermissionState>({});
@@ -64,10 +25,41 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ role, token, onSucc
   const [changeReason, setChangeReason] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
 
+  // Registry loaded dynamically from backend — future-proof: new modules
+  // added to backend/permissionRegistry.js appear here automatically
+  const [registry, setRegistry] = useState<{ moduleActions: { [k: string]: string[] }; sidebarItems: { [k: string]: { label: string } } } | null>(null);
+
+  // Load canonical registry once on mount
+  useEffect(() => {
+    getPermissionRegistry(token)
+      .then(setRegistry)
+      .catch(() => setRegistry(null));
+  }, [token]);
+
+  // Derived from registry (fallback to hardcoded constants if registry fails)
+  const MODULE_ACTIONS = registry?.moduleActions || {
+    payroll: ['view', 'create', 'edit', 'delete'],
+    performance: ['view', 'create', 'edit', 'delete'],
+    timesheet: ['view', 'create', 'edit', 'delete', 'approve'],
+    leave: ['view', 'create', 'edit', 'delete', 'approve'],
+    employees: ['view', 'create', 'edit', 'delete'],
+    documents: ['view', 'create', 'delete'],
+    reports: ['view', 'export'],
+    audit: ['view'],
+    settings: ['view', 'edit'],
+    users: ['view', 'create', 'edit', 'delete'],
+    kra: ['view', 'create', 'edit', 'delete'],
+    workflow: ['view', 'create', 'edit', 'delete'],
+    command: ['view', 'create', 'edit', 'delete'],
+    projects: ['view', 'create', 'edit', 'delete']
+  };
+  const MODULES = Object.keys(MODULE_ACTIONS);
+  const ALL_ACTIONS = Array.from(new Set(Object.values(MODULE_ACTIONS).flat()));
+
   // Fetch permissions on role change
   useEffect(() => {
     fetchPermissions();
-  }, [role.id]);
+  }, [role.id, registry]);
 
   const fetchPermissions = async () => {
     try {
@@ -77,7 +69,7 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ role, token, onSucc
 
       // Initialize permission state
       const permState: PermissionState = {};
-      
+
       // Load feature access permissions
       MODULES.forEach(module => {
         permState[module] = {};

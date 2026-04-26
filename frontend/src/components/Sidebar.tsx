@@ -19,10 +19,12 @@ import {
   Database,
   Shield,
   Crown,
-  HardDrive
+  HardDrive,
+  FolderKanban
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { getSidebarPermissions } from '../api/roleManagementApi';
+import { SIDEBAR_MENU_ITEMS } from '../constants/menuItems';
 
 // Type definitions
 interface NavItem {
@@ -93,150 +95,109 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
     if (userRole === 'superadmin') {
       return true;
     }
-    
-    // If permissions loaded and item has menuKey, check database
+
+    // If permissions loaded and item has menuKey, check database.
+    // If the key is missing from DB (undefined), fall back to hardcoded
+    // requiredRoles so the sidebar still shows items based on role.
     if (sidebarPermissions !== null && item.menuKey) {
-      return sidebarPermissions[item.menuKey] === true;
+      const dbValue = sidebarPermissions[item.menuKey];
+      // Explicit false in DB = hidden; undefined/null = fall back to hardcoded roles
+      if (dbValue === false) return false;
+      if (dbValue === true) return true;
+      // Undefined: use hardcoded requiredRoles as fallback
+      return item.requiredRoles ? item.requiredRoles.includes(userRole) : false;
     }
-    
+
     // While loading (sidebarPermissions is null), show based on hardcoded rules temporarily
-    // Once loaded, ONLY database permissions matter
     if (sidebarPermissions === null && item.requiredRoles) {
       return item.requiredRoles.includes(userRole);
     }
-    
+
     return false;
   };
 
+  // Icon mapping for menu items
+  const iconMap: { [key: string]: any } = {
+    'dashboard': LayoutDashboard,
+    'command-center': Command,
+    'workflow-hub': GitBranch,
+    'my-team': Users,
+    'directory': Building,
+    'leave-attendance': Calendar,
+    'timesheet-entry': Clock,
+    'performance-goals': Target,
+    'payroll-benefits': DollarSign,
+    'project-management': FolderKanban,
+    'recruiting': UserCheck,
+    'reports': FileText,
+    'audit-logs': Database,
+    'permission-management': Users,
+    'role-management': Shield,
+    'profile': User,
+    'settings': Settings
+  };
+
+  // Path mapping for menu items
+  const pathMap: { [key: string]: string } = {
+    'dashboard': '/dashboard',
+    'command-center': '/command-center',
+    'workflow-hub': '/workflow-hub',
+    'my-team': '/my-team',
+    'directory': '/directory',
+    'leave-attendance': '/leave-attendance',
+    'timesheet-entry': '/timesheet-entry',
+    'performance-goals': '/performance-goals',
+    'payroll-benefits': '/payroll-benefits',
+    'project-management': '/project-management',
+    'recruiting': '/recruiting',
+    'reports': '/reports',
+    'audit-logs': '/audit-logs',
+    'permission-management': '/permission-management',
+    'role-management': '/role-management',
+    'profile': '/profile',
+    'settings': '/settings'
+  };
+
+  // Build navigation sections from centralized config
   const navSections: NavSection[] = [
     {
       title: 'MAIN',
-      items: [
-        { 
-          name: 'Dashboard', 
-          path: '/dashboard',
-          icon: LayoutDashboard,
-          menuKey: 'dashboard',
-          requiredRoles: ['admin', 'manager', 'employee']
-        },
-        { 
-          name: 'Command Center', 
-          path: '/command-center',
-          icon: Command,
-          menuKey: 'command-center',
-          requiredRoles: ['admin']
-        },
-        { 
-          name: 'Workflow Hub', 
-          path: '/workflow-hub',
-          icon: GitBranch,
-          menuKey: 'workflow-hub',
-          requiredRoles: ['admin']
-        }
-      ]
+      items: ['dashboard', 'command-center', 'workflow-hub'].map(key => ({
+        name: SIDEBAR_MENU_ITEMS[key].label,
+        path: pathMap[key],
+        icon: iconMap[key],
+        menuKey: key,
+        requiredRoles: SIDEBAR_MENU_ITEMS[key].requiredRoles
+      }))
     },
     {
       title: 'HR',
-      items: [
-        { 
-          name: 'My Team', 
-          path: '/my-team',
-          icon: Users,
-          menuKey: 'my-team',
-          requiredRoles: ['admin', 'manager', 'teamlead']
-        },
-        { 
-          name: 'Directory', 
-          path: '/directory',
-          icon: Building,
-          menuKey: 'directory',
-          requiredRoles: ['admin', 'hr']
-        },
-        { 
-          name: 'Leave & Attendance', 
-          path: '/leave-attendance',
-          icon: Calendar,
-          menuKey: 'leave-attendance',
-          requiredRoles: ['admin', 'manager', 'employee', 'hr', 'teamlead']
-        },
-        { 
-          name: 'Timesheet Entry', 
-          path: '/timesheet-entry',
-          icon: Clock,
-          menuKey: 'timesheet-entry',
-          requiredRoles: ['admin', 'manager', 'employee', 'hr', 'teamlead']
-        },
-        { 
-          name: 'Performance Goals', 
-          path: '/performance-goals',
-          icon: Target,
-          menuKey: 'performance-goals',
-          requiredRoles: ['admin', 'manager', 'employee', 'teamlead']
-        },
-        { 
-          name: 'Payroll & Benefits', 
-          path: '/payroll-benefits',
-          icon: DollarSign,
-          menuKey: 'payroll-benefits',
-          requiredRoles: ['admin', 'employee', 'hr']
-        },
-        { 
-          name: 'Recruiting', 
-          path: '/recruiting',
-          icon: UserCheck,
-          menuKey: 'recruiting',
-          requiredRoles: ['admin']
-        },
-        { 
-          name: 'Reports', 
-          path: '/reports',
-          icon: FileText,
-          menuKey: 'reports',
-          requiredRoles: ['admin', 'manager', 'hr', 'teamlead']
-        }
-      ]
+      items: ['my-team', 'directory', 'leave-attendance', 'timesheet-entry', 'performance-goals', 'payroll-benefits', 'project-management', 'recruiting', 'reports'].map(key => ({
+        name: SIDEBAR_MENU_ITEMS[key].label,
+        path: pathMap[key],
+        icon: iconMap[key],
+        menuKey: key,
+        requiredRoles: SIDEBAR_MENU_ITEMS[key].requiredRoles
+      }))
     },
     {
       title: 'CONFIGURE',
-      items: [
-        { 
-          name: 'Audit Logs', 
-          path: '/audit-logs',
-          icon: Database,
-          menuKey: 'audit-logs',
-          requiredRoles: ['admin']
-        },
-        { 
-          name: 'Permission Management', 
-          path: '/permission-management',
-          icon: Users,
-          menuKey: 'permission-management',
-          requiredRoles: ['admin']
-        },
-        { 
-          name: 'Role Management', 
-          path: '/role-management',
-          icon: Shield,
-          menuKey: 'role-management',
-          requiredRoles: ['admin']
-        },
-        { 
-          name: 'Profile', 
-          path: '/profile',
-          icon: User,
-          menuKey: 'profile',
-          onClick: handleProfileClick,
-          requiredRoles: ['admin', 'manager', 'employee', 'hr', 'teamlead']
-        },
-        { 
-          name: 'Settings', 
-          path: '/settings',
-          icon: Settings,
-          menuKey: 'settings',
-          onClick: handleSettingsClick,
-          requiredRoles: ['admin', 'manager', 'employee', 'hr', 'teamlead']
+      items: ['audit-logs', 'permission-management', 'role-management', 'profile', 'settings'].map(key => {
+        const item = {
+          name: SIDEBAR_MENU_ITEMS[key].label,
+          path: pathMap[key],
+          icon: iconMap[key],
+          menuKey: key,
+          requiredRoles: SIDEBAR_MENU_ITEMS[key].requiredRoles
+        };
+        if (key === 'profile') {
+          (item as any).onClick = handleProfileClick;
         }
-      ]
+        if (key === 'settings') {
+          (item as any).onClick = handleSettingsClick;
+        }
+        return item;
+      })
     }
   ];
 

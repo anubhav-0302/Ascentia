@@ -60,13 +60,8 @@ const LeaveAttendance = () => {
     // Validate dates using local timezone
     const start = new Date(formData.startDate + 'T00:00:00');
     const end = new Date(formData.endDate + 'T00:00:00');
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
     
-    if (start < today) {
-      setError('Start date cannot be in the past');
-      return;
-    }
+    // Allow past start dates (no validation needed)
     
     if (end < start) {
       setError('End date cannot be before start date');
@@ -800,7 +795,6 @@ const LeaveAttendance = () => {
                       name="startDate"
                       value={formData.startDate}
                       onChange={handleInputChange}
-                      min={new Date().toISOString().split('T')[0]}
                       icon={<Calendar className="w-4 h-4" />}
                       required
                     />
@@ -816,7 +810,7 @@ const LeaveAttendance = () => {
                       name="endDate"
                       value={formData.endDate}
                       onChange={handleInputChange}
-                      min={formData.startDate || new Date().toISOString().split('T')[0]}
+                      min={formData.startDate}
                       disabled={!formData.startDate}
                       icon={<Calendar className="w-4 h-4" />}
                       required

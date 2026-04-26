@@ -7,7 +7,8 @@ import {
   deleteCustomRole,
   getPermissionAuditLog,
   checkUserPermission,
-  getSidebarPermissions
+  getSidebarPermissions,
+  getPermissionRegistry
 } from '../controllers/roleManagementController.js';
 import { requireAuth, authorize } from '../middleware/auth.js';
 
@@ -29,6 +30,10 @@ router.get('/check/permission', requireAuth, checkUserPermission);
 // GET /api/admin/permissions/sidebar - Get sidebar permissions for current user
 router.get('/sidebar/permissions', requireAuth, getSidebarPermissions);
 
+// GET /api/admin/roles/registry - Canonical permission registry
+// (must be defined BEFORE /:id so it doesn't get matched as a roleId)
+router.get('/registry', requireAuth, authorize('admin', 'superAdmin'), getPermissionRegistry);
+
 // Generic routes AFTER specific routes
 // GET /api/admin/roles - Get all roles (admin or superAdmin)
 router.get('/', requireAuth, authorize('admin', 'superAdmin'), getRoles);
@@ -44,15 +49,15 @@ router.put('/:id/permissions', (req, res, next) => {
 }, requireAuth, (req, res, next) => {
   console.log('✅ Auth middleware passed');
   next();
-}, authorize('admin'), (req, res, next) => {
+}, authorize('admin', 'superAdmin'), (req, res, next) => {
   console.log('✅ Admin authorization passed');
   next();
 }, updateRolePermissions);
 
-// POST /api/admin/roles - Create custom role (admin only)
-router.post('/', requireAuth, authorize('admin'), createCustomRole);
+// POST /api/admin/roles - Create custom role (admin or superAdmin)
+router.post('/', requireAuth, authorize('admin', 'superAdmin'), createCustomRole);
 
-// DELETE /api/admin/roles/:id - Delete custom role (admin only)
-router.delete('/:id', requireAuth, authorize('admin'), deleteCustomRole);
+// DELETE /api/admin/roles/:id - Delete custom role (admin or superAdmin)
+router.delete('/:id', requireAuth, authorize('admin', 'superAdmin'), deleteCustomRole);
 
 export default router;

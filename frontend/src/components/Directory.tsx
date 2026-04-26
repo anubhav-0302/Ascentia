@@ -222,23 +222,23 @@ function Directory() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
                   {filteredEmployees.map((emp: Employee) => (
                     <Card key={emp.id} className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-500/5 transition-all duration-300 transform hover:-translate-y-1">
-                      <div className="flex items-center mb-4">
-                        <div className="relative">
+                      <div className="flex items-start mb-4">
+                        <div className="relative flex-shrink-0">
                           <img
                             src={`https://picsum.photos/seed/${emp.id}/40/40.jpg`}
                             alt={emp.name}
-                            className="w-12 h-12 rounded-full mr-3 ring-2 ring-slate-700 group-hover:ring-teal-500/50 transition-all duration-300 group-hover:scale-110"
+                            className="w-12 h-12 rounded-full ring-2 ring-slate-700 group-hover:ring-teal-500/50 transition-all duration-300 group-hover:scale-110"
                           />
                           <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-slate-800"></div>
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 ml-3">
                           <h3 
                             className="text-white font-semibold text-base group-hover:text-teal-400 transition-colors duration-200 cursor-pointer hover:underline truncate"
                             onClick={() => navigate(`/employee/${emp.id}`)}
                           >
                             {emp.name}
                           </h3>
-                          <p className="text-gray-400 text-sm truncate">{emp.jobTitle}</p>
+                          <p className="text-gray-400 text-sm truncate mt-0.5">{emp.jobTitle}</p>
                         </div>
                         {isAdmin && (
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
@@ -292,15 +292,8 @@ function Directory() {
                         </div>
                       </div>
 
-                      <div className="mt-4 pt-4 border-t border-slate-700/50 flex items-center justify-between">
+                      <div className="mt-4 pt-4 border-t border-slate-700/50">
                         <StatusBadge status={emp.status} />
-                        <button 
-                          onClick={() => navigate(`/employee/${emp.id}`)}
-                          className="text-xs text-teal-400 hover:text-teal-300 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center"
-                        >
-                          View Profile
-                          <i className="fas fa-arrow-right ml-1"></i>
-                        </button>
                       </div>
                     </Card>
                   ))}

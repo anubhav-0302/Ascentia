@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { Component, type ErrorInfo, type ReactNode, useState, useEffect } from 'react';
+import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -20,6 +22,7 @@ import Settings from './components/Settings';
 import PermissionManagement from './components/PermissionManagement';
 import RoleManagementPage from './components/RoleManagementPage';
 import OrganizationManagement from './components/OrganizationManagement';
+import ProjectManagementPage from './components/ProjectManagementPage';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
 import OrgAdminsPage from './components/OrgAdminsPage';
 import DataProtectionPage from './components/DataProtectionPage';
@@ -35,6 +38,74 @@ import { useSettingsStore } from './store/useSettingsStore';
 import { useOrganizationStore } from './store/useOrganizationStore';
 import './styles/globals.css';
 import './styles/theme.css';
+
+// Route-specific error boundary component
+interface RouteErrorBoundaryProps {
+  children: ReactNode;
+  fallback?: ReactNode;
+  routeName?: string;
+}
+
+function RouteErrorBoundary({ children, fallback, routeName }: RouteErrorBoundaryProps) {
+  const navigate = useNavigate();
+  
+  const handleGoHome = () => {
+    navigate('/dashboard');
+  };
+  
+  const defaultFallback = (
+    <div className="min-h-96 flex items-center justify-center">
+      <div className="text-center max-w-md mx-auto p-6">
+        <div className="flex items-center justify-center w-16 h-16 bg-red-500/20 rounded-2xl mb-6 text-red-400 mx-auto">
+          <AlertTriangle className="w-8 h-8" />
+        </div>
+        
+        <h2 className="text-xl font-semibold text-white mb-2">
+          {routeName ? `Error in ${routeName}` : 'Page Error'}
+        </h2>
+        
+        <p className="text-gray-400 text-sm mb-6">
+          This page encountered an error. You can try again or go back to the dashboard.
+        </p>
+
+        <div className="flex gap-3 justify-center">
+          <button
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center px-6 py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-medium transition-all duration-200 active:scale-95"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Reload Page
+          </button>
+          
+          <button
+            onClick={handleGoHome}
+            className="inline-flex items-center px-6 py-3 bg-slate-600 hover:bg-slate-500 text-white rounded-xl font-medium transition-all duration-200 active:scale-95"
+          >
+            <Home className="w-4 h-4 mr-2" />
+            Dashboard
+          </button>
+        </div>
+
+        {import.meta.env.DEV && (
+          <details className="mt-6 text-left">
+            <summary className="text-gray-400 text-sm cursor-pointer hover:text-white transition-colors">
+              Error Details
+            </summary>
+            <pre className="mt-2 p-4 bg-slate-800 rounded-lg text-xs text-red-400 overflow-auto max-h-48">
+              Error occurred in route: {routeName || 'Unknown'}
+            </pre>
+          </details>
+        )}
+      </div>
+    </div>
+  );
+  
+  return (
+    <ErrorBoundary fallback={fallback || defaultFallback}>
+      {children}
+    </ErrorBoundary>
+  );
+}
 
 function App() {
   const { initializeAuth, token } = useAuthStore();
@@ -104,34 +175,133 @@ function App() {
                     <Routes key={currentOrgId ?? 'platform'}>
                       <Route path="/" element={<HomeRedirect />} />
                       <Route path="/dashboard" element={<HomeRedirect />} />
-                      <Route path="/directory" element={<Directory />} />
+                      <Route path="/directory" element={
+                        <RouteErrorBoundary routeName="Directory">
+                          <Directory />
+                        </RouteErrorBoundary>
+                      } />
                       <Route path="/command-center" element={
                         <ProtectedRoute requiredRoles={['admin']}>
-                          <CommandCenter />
+                          <RouteErrorBoundary routeName="Command Center">
+                            <CommandCenter />
+                          </RouteErrorBoundary>
                         </ProtectedRoute>
                       } />
                       <Route path="/workflow-hub" element={
                         <ProtectedRoute requiredRoles={['admin']}>
-                          <WorkflowHub />
+                          <RouteErrorBoundary routeName="Workflow Hub">
+                            <WorkflowHub />
+                          </RouteErrorBoundary>
                         </ProtectedRoute>
                       } />
-                      <Route path="/timesheet-entry" element={<TimesheetEntry />} />
-                      <Route path="/performance-goals" element={<PerformanceGoals />} />
-                      <Route path="/my-team" element={<MyTeam />} />
-                      <Route path="/leave-attendance" element={<LeaveAttendance />} />
-                      <Route path="/payroll-benefits" element={<PayrollBenefits />} />
-                      <Route path="/recruiting" element={<Recruiting />} />
-                      <Route path="/reports" element={<Reports />} />
-                      <Route path="/audit-logs" element={<AuditLogs />} />
-                      <Route path="/profile" element={<EmployeeProfile />} />
-                      <Route path="/employee/:id" element={<EmployeeProfile />} />
-                      <Route path="/settings" element={<Settings />} />
-                      <Route path="/permission-management" element={<PermissionManagement />} />
-                      <Route path="/role-management" element={<RoleManagementPage />} />
-                      <Route path="/organizations" element={<OrganizationManagement token={token || ''} />} />
-                      <Route path="/superadmin" element={<SuperAdminDashboard />} />
-                      <Route path="/superadmin/admins" element={<OrgAdminsPage />} />
-                      <Route path="/data-protection" element={<DataProtectionPage />} />
+                      <Route path="/timesheet-entry" element={
+                        <RouteErrorBoundary routeName="Timesheet Entry">
+                          <TimesheetEntry />
+                        </RouteErrorBoundary>
+                      } />
+                      <Route path="/performance-goals" element={
+                        <RouteErrorBoundary routeName="Performance Goals">
+                          <PerformanceGoals />
+                        </RouteErrorBoundary>
+                      } />
+                      <Route path="/my-team" element={
+                        <RouteErrorBoundary routeName="My Team">
+                          <MyTeam />
+                        </RouteErrorBoundary>
+                      } />
+                      <Route path="/leave-attendance" element={
+                        <RouteErrorBoundary routeName="Leave & Attendance">
+                          <LeaveAttendance />
+                        </RouteErrorBoundary>
+                      } />
+                      <Route path="/payroll-benefits" element={
+                        <RouteErrorBoundary routeName="Payroll & Benefits">
+                          <PayrollBenefits />
+                        </RouteErrorBoundary>
+                      } />
+                      <Route path="/recruiting" element={
+                        <ProtectedRoute requiredRoles={['admin', 'hr']}>
+                          <RouteErrorBoundary routeName="Recruiting">
+                            <Recruiting />
+                          </RouteErrorBoundary>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/project-management" element={
+                        <ProtectedRoute requiredRoles={['admin', 'hr']}>
+                          <RouteErrorBoundary routeName="Project Management">
+                            <ProjectManagementPage token={token} />
+                          </RouteErrorBoundary>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/reports" element={
+                        <RouteErrorBoundary routeName="Reports">
+                          <Reports />
+                        </RouteErrorBoundary>
+                      } />
+                      <Route path="/audit-logs" element={
+                        <ProtectedRoute requiredRoles={['admin', 'hr']}>
+                          <RouteErrorBoundary routeName="Audit Logs">
+                            <AuditLogs />
+                          </RouteErrorBoundary>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/profile" element={
+                        <RouteErrorBoundary routeName="Profile">
+                          <EmployeeProfile />
+                        </RouteErrorBoundary>
+                      } />
+                      <Route path="/employee/:id" element={
+                        <RouteErrorBoundary routeName="Employee Profile">
+                          <EmployeeProfile />
+                        </RouteErrorBoundary>
+                      } />
+                      <Route path="/settings" element={
+                        <RouteErrorBoundary routeName="Settings">
+                          <Settings />
+                        </RouteErrorBoundary>
+                      } />
+                      <Route path="/permission-management" element={
+                        <ProtectedRoute requiredRoles={['admin']}>
+                          <RouteErrorBoundary routeName="Permission Management">
+                            <PermissionManagement />
+                          </RouteErrorBoundary>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/role-management" element={
+                        <ProtectedRoute requiredRoles={['admin']}>
+                          <RouteErrorBoundary routeName="Role Management">
+                            <RoleManagementPage />
+                          </RouteErrorBoundary>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/organizations" element={
+                        <ProtectedRoute requiredRoles={['superAdmin']}>
+                          <RouteErrorBoundary routeName="Organization Management">
+                            <OrganizationManagement token={token || ''} />
+                          </RouteErrorBoundary>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/superadmin" element={
+                        <ProtectedRoute requiredRoles={['superAdmin']}>
+                          <RouteErrorBoundary routeName="SuperAdmin Dashboard">
+                            <SuperAdminDashboard />
+                          </RouteErrorBoundary>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/superadmin/admins" element={
+                        <ProtectedRoute requiredRoles={['superAdmin']}>
+                          <RouteErrorBoundary routeName="Organization Admins">
+                            <OrgAdminsPage />
+                          </RouteErrorBoundary>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/data-protection" element={
+                        <ProtectedRoute requiredRoles={['admin', 'superAdmin']}>
+                          <RouteErrorBoundary routeName="Data Protection">
+                            <DataProtectionPage />
+                          </RouteErrorBoundary>
+                        </ProtectedRoute>
+                      } />
                       <Route path="/login" element={<Navigate to="/dashboard" replace />} />
                       <Route path="*" element={<Navigate to="/dashboard" replace />} />
                     </Routes>

@@ -7,11 +7,8 @@ const loadUserPermissions = async (req) => {
     return req.user.permissions;
   }
 
-  // Admin and SuperAdmin always have all permissions
-  if (req.user.role === 'admin' || req.user.role === 'superAdmin') {
-    req.user.permissions = { all: true };
-    return req.user.permissions;
-  }
+  // Note: Admin permissions are now stored in database like other roles
+  // This ensures consistency and allows dynamic permission management
 
   // Load permissions from database for non-admin users
   const roleConfig = await prisma.roleConfig.findUnique({
@@ -49,10 +46,19 @@ export const checkPermission = (module, action) => {
         });
       }
 
+      // Admin & SuperAdmin bypass — they always have full access. This is a
+      // safety net so the org owner can never accidentally lock themselves
+      // out via the Role Management UI, and so new modules added to the
+      // registry don't require an explicit re-seed for admin.
+      const role = (req.user.role || '').toLowerCase();
+      if (role === 'admin' || role === 'superadmin') {
+        return next();
+      }
+
       // Load permissions (cached per request)
       const permissions = await loadUserPermissions(req);
 
-      // Admin always passes
+      // Check if user has all permissions (legacy support)
       if (permissions.all) {
         return next();
       }
@@ -62,6 +68,8 @@ export const checkPermission = (module, action) => {
 
       if (!hasPermission) {
         console.log(`🚫 Permission denied: ${req.user.role} tried to ${module}.${action}`);
+        console.log(`📋 Available permissions:`, Object.keys(permissions));
+        console.log(`📋 ${module} permissions:`, permissions[module]);
         return res.status(403).json({
           success: false,
           message: `Insufficient permissions: Required ${module}.${action}`
@@ -91,9 +99,15 @@ export const checkModuleAccess = (module) => {
         });
       }
 
+      // Admin & SuperAdmin bypass — same safety net as checkPermission()
+      const role = (req.user.role || '').toLowerCase();
+      if (role === 'admin' || role === 'superadmin') {
+        return next();
+      }
+
       const permissions = await loadUserPermissions(req);
 
-      // Admin always passes
+      // Check if user has all permissions (legacy support)
       if (permissions.all) {
         return next();
       }

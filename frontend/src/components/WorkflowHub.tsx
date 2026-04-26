@@ -1,8 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { StandardLayout } from './StandardLayout';
-import { GitBranch, Plus, Play, Pause, Edit, Trash2, Settings, BarChart3, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
-import Card from './Card';
 import { PageTransition, FadeIn } from './PageTransition';
+import { StandardLayout } from './StandardLayout';
+import Card from './Card';
+import { apiClient } from '../api/apiClient';
+import { 
+  Play, 
+  Pause, 
+  Edit2, 
+  Trash2, 
+  Plus, 
+  BarChart3, 
+  Clock,
+  CheckCircle,
+  GitBranch,
+  Settings,
+  AlertTriangle
+} from 'lucide-react';
 
 interface Workflow {
   id: string;
@@ -31,7 +44,29 @@ const WorkflowHub: React.FC = () => {
     }
   }, [activeTab]);
 
-  const workflows: Workflow[] = [];
+  const [workflows, setWorkflows] = useState<Workflow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch workflows from API
+  useEffect(() => {
+    const fetchWorkflows = async () => {
+      try {
+        const response = await apiClient.get('/workflows');
+        if (response.success) {
+          setWorkflows(response.data.map((w: any) => ({
+            ...w,
+            lastRun: w.lastRun ? new Date(w.lastRun).toLocaleDateString() : 'Never'
+          })));
+        }
+      } catch (error) {
+        console.error('Error fetching workflows:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWorkflows();
+  }, []);
 
   const workflowTemplates = [
     {
@@ -182,7 +217,14 @@ const WorkflowHub: React.FC = () => {
 
               {/* Workflow List */}
               <div className="grid gap-4">
-                {workflows.map((workflow) => (
+                {loading ? (
+                  <div className="text-center py-8 text-gray-400">Loading workflows...</div>
+                ) : workflows.length === 0 ? (
+                  <div className="text-center py-8 text-gray-400">
+                    No workflows found. Create your first workflow to get started.
+                  </div>
+                ) : (
+                  workflows.map((workflow) => (
                   <Card key={workflow.id} className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
@@ -225,7 +267,7 @@ const WorkflowHub: React.FC = () => {
                           className="p-2 text-blue-400 hover:text-blue-300 hover:bg-slate-700 rounded-lg transition-colors"
                           title="Edit Workflow"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleToggleWorkflow(workflow)}
@@ -251,7 +293,8 @@ const WorkflowHub: React.FC = () => {
                       </div>
                     </div>
                   </Card>
-                ))}
+                ))
+                )}
               </div>
             </div>
           )}

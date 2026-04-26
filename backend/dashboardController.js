@@ -1,6 +1,7 @@
 import prisma from './lib/prisma.js';
 import { getAllLeaveRequests } from './leaveStoreDB.js';
 import { tenantWhere, tenantWhereWith } from './helpers/tenantHelper.js';
+import { getAccessibleEmployeeIds } from './helpers/accessControlHelper.js';
 
 // Dashboard statistics API
 export const getDashboardStats = async (req, res) => {
@@ -9,39 +10,19 @@ export const getDashboardStats = async (req, res) => {
     const userId = req.user?.id;
     
     // Pull real employee data from database
+    const where = tenantWhere(req);
     let employees = await prisma.employee.findMany({ 
-      where: tenantWhere(req),
+      where: where,
       orderBy: { createdAt: 'desc' } 
     });
+    
     let allLeave = await getAllLeaveRequests();
     
-    // Filter data based on user role
-    if (userRole === 'manager') {
-      // Managers see only their team members
-      const manager = await prisma.employee.findUnique({ 
-        where: { 
-          id: userId,
-          ...tenantWhere(req)
-        },
-        select: { department: true }
-      });
-      
-      if (manager?.department) {
-        employees = employees.filter(e => e.department === manager.department);
-        allLeave = allLeave.filter(l => {
-          const leaveEmployee = employees.find(e => e.id === l.employeeId);
-          return leaveEmployee?.department === manager.department;
-        });
-      }
-    } else if (userRole === 'teamlead') {
-      // Team Leads see only their direct reports
-      const directReports = employees.filter(e => e.managerId === userId);
-      employees = directReports;
-      allLeave = allLeave.filter(l => directReports.some(e => e.id === l.employeeId));
-    } else if (userRole === 'employee') {
-      // Employees see only their own data
-      employees = employees.filter(e => e.id === userId);
-      allLeave = allLeave.filter(l => l.employeeId === userId);
+    // Filter data based on user role using access control helper
+    if (!['admin', 'hr'].includes(userRole)) {
+      const accessibleIds = await getAccessibleEmployeeIds(userId, userRole, req.user.organizationId);
+      employees = employees.filter(e => accessibleIds.includes(e.id));
+      allLeave = allLeave.filter(l => accessibleIds.includes(l.employeeId));
     }
     // Admin and HR see all data (no filtering)
 
@@ -77,20 +58,66 @@ export const getDashboardStats = async (req, res) => {
     // Calculate team attendance percentage (for managers)
     const teamAttendance = totalEmployees > 0 ? Math.round((activeEmployees / totalEmployees) * 100) : 0;
 
-    // Calculate average performance rating (TODO: Integrate with performance reviews table)
-    const avgPerformance = (userRole === 'manager' || userRole === 'teamlead') ? 4.2 : null;
+    // Calculate average performance rating for managers/teamleads
+    let avgPerformance = null;
+    if (userRole === 'manager' || userRole === 'teamlead') {
+      const reviews = await prisma.performanceReview.findMany({
+        where: {
+          employeeId: { in: employees.map(e => e.id) }
+        },
+        select: { rating: true }
+      });
+      if (reviews.length > 0) {
+        avgPerformance = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+      }
+    }
     
-    // Calculate hours logged for employees (TODO: Integrate with timesheet entries table)
-    const hoursLogged = userRole === 'employee' ? 160 : null;
+    // Calculate hours logged for employees
+    let hoursLogged = null;
+    if (userRole === 'employee') {
+      const timesheets = await prisma.timesheet.findMany({
+        where: {
+          employeeId: userId,
+          ...tenantWhere(req)
+        },
+        select: { hours: true }
+      });
+      hoursLogged = timesheets.reduce((sum, t) => sum + t.hours, 0);
+    }
     
-    // Calculate performance rating for employees (TODO: Integrate with performance reviews table)
-    const performanceRating = userRole === 'employee' ? 4.5 : null;
+    // Calculate performance rating for employees
+    let performanceRating = null;
+    if (userRole === 'employee') {
+      const review = await prisma.performanceReview.findFirst({
+        where: {
+          employeeId: userId,
+          employee: {
+            ...tenantWhere(req)
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        select: { rating: true }
+      });
+      performanceRating = review?.rating || null;
+    }
     
-    // Calculate pending timesheet reviews for HR/Manager/TeamLead (TODO: Query from timesheet table)
-    const pendingTimesheetReviews = (userRole === 'hr' || userRole === 'manager' || userRole === 'teamlead') ? 12 : null;
+    // Calculate pending timesheet reviews for HR/Manager/TeamLead
+    let pendingTimesheetReviews = null;
+    if (userRole === 'hr' || userRole === 'manager' || userRole === 'teamlead') {
+      pendingTimesheetReviews = await prisma.timesheet.count({
+        where: {
+          status: 'Pending',
+          employeeId: { in: employees.map(e => e.id) }
+        }
+      });
+    }
     
-    // Calculate payroll status for HR (TODO: Check payroll schedule table)
-    const payrollStatus = userRole === 'hr' ? 'Run' : null;
+    // Calculate payroll status for HR
+    let payrollStatus = null;
+    if (userRole === 'hr') {
+      // TODO: Implement payroll status when PayrollRun model is available
+      payrollStatus = 'Not Available';
+    }
 
     // Build monthly leave trends for the last 6 months
     const now = new Date();

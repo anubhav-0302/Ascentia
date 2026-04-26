@@ -34,9 +34,6 @@ interface SettingsStore {
   updateMultipleSettings: (updates: Partial<UserSettings>) => Promise<void>;
   resetSettings: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
-  setup2FA: () => Promise<{ secret: string; qrCode: string }>;
-  verify2FA: (token: string) => Promise<void>;
-  disable2FA: () => Promise<void>;
   deleteAccount: (password: string) => Promise<void>;
   exportData: () => Promise<any>;
 }
@@ -139,37 +136,6 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       set({ error: errorMessage });
-      throw error;
-    }
-  },
-  
-  setup2FA: async () => {
-    try {
-      set({ error: null });
-      const response = await settingsApi.setup2FA();
-      return response.data;
-    } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'An error occurred' });
-      throw error;
-    }
-  },
-  
-  verify2FA: async (token) => {
-    try {
-      set({ error: null });
-      await settingsApi.verify2FA(token);
-    } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'An error occurred' });
-      throw error;
-    }
-  },
-  
-  disable2FA: async () => {
-    try {
-      set({ error: null });
-      await settingsApi.disable2FA();
-    } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'An error occurred' });
       throw error;
     }
   },

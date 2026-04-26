@@ -11,8 +11,9 @@ import { createReadStream, createWriteStream } from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const BACKUP_FILE = path.join(__dirname, '../backups/dev-db-backup-2026-04-16T17-51-42-170Z-complete-app-backup-all-data.db.gz');
-const TEMP_DB = path.join(__dirname, '../temp-backup-check.db');
+// Use absolute path for cross-platform compatibility
+const BACKUP_FILE = path.resolve(__dirname, '../backups/dev-db-backup-2026-04-16T17-51-42-170Z-complete-app-backup-all-data.db.gz');
+const TEMP_DB = path.resolve(__dirname, '../temp-backup-check.db');
 
 async function checkBackupEmployees() {
   try {

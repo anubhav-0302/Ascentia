@@ -1,11 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import { logDatabaseOperation } from './databaseLogger.js';
+import prisma from './lib/prisma.js';
 
 // Resolve a user by ID from database - now works with Employee model
 const resolveUser = async (userId) => {
   try {
-    const { default: prisma } = await import('./lib/prisma.js');
     const employee = await prisma.employee.findUnique({ 
       where: { id: parseInt(userId) }, 
       select: { id: true, name: true, email: true, role: true, jobTitle: true, department: true } 
@@ -58,7 +58,7 @@ const writeLeaveRequests = (leaveRequests) => {
 export const initializeLeaveData = async () => {
   try {
     ensureDataDir();
-    console.log("✅ Leave requests database initialized");
+    // console.log("✅ Leave requests database initialized");
   } catch (error) {
     console.error("❌ Error initializing leave data:", error);
   }

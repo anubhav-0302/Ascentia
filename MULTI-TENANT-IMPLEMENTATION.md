@@ -182,7 +182,7 @@ curl -X GET http://localhost:5000/api/employees \
 # Login as User B (Company B)
 curl -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"userB@companyB.com","password":"password"}'
+  -d '{"email":"userB@companyB.com","password":"YOUR_TEST_PASSWORD"}'
 
 # Get employees (should only see Company B employees)
 curl -X GET http://localhost:5000/api/employees \

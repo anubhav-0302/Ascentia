@@ -18,7 +18,7 @@ const getPerformanceCycles = async (req, res) => {
       }
     });
     
-    console.log(`📊 getPerformanceCycles: ${cycles.length} cycles`);
+    // console.log(`📊 getPerformanceCycles: ${cycles.length} cycles`);
     res.json({ success: true, data: cycles });
   } catch (error) {
     console.error("❌ GET PERFORMANCE CYCLES ERROR:", error);
@@ -54,7 +54,7 @@ const createPerformanceCycle = async (req, res) => {
     
     await logDatabaseOperation('CREATE', 'performance_cycle', cycle.id, req.user.id);
     
-    console.log(`✅ Created performance cycle: ${cycle.id}`);
+    // console.log(`✅ Created performance cycle: ${cycle.id}`);
     res.json({ success: true, data: cycle });
   } catch (error) {
     console.error("❌ CREATE PERFORMANCE CYCLE ERROR:", error);
@@ -104,7 +104,7 @@ const getPerformanceGoals = async (req, res) => {
       }
     });
     
-    console.log(`📊 getPerformanceGoals: ${goals.length} goals`);
+    // console.log(`📊 getPerformanceGoals: ${goals.length} goals`);
     res.json({ success: true, data: goals });
   } catch (error) {
     console.error("❌ GET PERFORMANCE GOALS ERROR:", error);
@@ -164,7 +164,7 @@ const createPerformanceGoal = async (req, res) => {
     
     await logDatabaseOperation('CREATE', 'performance_goal', goal.id, req.user.id);
     
-    console.log(`✅ Created performance goal: ${goal.id}`);
+    // console.log(`✅ Created performance goal: ${goal.id}`);
     res.json({ success: true, data: goal });
   } catch (error) {
     console.error("❌ CREATE PERFORMANCE GOAL ERROR:", error);
@@ -223,7 +223,7 @@ const updatePerformanceGoal = async (req, res) => {
     
     await logDatabaseOperation('UPDATE', 'performance_goal', goal.id, req.user.id);
     
-    console.log(`✅ Updated performance goal: ${goal.id}`);
+    // console.log(`✅ Updated performance goal: ${goal.id}`);
     res.json({ success: true, data: goal });
   } catch (error) {
     console.error("❌ UPDATE PERFORMANCE GOAL ERROR:", error);
@@ -277,7 +277,7 @@ const getPerformanceReviews = async (req, res) => {
       }
     });
     
-    console.log(`📊 getPerformanceReviews: ${reviews.length} reviews`);
+    // console.log(`📊 getPerformanceReviews: ${reviews.length} reviews`);
     res.json({ success: true, data: reviews });
   } catch (error) {
     console.error("❌ GET PERFORMANCE REVIEWS ERROR:", error);
@@ -321,7 +321,11 @@ const createPerformanceReview = async (req, res) => {
         goalId: parseInt(goalId),
         reviewerId: req.user.id,
         type,
-        ...tenantWhere(req)
+        goal: {
+          employee: {
+            ...tenantWhere(req)
+          }
+        }
       }
     });
     
@@ -341,8 +345,7 @@ const createPerformanceReview = async (req, res) => {
         type,
         rating: parseInt(rating),
         comments: comments || null,
-        status: 'Pending',
-        organizationId: req.user.organizationId
+        status: 'Pending'
       },
       include: {
         cycle: {
@@ -362,7 +365,7 @@ const createPerformanceReview = async (req, res) => {
     
     await logDatabaseOperation('CREATE', 'performance_review', review.id, req.user.id);
     
-    console.log(`✅ Created performance review: ${review.id}`);
+    // console.log(`✅ Created performance review: ${review.id}`);
     res.json({ success: true, data: review });
   } catch (error) {
     console.error("❌ CREATE PERFORMANCE REVIEW ERROR:", error);
@@ -425,7 +428,7 @@ const createSimpleReview = async (req, res) => {
     });
     
     await logDatabaseOperation('CREATE', 'performance_review', review.id, req.user.id);
-    console.log(`✅ Created simple performance review: ${review.id}`);
+    // console.log(`✅ Created simple performance review: ${review.id}`);
     res.json({ success: true, data: review });
   } catch (error) {
     console.error("❌ CREATE SIMPLE REVIEW ERROR:", error);
@@ -479,7 +482,7 @@ const getEmployeeReviews = async (req, res) => {
       }
     });
     
-    console.log(`📊 getEmployeeReviews: ${reviews.length} reviews for employee ${empId}`);
+    // console.log(`📊 getEmployeeReviews: ${reviews.length} reviews for employee ${empId}`);
     res.json({ success: true, data: reviews });
   } catch (error) {
     console.error("❌ GET EMPLOYEE REVIEWS ERROR:", error);
@@ -523,7 +526,7 @@ const deletePerformanceCycle = async (req, res) => {
     
     await logDatabaseOperation('DELETE', 'performance_cycle', cycleId, req.user.id);
     
-    console.log(`✅ Deleted performance cycle: ${cycleId}`);
+    // console.log(`✅ Deleted performance cycle: ${cycleId}`);
     res.json({ success: true, message: 'Performance cycle deleted successfully' });
   } catch (error) {
     console.error("❌ DELETE PERFORMANCE CYCLE ERROR:", error);
@@ -594,7 +597,7 @@ const updatePerformanceReview = async (req, res) => {
     
     await logDatabaseOperation('UPDATE', 'performance_review', review.id, req.user.id);
     
-    console.log(`✅ Updated performance review: ${review.id}`);
+    // console.log(`✅ Updated performance review: ${review.id}`);
     res.json({ success: true, data: review });
   } catch (error) {
     console.error("❌ UPDATE PERFORMANCE REVIEW ERROR:", error);

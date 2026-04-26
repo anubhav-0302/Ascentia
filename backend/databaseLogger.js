@@ -58,11 +58,11 @@ export const logDatabaseOperation = (operation, entity, details, userId = null) 
     logs.push(logEntry);
     writeLogs(logs);
     
-    console.log(`📝 DB LOG: ${operation} ${entity}`, {
-      id: logEntry.id,
-      userId,
-      details
-    });
+    // console.log(`📝 DB LOG: ${operation} ${entity}`, {
+    //   id: logEntry.id,
+    //   userId,
+    //   details
+    // });
     
     return logEntry;
   } catch (error) {
@@ -139,7 +139,7 @@ export const clearOldLogs = (daysToKeep = 30) => {
     writeLogs(filteredLogs);
     
     const removedCount = logs.length - filteredLogs.length;
-    console.log(`🗑️ Cleared ${removedCount} old log entries (kept last ${daysToKeep} days)`);
+    // console.log(`🗑️ Cleared ${removedCount} old log entries (kept last ${daysToKeep} days)`);
     
     return removedCount;
   } catch (error) {

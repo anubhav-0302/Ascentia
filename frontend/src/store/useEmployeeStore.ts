@@ -23,21 +23,21 @@ export const useEmployeeStore = create<EmployeeStore>((set, get) => ({
     
     // Prevent duplicate calls
     if (loading) {
-      console.log('Already fetching employees, skipping...');
+      // console.log('Already fetching employees, skipping...');
       return;
     }
 
-    console.log('Fetching employees with scope:', scope || 'default');
+    // console.log('Fetching employees with scope:', scope || 'default');
     
     set({ loading: true, error: null });
 
     try {
       const res = await employeeApi.getEmployees(scope);
-      console.log("API RESPONSE:", res);
+      // console.log("API RESPONSE:", res);
       
       // Handle new API response format: { success: true, data: [...] }
       const employees = res.data || [];
-      console.log('Employees fetched successfully:', employees.length);
+      // console.log('Employees fetched successfully:', employees.length);
       
       set({ 
         employees, 

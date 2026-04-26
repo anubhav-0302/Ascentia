@@ -24,6 +24,11 @@ model Organization {
   roleConfigs      RoleConfig[]
   permissionAudits PermissionAudit[]
   auditLogs        AuditLog[]
+  workflows        Workflow[]
+  jobPositions     JobPosition[]
+  systemMetrics    SystemMetric[]
+  integrations     Integration[]
+  projects         Project[]
   
   @@index([isActive])
   @@index([code])
@@ -67,6 +72,11 @@ model Employee {
   permissionAuditLogs PermissionAudit[]
   timesheets          Timesheet[]
   approvedTimesheets  Timesheet[]             @relation("TimesheetApprover")
+  createdWorkflows    Workflow[]
+  createdPositions    JobPosition[]
+  managedProjects     Project[]               @relation("ProjectManager")
+  projectAssignments  ProjectAssignment[]     @relation("ProjectAssignments")
+  assignedTasks       ProjectTask[]           @relation("AssignedTasks")
   
   @@index([organizationId])
   @@index([email, organizationId])
@@ -321,3 +331,179 @@ model AuditLog {
   @@index([timestamp])
   @@index([organizationId])
 }
+
+model Workflow {
+  id              Int      @id @default(autoincrement())
+  organizationId  Int      @default(1)
+  name            String
+  description     String?
+  category        String?
+  status          String   @default("draft") // draft, active, paused
+  trigger         String?  // manual, scheduled, event
+  actions         Int      @default(0)
+  lastRun         DateTime?
+  successRate     Float    @default(0)
+  createdBy       Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  creator         Employee @relation(fields: [createdBy], references: [id])
+  executions      WorkflowExecution[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([category])
+}
+
+model WorkflowExecution {
+  id            Int      @id @default(autoincrement())
+  workflowId    Int
+  status        String   @default("pending") // pending, running, completed, failed
+  startedAt     DateTime @default(now())
+  completedAt   DateTime?
+  errorMessage  String?
+  workflow      Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
+  @@index([status])
+  @@index([startedAt])
+}
+
+model JobPosition {
+  id              Int      @id @default(autoincrement())
+  organizationId  Int      @default(1)
+  title           String
+  department      String
+  location        String
+  type            String   // full-time, part-time, contract
+  status          String   @default("open") // open, closed, on-hold
+  priority        String   @default("medium") // low, medium, high
+  description     String?
+  requirements    String?
+  postedAt        DateTime @default(now())
+  createdBy       Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  creator         Employee @relation(fields: [createdBy], references: [id])
+  candidates      Candidate[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([department])
+  @@index([priority])
+}
+
+model Candidate {
+  id            Int          @id @default(autoincrement())
+  positionId    Int
+  name          String
+  email         String
+  phone         String?
+  stage         String       @default("applied") // applied, screening, interview, offer, hired, rejected
+  rating        Int?         // 1-5 rating
+  appliedAt     DateTime     @default(now())
+  avatar        String?
+  resume        String?
+  notes         String?
+  position      JobPosition  @relation(fields: [positionId], references: [id], onDelete: Cascade)
+
+  @@index([positionId])
+  @@index([stage])
+  @@index([rating])
+}
+
+model SystemMetric {
+  id            Int      @id @default(autoincrement())
+  organizationId Int      @default(1)
+  metricType    String   // alerts, workflows, integrations, api_calls
+  value         Int
+  change        String?
+  recordedAt    DateTime @default(now())
+  organization  Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([metricType])
+  @@index([recordedAt])
+}
+
+model Integration {
+  id            Int      @id @default(autoincrement())
+  organizationId Int      @default(1)
+  name          String
+  type          String   // email, slack, zoom, etc.
+  status        String   @default("inactive") // active, inactive, error
+  configuredAt  DateTime?
+  lastSync      DateTime?
+  organization  Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([type])
+}
+
+model Project {
+  id                Int                @id @default(autoincrement())
+  organizationId    Int                @default(1)
+  name              String
+  description       String?
+  status            String             @default("planning") // planning, active, on-hold, completed, cancelled
+  startDate         DateTime?
+  endDate           DateTime?
+  managerId         Int
+  priority          String             @default("medium") // low, medium, high, critical
+  budget            Float?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  
+  // Relationships
+  organization      Organization       @relation(fields: [organizationId], references: [id])
+  manager           Employee           @relation("ProjectManager", fields: [managerId], references: [id])
+  assignments       ProjectAssignment[]
+  tasks             ProjectTask[]
+  
+  @@index([organizationId])
+  @@index([managerId])
+  @@index([status])
+}
+
+model ProjectAssignment {
+  id          Int      @id @default(autoincrement())
+  projectId   Int
+  employeeId  Int
+  role        String   @default("member") // lead, member, contributor
+  allocation  Float?   // Percentage allocation (e.g., 50 for 50%)
+  startDate   DateTime @default(now())
+  endDate     DateTime?
+  createdAt   DateTime @default(now())
+  
+  // Relationships
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  employee    Employee @relation("ProjectAssignments", fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  @@unique([projectId, employeeId])
+  @@index([projectId])
+  @@index([employeeId])
+}
+
+model ProjectTask {
+  id          Int      @id @default(autoincrement())
+  projectId   Int
+  title       String
+  description String?
+  status      String   @default("todo") // todo, in-progress, review, done
+  priority    String   @default("medium") // low, medium, high, critical
+  assigneeId  Int?
+  dueDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relationships
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee    Employee? @relation("AssignedTasks", fields: [assigneeId], references: [id], onDelete: SetNull)
+  
+  @@index([projectId])
+  @@index([assigneeId])
+  @@index([status])
+}
+

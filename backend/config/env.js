@@ -128,6 +128,7 @@ export const env = Object.freeze({
   JWT_SECRET:          jwt,
   JWT_EXPIRES_IN:      process.env.JWT_EXPIRES_IN || '7d',
   BCRYPT_SALT_ROUNDS:  asInt(process.env.BCRYPT_SALT_ROUNDS, 10),
+  DISABLE_2FA:         asBool(process.env.DISABLE_2FA, false),
 
   // Seed: Super Admin (platform owner, no organization)
   SUPERADMIN_NAME:     process.env.SUPERADMIN_NAME     || 'Super Admin',

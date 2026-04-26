@@ -105,7 +105,7 @@ export const updateRolePermissions = async (
       { permissions, reason },
       { headers: authHeaders(token) }
     );
-    return response.data.data;
+    return response.data;
   } catch (error) {
     console.error('Error updating role permissions:', error);
     throw error;
@@ -148,6 +148,23 @@ export const getSidebarPermissions = async (token: string): Promise<{ [key: stri
     console.error('Error fetching sidebar permissions:', error);
     // Return empty object on error - sidebar will use hardcoded fallback
     return {};
+  }
+};
+
+// Get canonical permission registry from backend
+// Returns the single source of truth for modules, actions, and sidebar items
+export const getPermissionRegistry = async (token: string): Promise<{
+  moduleActions: { [module: string]: string[] };
+  sidebarItems: { [key: string]: { label: string } };
+}> => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/admin/roles/registry`, {
+      headers: authHeaders(token)
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching permission registry:', error);
+    throw error;
   }
 };
 

@@ -23,7 +23,7 @@ const getSalaryComponents = async (req, res) => {
       }
     });
     
-    console.log(`📊 getSalaryComponents: ${components.length} components`);
+    // console.log(`📊 getSalaryComponents: ${components.length} components`);
     res.json({ success: true, data: components });
   } catch (error) {
     console.error("❌ GET SALARY COMPONENTS ERROR:", error);
@@ -40,7 +40,7 @@ const createSalaryComponent = async (req, res) => {
   try {
     const { name, type, category, amount, isPercentage, isTaxable } = req.body;
     
-    console.log(`📝 Creating component: name=${name}, type=${type}, amount=${amount}, isPercentage=${isPercentage} (type: ${typeof isPercentage})`);
+    // console.log(`📝 Creating component: name=${name}, type=${type}, amount=${amount}, isPercentage=${isPercentage} (type: ${typeof isPercentage})`);
     
     if (!name || !type || !category || amount === undefined) {
       return res.status(400).json({ 
@@ -66,11 +66,11 @@ const createSalaryComponent = async (req, res) => {
     // Convert isPercentage to boolean (handle string values from form data)
     // Only treat as percentage if explicitly true
     const isPercentageBoolean = isPercentage === true || isPercentage === 'true' || isPercentage === 1 || isPercentage === '1';
-    console.log(`✓ isPercentageBoolean=${isPercentageBoolean}, amount=${amount}, raw isPercentage=${isPercentage}`);
+    // console.log(`✓ isPercentageBoolean=${isPercentageBoolean}, amount=${amount}, raw isPercentage=${isPercentage}`);
     
     // Only validate percentage range if it's actually marked as percentage
     if (isPercentageBoolean === true && (amount < 0 || amount > 100)) {
-      console.log(`❌ Validation failed: percentage ${amount} is not between 0-100`);
+      // console.log(`❌ Validation failed: percentage ${amount} is not between 0-100`);
       return res.status(400).json({ 
         success: false, 
         message: 'Percentage amount must be between 0 and 100' 
@@ -91,7 +91,7 @@ const createSalaryComponent = async (req, res) => {
     
     await logDatabaseOperation('CREATE', 'salary_component', component.id, req.user.id);
     
-    console.log(`✅ Created salary component: ${component.id}`);
+    // console.log(`✅ Created salary component: ${component.id}`);
     res.json({ success: true, data: component });
   } catch (error) {
     console.error("❌ CREATE SALARY COMPONENT ERROR:", error);
@@ -176,7 +176,7 @@ const updateSalaryComponent = async (req, res) => {
     
     await logDatabaseOperation('UPDATE', 'salary_component', component.id, req.user.id);
     
-    console.log(`✅ Updated salary component: ${component.id}`);
+    // console.log(`✅ Updated salary component: ${component.id}`);
     res.json({ success: true, data: component });
   } catch (error) {
     console.error("❌ UPDATE SALARY COMPONENT ERROR:", error);
@@ -234,7 +234,7 @@ const deleteSalaryComponent = async (req, res) => {
     
     await logDatabaseOperation('DELETE', 'salary_component', parseInt(id), req.user.id);
     
-    console.log(`✅ Deleted salary component: ${id}`);
+    // console.log(`✅ Deleted salary component: ${id}`);
     res.json({ success: true, message: 'Salary component deleted successfully' });
   } catch (error) {
     console.error("❌ DELETE SALARY COMPONENT ERROR:", error);
@@ -274,7 +274,7 @@ const getEmployeeSalaries = async (req, res) => {
       }
     });
     
-    console.log(`📊 getEmployeeSalaries: ${salaries.length} salary records`);
+    // console.log(`📊 getEmployeeSalaries: ${salaries.length} salary records`);
     res.json({ success: true, data: salaries });
   } catch (error) {
     console.error("❌ GET EMPLOYEE SALARIES ERROR:", error);
@@ -348,7 +348,7 @@ const assignSalaryToEmployee = async (req, res) => {
     
     await logDatabaseOperation('CREATE', 'employee_salary', salary.id, req.user.id);
     
-    console.log(`✅ Assigned salary to employee: ${salary.id}`);
+    // console.log(`✅ Assigned salary to employee: ${salary.id}`);
     res.json({ success: true, data: salary });
   } catch (error) {
     console.error("❌ ASSIGN SALARY ERROR:", error);
@@ -408,7 +408,7 @@ const updateEmployeeSalary = async (req, res) => {
     
     await logDatabaseOperation('UPDATE', 'employee_salary', salary.id, req.user.id);
     
-    console.log(`✅ Updated employee salary: ${salary.id}`);
+    // console.log(`✅ Updated employee salary: ${salary.id}`);
     res.json({ success: true, data: salary });
   } catch (error) {
     console.error("❌ UPDATE EMPLOYEE SALARY ERROR:", error);
