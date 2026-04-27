@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 
 interface DropdownOption {
@@ -33,37 +34,71 @@ const UnifiedDropdown: React.FC<UnifiedDropdownProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [dropUp, setDropUp] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const dropdownListRef = useRef<HTMLDivElement>(null);
+  const [portalStyle, setPortalStyle] = useState<React.CSSProperties>({});
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // Calculate portal position based on trigger button
+  const updatePosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const estimatedHeight = Math.min(384, options.length * 36);
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const shouldDropUp = spaceBelow < estimatedHeight && spaceAbove > estimatedHeight;
+
+    setDropUp(shouldDropUp);
+
+    if (shouldDropUp) {
+      setPortalStyle({
+        position: 'fixed',
+        left: rect.left,
+        top: rect.top - estimatedHeight - 4,
+        width: rect.width,
+        zIndex: 99999,
+      });
+    } else {
+      setPortalStyle({
+        position: 'fixed',
+        left: rect.left,
+        top: rect.bottom + 4,
+        width: rect.width,
+        zIndex: 99999,
+      });
+    }
+  }, [options.length]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
+    if (!isOpen) return;
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        triggerRef.current && !triggerRef.current.contains(target) &&
+        listRef.current && !listRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
+    const handleScroll = () => setIsOpen(false);
+    const handleResize = () => updatePosition();
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleResize);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isOpen, updatePosition]);
 
-  // Check if dropdown should drop up
+  // Update position when opening
   useEffect(() => {
-    if (isOpen && dropdownRef.current && dropdownListRef.current) {
-      const rect = dropdownRef.current.getBoundingClientRect();
-      const dropdownHeight = 400; // Increased max height for more options
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const spaceAbove = rect.top;
-
-      // If not enough space below, drop up
-      if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
-        setDropUp(true);
-      } else {
-        setDropUp(false);
-      }
+    if (isOpen) {
+      updatePosition();
     }
-  }, [isOpen]);
+  }, [isOpen, updatePosition]);
 
   const selectedOption = options.find(opt => opt.value === value);
   const displayLabel = selectedOption?.label || placeholder;
@@ -82,9 +117,10 @@ const UnifiedDropdown: React.FC<UnifiedDropdownProps> = ({
           {required && <span className="text-red-400 ml-1">*</span>}
         </label>
       )}
-      
-      <div ref={dropdownRef} className="relative">
+
+      <div className="relative">
         <button
+          ref={triggerRef}
           type="button"
           onClick={() => !disabled && setIsOpen(!isOpen)}
           disabled={disabled}
@@ -95,19 +131,18 @@ const UnifiedDropdown: React.FC<UnifiedDropdownProps> = ({
           <span className={selectedOption ? 'text-white' : 'text-gray-400'}>
             {displayLabel}
           </span>
-          <ChevronDown 
+          <ChevronDown
             className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
               isOpen ? `transform ${dropUp ? 'rotate-0' : 'rotate-180'}` : ''
             }`}
           />
         </button>
 
-        {isOpen && !disabled && (
-          <div 
-            ref={dropdownListRef}
-            className={`absolute left-0 right-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl overflow-hidden min-w-full max-w-sm ${
-              dropUp ? 'bottom-full mb-1' : 'top-full mt-1'
-            }`}
+        {isOpen && !disabled && createPortal(
+          <div
+            ref={listRef}
+            style={portalStyle}
+            className="bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl overflow-hidden max-w-sm"
           >
             <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
               {options.map((option) => (
@@ -128,7 +163,8 @@ const UnifiedDropdown: React.FC<UnifiedDropdownProps> = ({
                 </button>
               ))}
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </div>

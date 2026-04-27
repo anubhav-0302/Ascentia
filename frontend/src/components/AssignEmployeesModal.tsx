@@ -93,11 +93,14 @@ const AssignEmployeesModal: React.FC<AssignEmployeesModalProps> = ({
         allocation: se.role === 'member' ? 50 : 25
       }));
 
+      console.log('📤 Assigning employees:', { projectId, assignments });
       await assignEmployees(projectId, assignments, token);
+      console.log('✅ Employees assigned successfully');
 
       onSuccess();
       handleClose();
     } catch (err: any) {
+      console.error('❌ Failed to assign employees:', err);
       setError(err.message || 'Failed to assign employees');
     } finally {
       setLoading(false);

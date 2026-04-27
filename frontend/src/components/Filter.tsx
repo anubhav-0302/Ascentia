@@ -25,9 +25,27 @@ const Filter: React.FC<FilterProps> = ({
 }) => {
   const { filters, updateFilter, clearFilters, getActiveFilterCount } = useFilters();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [dropUpMap, setDropUpMap] = useState<{ [key: string]: boolean }>({});
   const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   const activeFilterCount = getActiveFilterCount();
+
+  // Check if dropdown should open upward based on available viewport space
+  useEffect(() => {
+    if (openDropdown) {
+      const el = dropdownRefs.current[openDropdown];
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        // Estimate dropdown height: ~36px per option, max 240px (max-h-60)
+        const estimatedHeight = Math.min(240, el.querySelectorAll('button').length * 36 || 150);
+        setDropUpMap(prev => ({
+          ...prev,
+          [openDropdown]: spaceBelow < estimatedHeight && rect.top > estimatedHeight
+        }));
+      }
+    }
+  }, [openDropdown]);
 
   const departments = [
     { value: 'all', label: 'All Departments' },
@@ -215,6 +233,12 @@ const Filter: React.FC<FilterProps> = ({
     setOpenDropdown(null);
   };
 
+  const getDropdownClass = (key: string) => {
+    const base = 'absolute left-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl min-w-max';
+    const position = dropUpMap[key] ? 'bottom-full mb-1' : 'top-full mt-1';
+    return `${base} ${position}`;
+  };
+
   const filterPills = getFilterPills();
 
   if (compact) {
@@ -273,7 +297,7 @@ const Filter: React.FC<FilterProps> = ({
                 </button>
 
                 {openDropdown === 'department' && (
-                  <div className="absolute top-full mt-1 left-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl min-w-max">
+                  <div className={getDropdownClass('department')}>
                     <div className="max-h-60 overflow-y-auto">
                       {departments.map((dept) => (
                         <button
@@ -312,7 +336,7 @@ const Filter: React.FC<FilterProps> = ({
                 </button>
 
                 {openDropdown === 'status' && (
-                  <div className="absolute top-full mt-1 left-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl min-w-max">
+                  <div className={getDropdownClass('status')}>
                     <div className="max-h-60 overflow-y-auto">
                       {statuses.map((status) => (
                         <button
@@ -351,7 +375,7 @@ const Filter: React.FC<FilterProps> = ({
                 </button>
 
                 {openDropdown === 'employmentType' && (
-                  <div className="absolute top-full mt-1 left-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl min-w-max">
+                  <div className={getDropdownClass('employmentType')}>
                     <div className="max-h-60 overflow-y-auto">
                       {employmentTypes.map((type) => (
                         <button
@@ -390,7 +414,7 @@ const Filter: React.FC<FilterProps> = ({
                 </button>
 
                 {openDropdown === 'location' && (
-                  <div className="absolute top-full mt-1 left-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl min-w-max">
+                  <div className={getDropdownClass('location')}>
                     <div className="max-h-60 overflow-y-auto">
                       {locations.map((location) => (
                         <button
@@ -429,7 +453,7 @@ const Filter: React.FC<FilterProps> = ({
                 </button>
 
                 {openDropdown === 'dateRange' && (
-                  <div className="absolute top-full mt-1 left-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl min-w-max">
+                  <div className={getDropdownClass('dateRange')}>
                     <div className="max-h-60 overflow-y-auto">
                       {dateRanges.map((range) => (
                         <button
@@ -468,7 +492,7 @@ const Filter: React.FC<FilterProps> = ({
                 </button>
 
                 {openDropdown === 'reportType' && (
-                  <div className="absolute top-full mt-1 left-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl min-w-max">
+                  <div className={getDropdownClass('reportType')}>
                     <div className="max-h-60 overflow-y-auto">
                       {reportTypes.map((type) => (
                         <button
@@ -507,7 +531,7 @@ const Filter: React.FC<FilterProps> = ({
                 </button>
 
                 {openDropdown === 'sortBy' && (
-                  <div className="absolute top-full mt-1 left-0 z-[99999] bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl min-w-max">
+                  <div className={getDropdownClass('sortBy')}>
                     <div className="max-h-60 overflow-y-auto">
                       {sortOptions.map((option) => (
                         <button

@@ -264,27 +264,31 @@ export const updateProject = async (req, res) => {
       startDate,
       endDate,
       managerId,
+      teamLeadId,
       priority,
       budget
     } = req.body;
-    
+
     const userRole = req.user?.role?.toLowerCase();
-    
+
     // Check permissions
     const existingProject = await prisma.project.findFirst({
       where: {
         id: parseInt(id),
         ...tenantWhere(req)
+      },
+      include: {
+        assignments: true
       }
     });
-    
+
     if (!existingProject) {
       return res.status(404).json({
         success: false,
         message: 'Project not found'
       });
     }
-    
+
     // Only admin/HR or project manager can update
     if (!['admin', 'hr'].includes(userRole) && existingProject.managerId !== req.user.id) {
       return res.status(403).json({
@@ -292,7 +296,7 @@ export const updateProject = async (req, res) => {
         message: 'Only admin, HR, or project manager can update project'
       });
     }
-    
+
     const updateData = {};
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
@@ -300,23 +304,99 @@ export const updateProject = async (req, res) => {
     if (startDate !== undefined) updateData.startDate = startDate ? new Date(startDate) : null;
     if (endDate !== undefined) updateData.endDate = endDate ? new Date(endDate) : null;
     if (managerId !== undefined && ['admin', 'hr'].includes(userRole)) {
-      updateData.managerId = managerId;
+      updateData.managerId = parseInt(managerId);
+
+      // If manager changed, update the lead assignment for old manager
+      if (managerId !== existingProject.managerId) {
+        // Remove old manager's lead assignment if exists
+        const oldManagerLead = existingProject.assignments.find(
+          a => a.employeeId === existingProject.managerId && a.role === 'lead'
+        );
+        if (oldManagerLead) {
+          await prisma.projectAssignment.delete({
+            where: { id: oldManagerLead.id }
+          });
+        }
+        // Add new manager as lead assignment
+        await prisma.projectAssignment.upsert({
+          where: {
+            projectId_employeeId: {
+              projectId: parseInt(id),
+              employeeId: parseInt(managerId)
+            }
+          },
+          create: {
+            projectId: parseInt(id),
+            employeeId: parseInt(managerId),
+            role: 'lead',
+            allocation: 100
+          },
+          update: {
+            role: 'lead',
+            allocation: 100
+          }
+        });
+      }
     }
     if (priority !== undefined) updateData.priority = priority;
     if (budget !== undefined) updateData.budget = budget ? parseFloat(budget) : null;
-    
+
+    // Handle teamLeadId change
+    if (teamLeadId !== undefined) {
+      const parsedLeadId = teamLeadId ? parseInt(teamLeadId) : null;
+
+      // Remove existing team lead assignment (role='lead' that isn't the manager)
+      const existingLead = existingProject.assignments.find(
+        a => a.role === 'lead' && a.employeeId !== existingProject.managerId
+      );
+      if (existingLead) {
+        await prisma.projectAssignment.delete({
+          where: { id: existingLead.id }
+        });
+      }
+
+      // Add new team lead if specified
+      if (parsedLeadId) {
+        await prisma.projectAssignment.upsert({
+          where: {
+            projectId_employeeId: {
+              projectId: parseInt(id),
+              employeeId: parsedLeadId
+            }
+          },
+          create: {
+            projectId: parseInt(id),
+            employeeId: parsedLeadId,
+            role: 'lead',
+            allocation: 75
+          },
+          update: {
+            role: 'lead',
+            allocation: 75
+          }
+        });
+      }
+    }
+
     const project = await prisma.project.update({
       where: { id: parseInt(id) },
       data: updateData,
       include: {
         manager: {
           select: { id: true, name: true, email: true }
+        },
+        assignments: {
+          include: {
+            employee: {
+              select: { id: true, name: true, email: true, jobTitle: true }
+            }
+          }
         }
       }
     });
-    
+
     logDatabaseOperation('update', 'project', project.id, req.user.id);
-    
+
     res.json({
       success: true,
       message: 'Project updated successfully',
@@ -382,9 +462,11 @@ export const deleteProject = async (req, res) => {
 
 // POST /api/projects/:id/assign - Assign employees to project
 export const assignEmployees = async (req, res) => {
+  // Extract id outside try so it's available in catch block
+  const { id } = req.params;
+  const { assignments } = req.body; // Array of { employeeId, role, allocation }
+  
   try {
-    const { id } = req.params;
-    const { assignments } = req.body; // Array of { employeeId, role, allocation }
     
     const userRole = req.user?.role?.toLowerCase();
     
@@ -411,11 +493,11 @@ export const assignEmployees = async (req, res) => {
       });
     }
     
-    // Create assignments
+    // Create assignments - parse employeeId as integer
     const results = await prisma.projectAssignment.createMany({
       data: assignments.map(({ employeeId, role = 'member', allocation }) => ({
         projectId: parseInt(id),
-        employeeId,
+        employeeId: parseInt(employeeId),
         role,
         allocation: allocation ? parseFloat(allocation) : null
       })),
@@ -429,10 +511,12 @@ export const assignEmployees = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Error assigning employees:', error);
+    console.error('Request data:', { projectId: id, assignments });
     res.status(500).json({
       success: false,
       message: 'Failed to assign employees',
-      error: error.message
+      error: error.message,
+      details: error.meta || undefined
     });
   }
 };

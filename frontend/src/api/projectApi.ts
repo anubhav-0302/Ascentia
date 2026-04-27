@@ -120,6 +120,7 @@ export interface UpdateProjectData {
   startDate?: string;
   endDate?: string;
   managerId?: number;
+  teamLeadId?: number | null;
   priority?: string;
   budget?: number;
 }
@@ -224,7 +225,10 @@ export const deleteProject = async (id: number, token: string): Promise<void> =>
 
 // Assign employees to project
 export const assignEmployees = async (id: number, assignments: AssignEmployeeData[], token: string): Promise<void> => {
-  const response = await fetch(`${BASE_URL}/projects/${id}/assign`, {
+  const url = `${BASE_URL}/projects/${id}/assign`;
+  console.log('📡 API Call:', url, { id, assignments });
+
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -233,9 +237,21 @@ export const assignEmployees = async (id: number, assignments: AssignEmployeeDat
     body: JSON.stringify({ assignments }),
   });
 
+  console.log('📡 Response status:', response.status, response.statusText);
+
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to assign employees');
+    const text = await response.text();
+    console.error('📡 Error response:', text.substring(0, 200));
+    
+    // Try to parse as JSON, fallback to text
+    let errorMessage = 'Failed to assign employees';
+    try {
+      const errorJson = JSON.parse(text);
+      errorMessage = errorJson.message || errorMessage;
+    } catch {
+      errorMessage = text.substring(0, 100) || `HTTP ${response.status}: ${response.statusText}`;
+    }
+    throw new Error(errorMessage);
   }
 };
 

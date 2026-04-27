@@ -83,17 +83,7 @@ export const createLeaveRequest = async (req, res) => {
     // Date validation
     const start = new Date(startDate);
     const end = new Date(endDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Set to start of day for fair comparison
 
-    // Validate start date is not in the past
-    if (start < today) {
-      return res.status(400).json({
-        success: false,
-        message: 'Start date cannot be in the past'
-      });
-    }
-    
     // Validate date range (allow same-day leave)
     if (start > end) {
       return res.status(400).json({

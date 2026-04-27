@@ -138,14 +138,21 @@ const LeaveAttendance = () => {
     });
   };
 
-  // Calculate leave duration in days
+  // Calculate leave duration in business days (excluding weekends)
   const calculateDuration = (startDate: string, endDate: string) => {
-    // Use local timezone to avoid date shifting
     const start = new Date(startDate + 'T00:00:00');
     const end = new Date(endDate + 'T00:00:00');
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays + 1; // Include both start and end dates
+    let count = 0;
+    const current = new Date(start);
+    while (current <= end) {
+      const day = current.getDay();
+      // 0 = Sunday, 6 = Saturday — skip weekends
+      if (day !== 0 && day !== 6) {
+        count++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    return count;
   };
 
   // Get duration for current form dates

@@ -53,21 +53,89 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ token }) => {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [expandedProject, setExpandedProject] = useState<number | null>(null);
 
-  // Form data for edit (legacy)
-  const [formData, setFormData] = useState<UpdateProjectData>({
+  // Form data for edit (simplified to match create)
+  const [formData, setFormData] = useState({
     name: '',
     description: '',
-    status: '',
-    startDate: '',
-    endDate: '',
-    priority: '',
-    budget: undefined
+    managerId: 0,
+    teamLeadId: null as number | null
   });
+  const [editAvailableEmployees, setEditAvailableEmployees] = useState<any[]>([]);
+  const [editModalLoading, setEditModalLoading] = useState(false);
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
+
+  // Fetch available employees for edit modal
+  const fetchEditAvailableEmployees = async () => {
+    try {
+      const employees = await getAvailableEmployees(token);
+      setEditAvailableEmployees(employees);
+      return employees;
+    } catch (err) {
+      console.error('Failed to fetch employees for edit:', err);
+      return [];
+    }
+  };
+
+  // Get edit modal dropdown options
+  // Manager dropdown: show managers/admins + always include current manager
+  const getEditManagerOptions = () => {
+    const roleFiltered = editAvailableEmployees.filter(
+      (emp: any) => emp.role === 'manager' || emp.role === 'admin'
+    );
+    const options = [...roleFiltered];
+
+    // Always include current project manager even if not in filtered list
+    if (selectedProject && formData.managerId) {
+      const hasCurrent = options.some((emp: any) => emp.id === formData.managerId);
+      if (!hasCurrent) {
+        // Use project.manager data (only has id, name, email from API)
+        const mgr = selectedProject.manager;
+        if (mgr && mgr.id === formData.managerId) {
+          options.unshift({
+            id: mgr.id,
+            name: mgr.name,
+            email: mgr.email,
+            jobTitle: '',
+            role: 'manager'
+          });
+        }
+      }
+    }
+    return options;
+  };
+
+  // Team Lead dropdown: show teamleads + always include current team lead
+  const getEditTeamLeadOptions = () => {
+    const roleFiltered = editAvailableEmployees.filter(
+      (emp: any) => emp.role === 'teamlead'
+    );
+    const options = [...roleFiltered];
+
+    // Always include current team lead even if not in filtered list
+    if (selectedProject && formData.teamLeadId) {
+      const hasCurrent = options.some((emp: any) => emp.id === formData.teamLeadId);
+      if (!hasCurrent) {
+        // Find lead from current assignments (exclude manager who is auto-assigned as lead)
+        const leadAssignment = selectedProject.assignments.find(
+          (a: any) => a.role === 'lead' && a.employeeId === formData.teamLeadId && a.employeeId !== selectedProject.managerId
+        );
+        if (leadAssignment?.employee) {
+          options.unshift({
+            id: leadAssignment.employee.id,
+            name: leadAssignment.employee.name,
+            email: leadAssignment.employee.email,
+            jobTitle: leadAssignment.employee.jobTitle || '',
+            role: 'teamlead'
+          });
+        }
+      }
+    }
+    return options;
+  };
 
   useEffect(() => {
     fetchProjects();
@@ -355,18 +423,22 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ token }) => {
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         setSelectedProject(project);
+                        // Find team lead from assignments (role = 'lead', but NOT the manager who is auto-assigned as lead)
+                        const teamLeadAssignment = project.assignments.find(
+                          a => a.role === 'lead' && a.employeeId !== project.managerId
+                        );
                         setFormData({
                           name: project.name,
                           description: project.description || '',
-                          status: project.status,
-                          startDate: project.startDate?.split('T')[0] || '',
-                          endDate: project.endDate?.split('T')[0] || '',
-                          priority: project.priority,
-                          budget: project.budget || undefined
+                          managerId: project.managerId,
+                          teamLeadId: teamLeadAssignment?.employeeId || null
                         });
+                        setEditModalLoading(true);
                         setShowEditModal(true);
+                        await fetchEditAvailableEmployees();
+                        setEditModalLoading(false);
                       }}
                       className="p-2 text-gray-400 hover:text-white hover:bg-slate-700 rounded transition"
                     >
@@ -404,24 +476,26 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ token }) => {
                     <div>
                       <h4 className="text-sm font-medium text-gray-400 mb-2">Team Members</h4>
                       <div className="space-y-2">
-                        {project.assignments.map((assignment) => (
-                          <div key={assignment.id} className="flex items-center justify-between bg-slate-700/50 rounded p-2">
-                            <div>
-                              <p className="text-white font-medium">{assignment.employee.name}</p>
-                              <p className="text-gray-400 text-sm">
-                                {assignment.employee.jobTitle} • {assignment.role}
-                                {assignment.allocation && ` • ${assignment.allocation}% allocation`}
-                              </p>
+                        {project.assignments
+                          .filter(assignment => assignment.employeeId !== project.managerId)
+                          .map((assignment) => (
+                            <div key={assignment.id} className="flex items-center justify-between bg-slate-700/50 rounded p-2">
+                              <div>
+                                <p className="text-white font-medium">{assignment.employee.name}</p>
+                                <p className="text-gray-400 text-sm">
+                                  {assignment.employee.jobTitle} • {assignment.role}
+                                  {assignment.allocation && ` • ${assignment.allocation}% allocation`}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => handleRemoveEmployee(project.id, assignment.employeeId)}
+                                className="p-1 text-gray-400 hover:text-red-400 hover:bg-slate-600 rounded transition"
+                              >
+                                <UserMinus size={16} />
+                              </button>
                             </div>
-                            <button
-                              onClick={() => handleRemoveEmployee(project.id, assignment.employeeId)}
-                              className="p-1 text-gray-400 hover:text-red-400 hover:bg-slate-600 rounded transition"
-                            >
-                              <UserMinus size={16} />
-                            </button>
-                          </div>
-                        ))}
-                        {project.assignments.length === 0 && (
+                          ))}
+                        {project.assignments.filter(a => a.employeeId !== project.managerId).length === 0 && (
                           <p className="text-gray-500 text-sm">No team members assigned</p>
                         )}
                       </div>
@@ -434,7 +508,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ token }) => {
         )}
       </div>
 
-      {/* Edit Modal - only for editing existing projects */}
+      {/* Edit Modal - simplified to match CreateProjectModal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 w-full max-w-md">
@@ -460,50 +534,53 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ token }) => {
                     className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Start Date</label>
-                    <input
-                      type="date"
-                      value={formData.startDate || ''}
-                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
+                {editModalLoading && (
+                  <div className="text-center py-2 text-gray-400">
+                    Loading employees...
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">End Date</label>
-                    <input
-                      type="date"
-                      value={formData.endDate || ''}
-                      min={formData.startDate}
-                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    <span className="flex items-center gap-2">
+                      <Briefcase size={16} />
+                      Project Manager
+                    </span>
+                  </label>
+                  <select
+                    value={formData.managerId || ''}
+                    onChange={(e) => setFormData({ ...formData, managerId: Number(e.target.value) })}
+                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50"
+                    required
+                    disabled={editModalLoading}
+                  >
+                    <option value="">Select a manager...</option>
+                    {getEditManagerOptions().map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.name} ({emp.jobTitle || emp.role})
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Priority</label>
-                    <select
-                      value={formData.priority || 'medium'}
-                      onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    >
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                      <option value="critical">Critical</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Budget ($)</label>
-                    <input
-                      type="number"
-                      value={formData.budget || ''}
-                      onChange={(e) => setFormData({ ...formData, budget: e.target.value ? parseFloat(e.target.value) : undefined })}
-                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    <span className="flex items-center gap-2">
+                      <Users size={16} />
+                      Team Lead (Optional)
+                    </span>
+                  </label>
+                  <select
+                    value={formData.teamLeadId || ''}
+                    onChange={(e) => setFormData({ ...formData, teamLeadId: e.target.value ? Number(e.target.value) : null })}
+                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50"
+                    disabled={editModalLoading}
+                  >
+                    <option value="">Select a team lead...</option>
+                    {getEditTeamLeadOptions().map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.name} ({emp.jobTitle || emp.role})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div className="flex gap-3 mt-6">

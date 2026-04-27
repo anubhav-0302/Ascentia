@@ -48,12 +48,14 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   };
 
   // Filter employees by role for dropdowns
+  // Manager dropdown: only managers and admins (not HR, not team leads)
   const managersAndAdmins = availableEmployees.filter(
-    emp => emp.role === 'admin' || emp.role === 'manager' || emp.role === 'hr'
+    emp => emp.role === 'admin' || emp.role === 'manager'
   );
 
+  // Team Lead dropdown: only team leads (not managers, not admins)
   const teamLeads = availableEmployees.filter(
-    emp => emp.role === 'teamlead' || emp.role === 'manager'
+    emp => emp.role === 'teamlead'
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
