@@ -282,5 +282,10 @@ export const useIsManagerOrAdmin = () => {
 
 export const useIsManagerOrTeamLeadOrAdmin = () => {
   const { user } = useAuthStore();
-  return user?.role === 'admin' || user?.role === 'manager' || user?.role === 'teamlead';
+  return user?.role === 'admin' || user?.role === 'manager' || user?.role === 'teamlead' || user?.role === 'hr';
+};
+
+export const useIsAdminOrHR = () => {
+  const { user } = useAuthStore();
+  return user?.role === 'admin' || user?.role === 'hr';
 };

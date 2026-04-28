@@ -36,6 +36,9 @@ const getMyTimesheet = async (req, res) => {
         },
         approver: {
           select: { id: true, name: true, email: true }
+        },
+        ActivityMaster: {
+          select: { id: true, name: true }
         }
       }
     });
@@ -137,6 +140,9 @@ const getAllTimesheets = async (req, res) => {
         },
         approver: {
           select: { id: true, name: true, email: true }
+        },
+        ActivityMaster: {
+          select: { id: true, name: true }
         }
       }
     });
@@ -167,7 +173,7 @@ const getAllTimesheets = async (req, res) => {
 // POST /api/timesheet - Create new timesheet entry
 const createTimesheetEntry = async (req, res) => {
   try {
-    const { date, hours, description } = req.body;
+    const { date, hours, description, activityId } = req.body;
     
     if (!date || !hours) {
       return res.status(400).json({ 
@@ -196,12 +202,17 @@ const createTimesheetEntry = async (req, res) => {
       });
     }
     
-    // Check if entry already exists for this date
+    // Check if entry already exists for this date (+ activity combination if activityId provided)
+    const existingWhere = {
+      employeeId: req.user.id,
+      date: new Date(date),
+      organizationId: req.user.organizationId
+    };
+    if (activityId) {
+      existingWhere.activityId = activityId;
+    }
     const existingEntry = await prisma.timesheet.findFirst({
-      where: tenantWhereWith(req, {
-        employeeId: req.user.id,
-        date: new Date(date)
-      })
+      where: existingWhere
     });
     
     let timesheet;
@@ -213,11 +224,15 @@ const createTimesheetEntry = async (req, res) => {
         data: {
           hours: parseFloat(hours),
           description: description || null,
+          activityId: activityId || null,
           updatedAt: new Date()
         },
         include: {
           employee: {
             select: { id: true, name: true, email: true }
+          },
+          ActivityMaster: {
+            select: { id: true, name: true }
           }
         }
       });
@@ -237,11 +252,15 @@ const createTimesheetEntry = async (req, res) => {
           date: new Date(date),
           hours: parseFloat(hours),
           description: description || null,
+          activityId: activityId || null,
           organizationId: req.user.organizationId
         },
         include: {
           employee: {
             select: { id: true, name: true, email: true }
+          },
+          ActivityMaster: {
+            select: { id: true, name: true }
           }
         }
       });
@@ -608,6 +627,258 @@ const bulkApproveTimesheets = async (req, res) => {
   }
 };
 
+// ===================== ACTIVITY MASTER CRUD =====================
+
+// GET /api/timesheet/activities - Get all active activities
+const getActivities = async (req, res) => {
+  try {
+    const { includeInactive } = req.query;
+    const whereClause = {};
+    
+    // By default only show active activities (for employee dropdown)
+    // Admin/HR can request all including inactive
+    const userRole = req.user.role?.toLowerCase();
+    if (includeInactive !== 'true' || !['admin', 'hr'].includes(userRole)) {
+      whereClause.isActive = true;
+    }
+    
+    const activities = await prisma.activityMaster.findMany({
+      where: whereClause,
+      orderBy: { name: 'asc' },
+      include: {
+        Employee: {
+          select: { id: true, name: true }
+        }
+      }
+    });
+    
+    res.json({ success: true, data: activities });
+  } catch (error) {
+    console.error("❌ GET ACTIVITIES ERROR:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch activities", error: error.message });
+  }
+};
+
+// POST /api/timesheet/activities - Create new activity (admin/HR only)
+const createActivity = async (req, res) => {
+  try {
+    const { name, description } = req.body;
+    
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, message: 'Activity name is required' });
+    }
+    
+    // Check for duplicate name
+    const existing = await prisma.activityMaster.findFirst({
+      where: { name: name.trim() }
+    });
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'Activity with this name already exists' });
+    }
+    
+    const activity = await prisma.activityMaster.create({
+      data: {
+        name: name.trim(),
+        description: description?.trim() || null,
+        createdBy: req.user.id,
+        updatedAt: new Date()
+      }
+    });
+    
+    await logDatabaseOperation('CREATE', 'activityMaster', activity.id, req.user.id);
+    res.json({ success: true, data: activity, message: 'Activity created successfully' });
+  } catch (error) {
+    console.error("❌ CREATE ACTIVITY ERROR:", error);
+    res.status(500).json({ success: false, message: "Failed to create activity", error: error.message });
+  }
+};
+
+// PUT /api/timesheet/activities/:id - Update activity (admin/HR only)
+const updateActivity = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, isActive } = req.body;
+    
+    const existing = await prisma.activityMaster.findFirst({ where: { id: parseInt(id) } });
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Activity not found' });
+    }
+    
+    // Check duplicate name if name is being changed
+    if (name && name.trim() !== existing.name) {
+      const duplicate = await prisma.activityMaster.findFirst({
+        where: { name: name.trim(), id: { not: parseInt(id) } }
+      });
+      if (duplicate) {
+        return res.status(400).json({ success: false, message: 'Activity with this name already exists' });
+      }
+    }
+    
+    const updateData = { updatedAt: new Date() };
+    if (name !== undefined) updateData.name = name.trim();
+    if (description !== undefined) updateData.description = description?.trim() || null;
+    if (isActive !== undefined) updateData.isActive = isActive;
+    
+    const activity = await prisma.activityMaster.update({
+      where: { id: parseInt(id) },
+      data: updateData
+    });
+    
+    await logDatabaseOperation('UPDATE', 'activityMaster', activity.id, req.user.id);
+    res.json({ success: true, data: activity, message: 'Activity updated successfully' });
+  } catch (error) {
+    console.error("❌ UPDATE ACTIVITY ERROR:", error);
+    res.status(500).json({ success: false, message: "Failed to update activity", error: error.message });
+  }
+};
+
+// DELETE /api/timesheet/activities/:id - Delete activity (admin/HR only)
+const deleteActivity = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const existing = await prisma.activityMaster.findFirst({ where: { id: parseInt(id) } });
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Activity not found' });
+    }
+    
+    // Check if activity is used in any timesheet entries
+    const usageCount = await prisma.timesheet.count({
+      where: { activityId: parseInt(id) }
+    });
+    
+    if (usageCount > 0) {
+      // Soft delete - just mark as inactive
+      const activity = await prisma.activityMaster.update({
+        where: { id: parseInt(id) },
+        data: { isActive: false, updatedAt: new Date() }
+      });
+      await logDatabaseOperation('SOFT_DELETE', 'activityMaster', activity.id, req.user.id);
+      return res.json({ 
+        success: true, 
+        data: activity, 
+        message: `Activity deactivated (used in ${usageCount} timesheet entries). It will no longer appear in the activity dropdown.` 
+      });
+    }
+    
+    // Hard delete if not used
+    await prisma.activityMaster.delete({ where: { id: parseInt(id) } });
+    await logDatabaseOperation('DELETE', 'activityMaster', parseInt(id), req.user.id);
+    res.json({ success: true, message: 'Activity deleted successfully' });
+  } catch (error) {
+    console.error("❌ DELETE ACTIVITY ERROR:", error);
+    res.status(500).json({ success: false, message: "Failed to delete activity", error: error.message });
+  }
+};
+
+// ===================== BULK CREATE TIMESHEET =====================
+
+// POST /api/timesheet/bulk-create - Create multiple timesheet entries at once
+const bulkCreateTimesheet = async (req, res) => {
+  try {
+    const { entries } = req.body;
+    
+    if (!entries || !Array.isArray(entries) || entries.length === 0) {
+      return res.status(400).json({ success: false, message: 'Entries array is required' });
+    }
+    
+    // Validate total hours across all entries for each date
+    const hoursByDate = {};
+    for (const entry of entries) {
+      if (!entry.date || !entry.hours || entry.hours <= 0) {
+        return res.status(400).json({ success: false, message: 'Each entry must have a valid date and hours > 0' });
+      }
+      if (entry.hours > 24) {
+        return res.status(400).json({ success: false, message: 'Hours cannot exceed 24 per entry' });
+      }
+      const key = entry.date;
+      hoursByDate[key] = (hoursByDate[key] || 0) + entry.hours;
+      if (hoursByDate[key] > 24) {
+        return res.status(400).json({ success: false, message: `Total hours for ${key} exceed 24` });
+      }
+      // Validate date is not in the future
+      const entryDate = new Date(entry.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      entryDate.setHours(0, 0, 0, 0);
+      if (entryDate > today) {
+        return res.status(400).json({ success: false, message: `Date ${entry.date} cannot be in the future` });
+      }
+    }
+    
+    const results = [];
+    for (const entry of entries) {
+      try {
+        // Check if entry already exists for this date + activity combination
+        const existingWhere = {
+          employeeId: req.user.id,
+          date: new Date(entry.date),
+          organizationId: req.user.organizationId
+        };
+        if (entry.activityId) {
+          existingWhere.activityId = entry.activityId;
+        }
+        
+        const existingEntry = await prisma.timesheet.findFirst({
+          where: existingWhere
+        });
+        
+        let timesheet;
+        if (existingEntry) {
+          // Update existing entry
+          timesheet = await prisma.timesheet.update({
+            where: { id: existingEntry.id },
+            data: {
+              hours: parseFloat(entry.hours),
+              description: entry.description || null,
+              activityId: entry.activityId || null,
+              updatedAt: new Date()
+            },
+            include: {
+              employee: { select: { id: true, name: true, email: true } },
+              ActivityMaster: { select: { id: true, name: true } }
+            }
+          });
+        } else {
+          // Create new entry
+          timesheet = await prisma.timesheet.create({
+            data: {
+              employeeId: req.user.id,
+              date: new Date(entry.date),
+              hours: parseFloat(entry.hours),
+              description: entry.description || null,
+              activityId: entry.activityId || null,
+              organizationId: req.user.organizationId
+            },
+            include: {
+              employee: { select: { id: true, name: true, email: true } },
+              ActivityMaster: { select: { id: true, name: true } }
+            }
+          });
+        }
+        
+        await logDatabaseOperation('CREATE', 'timesheet', timesheet.id, req.user.id);
+        results.push({ success: true, data: timesheet });
+      } catch (error) {
+        results.push({ success: false, error: error.message, date: entry.date });
+      }
+    }
+    
+    const successCount = results.filter(r => r.success).length;
+    const failureCount = results.filter(r => !r.success).length;
+    
+    res.json({
+      success: true,
+      message: `Successfully created/updated ${successCount} timesheet entries${failureCount > 0 ? ` (${failureCount} failed)` : ''}`,
+      results,
+      summary: { total: entries.length, successful: successCount, failed: failureCount }
+    });
+  } catch (error) {
+    console.error("❌ BULK CREATE TIMESHEET ERROR:", error);
+    res.status(500).json({ success: false, message: "Failed to bulk create timesheet entries", error: error.message });
+  }
+};
+
 export {
   getMyTimesheet,
   getAllTimesheets,
@@ -616,5 +887,10 @@ export {
   approveTimesheetEntry,
   deleteTimesheetEntry,
   getTimesheetHistory,
-  bulkApproveTimesheets
+  bulkApproveTimesheets,
+  bulkCreateTimesheet,
+  getActivities,
+  createActivity,
+  updateActivity,
+  deleteActivity
 };

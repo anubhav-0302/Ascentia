@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
   getMyTimesheet, 
   getAllTimesheets, 
@@ -8,11 +8,18 @@ import {
   deleteTimesheetEntry,
   getTimesheetHistory,
   bulkApproveTimesheets,
+  bulkCreateTimesheet,
+  getActivities,
+  createActivity,
+  updateActivity,
+  deleteActivity,
   type TimesheetEntry as TimesheetEntryType, 
   type CreateTimesheetRequest,
-  type ApproveTimesheetRequest
+  type ApproveTimesheetRequest,
+  type ActivityMaster,
+  type CreateActivityRequest
 } from '../api/timesheetApi';
-import { useAuthStore, useIsManagerOrTeamLeadOrAdmin } from '../store/useAuthStore';
+import { useAuthStore, useIsManagerOrTeamLeadOrAdmin, useIsAdminOrHR } from '../store/useAuthStore';
 import { useEmployeeStore } from '../store/useEmployeeStore';
 import Button from './Button';
 import Input from './Input';
@@ -33,12 +40,18 @@ import {
   Download, 
   Filter as FilterIcon,
   TrendingUp,
-  Info
+  Info,
+  ChevronLeft,
+  ChevronRight,
+  Activity,
+  ToggleLeft,
+  ToggleRight
 } from 'lucide-react';
 
 const TimesheetEntry: React.FC = () => {
   const { user } = useAuthStore();
   const canApproveTimesheet = useIsManagerOrTeamLeadOrAdmin();
+  const canManageActivities = useIsAdminOrHR();
   const { employees } = useEmployeeStore();
   
   // Debug authentication state
@@ -47,7 +60,11 @@ const TimesheetEntry: React.FC = () => {
   // Initialize activeTab from localStorage, default to 'my-timesheet'
   const [activeTab, setActiveTab] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('timesheet-active-tab') || 'my-timesheet';
+      const saved = localStorage.getItem('timesheet-active-tab') || 'my-timesheet';
+      // Prevent restricted tabs from being loaded for unauthorized roles
+      if (saved === 'approvals' && !canApproveTimesheet) return 'my-timesheet';
+      if (saved === 'manage-activities' && !canManageActivities) return 'my-timesheet';
+      return saved;
     }
     return 'my-timesheet';
   });
@@ -77,15 +94,38 @@ const TimesheetEntry: React.FC = () => {
   const [formData, setFormData] = useState<CreateTimesheetRequest>({
     date: '',
     hours: 0,
-    description: ''
+    description: '',
+    activityId: null
   });
 
-  // Quick add form state
-  const [quickAddData, setQuickAddData] = useState<CreateTimesheetRequest>({
-    date: new Date().toISOString().split('T')[0],
-    hours: 8,
-    description: ''
-  });
+  // Quick add form state - now supports multiple activities per date
+  const [activityRows, setActivityRows] = useState<Array<{ activityId: number | null; hours: number }>>([
+    { activityId: null, hours: 8 }
+  ]);
+
+  // Calendar state
+  const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
+  const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [dateSelectionMode, setDateSelectionMode] = useState<'single' | 'range' | 'multi'>('single');
+  const [rangeStart, setRangeStart] = useState<string | null>(null);
+
+  // Activities state
+  const [activities, setActivities] = useState<ActivityMaster[]>([]);
+  const [allActivities, setAllActivities] = useState<ActivityMaster[]>([]);
+  const [activityForm, setActivityForm] = useState<CreateActivityRequest>({ name: '', description: '' });
+  const [editingActivityId, setEditingActivityId] = useState<number | null>(null);
+  const [editingActivityForm, setEditingActivityForm] = useState<CreateActivityRequest & { isActive?: boolean }>({ name: '', description: '' });
+
+  // Helper: format local date without timezone issues
+  const formatLocalDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const todayStr = formatLocalDate(new Date());
 
   // Filter state
   const [filters, setFilters] = useState({
@@ -95,9 +135,23 @@ const TimesheetEntry: React.FC = () => {
     status: ''
   });
 
+  // Fetch activities on component mount
+  useEffect(() => {
+    fetchActivities();
+  }, []);
+
+  // Fetch activities for admin/HR management tab
+  useEffect(() => {
+    if (activeTab === 'manage-activities' && canManageActivities) {
+      fetchAllActivities();
+    }
+  }, [activeTab]);
+
   // Fetch timesheets on component mount and when filters change
   useEffect(() => {
-    fetchTimesheets();
+    if (activeTab !== 'manage-activities') {
+      fetchTimesheets();
+    }
   }, [activeTab, filters]);
 
   // Filter timesheets based on search query
@@ -107,14 +161,14 @@ const TimesheetEntry: React.FC = () => {
     } else {
       const query = searchQuery.toLowerCase();
       const filtered = timesheets.filter(entry => {
-        // Search in date, description, employee name, status
         const dateMatch = new Date(entry.date).toLocaleDateString().toLowerCase().includes(query);
         const descriptionMatch = entry.description?.toLowerCase().includes(query) || false;
         const employeeMatch = entry.employee?.name?.toLowerCase().includes(query) || false;
         const statusMatch = entry.status?.toLowerCase().includes(query) || '';
         const hoursMatch = entry.hours?.toString().includes(query) || '';
+        const activityMatch = entry.ActivityMaster?.name?.toLowerCase().includes(query) || false;
         
-        return dateMatch || descriptionMatch || employeeMatch || statusMatch || hoursMatch;
+        return dateMatch || descriptionMatch || employeeMatch || statusMatch || hoursMatch || activityMatch;
       });
       setFilteredTimesheets(filtered);
     }
@@ -169,6 +223,206 @@ const TimesheetEntry: React.FC = () => {
     }
   };
 
+  const fetchActivities = async () => {
+    try {
+      const response = await getActivities(false);
+      const data = Array.isArray(response) ? response : (response?.data || []);
+      setActivities(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      console.error('❌ Fetch activities error:', err);
+    }
+  };
+
+  const fetchAllActivities = async () => {
+    try {
+      const response = await getActivities(true);
+      const data = Array.isArray(response) ? response : (response?.data || []);
+      setAllActivities(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      console.error('❌ Fetch all activities error:', err);
+    }
+  };
+
+  // Calendar helpers
+  const calendarDaysInMonth = useMemo(() => {
+    const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+    const firstDayOfMonth = new Date(calendarYear, calendarMonth, 1).getDay();
+    return { daysInMonth, firstDayOfMonth };
+  }, [calendarMonth, calendarYear]);
+
+  const calendarMonthName = useMemo(() => {
+    return new Date(calendarYear, calendarMonth).toLocaleString('default', { month: 'long', year: 'numeric' });
+  }, [calendarMonth, calendarYear]);
+
+  // Dates that already have timesheet entries (for visual indicators)
+  const datesWithEntries = useMemo(() => {
+    const dateSet = new Set<string>();
+    timesheets.forEach(entry => {
+      if (entry?.date) {
+        dateSet.add(entry.date.split('T')[0]);
+      }
+    });
+    return dateSet;
+  }, [timesheets]);
+
+  const handleCalendarDateClick = (day: number) => {
+    const dateStr = formatLocalDate(new Date(calendarYear, calendarMonth, day));
+    // Don't allow future dates
+    if (dateStr > todayStr) return;
+
+    if (dateSelectionMode === 'single') {
+      setSelectedDates([dateStr]);
+    } else if (dateSelectionMode === 'multi') {
+      setSelectedDates(prev => 
+        prev.includes(dateStr) ? prev.filter(d => d !== dateStr) : [...prev, dateStr]
+      );
+    } else if (dateSelectionMode === 'range') {
+      if (!rangeStart || selectedDates.length === 2) {
+        setRangeStart(dateStr);
+        setSelectedDates([dateStr]);
+      } else {
+        const start = rangeStart < dateStr ? rangeStart : dateStr;
+        const end = rangeStart < dateStr ? dateStr : rangeStart;
+        const range: string[] = [];
+        let current = new Date(start);
+        while (formatLocalDate(current) <= end) {
+          if (formatLocalDate(current) <= todayStr) {
+            range.push(formatLocalDate(current));
+          }
+          current.setDate(current.getDate() + 1);
+        }
+        setSelectedDates(range);
+        setRangeStart(null);
+      }
+    }
+  };
+
+  // Activity row handlers
+  const addActivityRow = () => {
+    setActivityRows(prev => [...prev, { activityId: null, hours: 0 }]);
+  };
+
+  const removeActivityRow = (index: number) => {
+    if (activityRows.length <= 1) return;
+    setActivityRows(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateActivityRow = (index: number, field: 'activityId' | 'hours', value: number | null) => {
+    setActivityRows(prev => prev.map((row, i) => i === index ? { ...row, [field]: value } : row));
+  };
+
+  const totalActivityHours = useMemo(() => {
+    return activityRows.reduce((sum, row) => sum + (row.hours || 0), 0);
+  }, [activityRows]);
+
+  // Bulk submit with calendar dates + activity rows
+  const handleBulkSubmit = async () => {
+    if (selectedDates.length === 0) {
+      setError('Please select at least one date from the calendar');
+      return;
+    }
+    if (totalActivityHours <= 0) {
+      setError('Please enter hours for at least one activity');
+      return;
+    }
+    if (totalActivityHours > 24) {
+      setError('Total hours per day cannot exceed 24');
+      return;
+    }
+    if (!user) {
+      setError('User not authenticated');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const description = (document.getElementById('bulk-description') as HTMLInputElement)?.value || '';
+      const entries = selectedDates.flatMap(date => 
+        activityRows.filter(row => row.hours > 0).map(row => ({
+          date,
+          hours: row.hours,
+          description: description || undefined,
+          activityId: row.activityId || null
+        }))
+      );
+
+      if (entries.length === 0) {
+        setError('No valid entries to submit');
+        return;
+      }
+
+      const response = await bulkCreateTimesheet({ entries });
+      setSuccess(response.message || `Successfully created ${entries.length} timesheet entries`);
+      
+      // Reset form
+      setSelectedDates([]);
+      setActivityRows([{ activityId: null, hours: 8 }]);
+      setShowQuickAdd(false);
+      fetchActivities(); // Refresh activities in case they changed
+      fetchTimesheets();
+    } catch (err: any) {
+      setError(err.message || 'Failed to create timesheet entries');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Activity CRUD handlers
+  const handleCreateActivity = async () => {
+    if (!activityForm.name.trim()) {
+      setError('Activity name is required');
+      return;
+    }
+    try {
+      setLoading(true);
+      setError(null);
+      await createActivity(activityForm);
+      setSuccess('Activity created successfully');
+      setActivityForm({ name: '', description: '' });
+      fetchActivities();
+      fetchAllActivities();
+    } catch (err: any) {
+      setError(err.message || 'Failed to create activity');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateActivity = async (id: number) => {
+    try {
+      setLoading(true);
+      setError(null);
+      await updateActivity(id, editingActivityForm);
+      setSuccess('Activity updated successfully');
+      setEditingActivityId(null);
+      setEditingActivityForm({ name: '', description: '' });
+      fetchActivities();
+      fetchAllActivities();
+    } catch (err: any) {
+      setError(err.message || 'Failed to update activity');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteActivity = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this activity?')) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await deleteActivity(id);
+      setSuccess(response.message || 'Activity deleted successfully');
+      fetchActivities();
+      fetchAllActivities();
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete activity');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -200,10 +454,10 @@ const TimesheetEntry: React.FC = () => {
       setError(null);
 
       if (editingEntry) {
-        // console.log('✏️ Updating existing entry:', editingEntry.id);
         const response = await updateTimesheetEntry(editingEntry.id, {
           hours: formData.hours,
-          description: formData.description
+          description: formData.description,
+          activityId: formData.activityId
         });
         setSuccess(response.message || 'Timesheet entry updated successfully');
       } else {
@@ -216,7 +470,7 @@ const TimesheetEntry: React.FC = () => {
 
       setShowForm(false);
       setEditingEntry(null);
-      setFormData({ date: '', hours: 0, description: '' });
+      setFormData({ date: '', hours: 0, description: '', activityId: null });
       fetchTimesheets();
     } catch (err: any) {
       // console.error('❌ Form submission error:', err);
@@ -231,7 +485,8 @@ const TimesheetEntry: React.FC = () => {
     setFormData({
       date: entry.date.split('T')[0],
       hours: entry.hours,
-      description: entry.description || ''
+      description: entry.description || '',
+      activityId: entry.activityId || null
     });
     setShowForm(true);
   };
@@ -387,34 +642,10 @@ const TimesheetEntry: React.FC = () => {
     }
   };
 
-  const handleQuickAdd = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await createTimesheetEntry(quickAddData);
-      setSuccess(response.message || 'Timesheet entry created successfully');
-      
-      // Reset quick add form
-      setQuickAddData({
-        date: new Date().toISOString().split('T')[0],
-        hours: 8,
-        description: ''
-      });
-      setShowQuickAdd(false);
-      
-      // Refresh data
-      fetchTimesheets(currentPage);
-    } catch (err: any) {
-      setError(err.message || 'Failed to create timesheet entry');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const resetForm = () => {
     setEditingEntry(null);
-    setFormData({ date: '', hours: 0, description: '' });
+    setFormData({ date: '', hours: 0, description: '', activityId: null });
     setShowForm(false);
   };
 
@@ -508,7 +739,7 @@ const TimesheetEntry: React.FC = () => {
               My Timesheet
             </button>
             
-            {(canApproveTimesheet || activeTab === 'approvals') && (
+            {canApproveTimesheet && (
               <button
                 onClick={() => setActiveTab('approvals')}
                 className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
@@ -531,6 +762,22 @@ const TimesheetEntry: React.FC = () => {
             >
               History & Export
             </button>
+            
+            {canManageActivities && (
+              <button
+                onClick={() => setActiveTab('manage-activities')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'manage-activities'
+                    ? 'border-teal-500 text-teal-400'
+                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <Activity className="w-4 h-4" />
+                  Manage Activities
+                </span>
+              </button>
+            )}
           </nav>
         </div>
 
@@ -589,83 +836,249 @@ const TimesheetEntry: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick Add Form */}
+        {/* Quick Add Form - Calendar + Multi-Activity */}
         {showQuickAdd && activeTab === 'my-timesheet' && (
           <>
             <Card className="mb-6 bg-blue-600/10 border-blue-600/30">
               <div className="p-4">
                 <div className="flex items-center mb-3">
                   <Info className="w-5 h-5 mr-2 text-blue-400" />
-                  <h3 className="text-lg font-medium text-white">My Timesheet</h3>
+                  <h3 className="text-lg font-medium text-white">Add Timesheet Entries</h3>
                 </div>
                 <p className="text-gray-300 text-sm mb-4">
-                  Manage your recent timesheet entries from the last 3 months. Add new entries, edit pending submissions, and track your current work hours.
+                  Select dates from the calendar, choose activities, and enter hours. You can select multiple dates and add multiple activities per day.
                 </p>
-                <div className="flex items-center gap-4 text-sm">
-                  <span className="text-gray-400">Showing entries from:</span>
-                  <span className="text-blue-300 font-medium">
-                    {new Date(new Date().setMonth(new Date().getMonth() - 3)).toLocaleDateString()} - Present
-                  </span>
-                </div>
               </div>
             </Card>
 
-            <Card className="mb-6 bg-teal-600/10 border-teal-600/30">
-              <div className="p-4">
-                <h3 className="text-lg font-medium text-white mb-4 flex items-center">
-                  <Plus className="w-5 h-5 mr-2" />
-                  Add Timesheet Entry
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                  <div className="md:col-span-3">
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Date</label>
-                    <Input
-                      type="date"
-                      value={quickAddData.date}
-                      onChange={(e) => setQuickAddData({ ...quickAddData, date: e.target.value })}
-                      max={new Date().toISOString().split('T')[0]}
-                    />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* Calendar Section */}
+              <Card className="bg-slate-800/50 border-slate-700/50">
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium text-white flex items-center">
+                      <Calendar className="w-5 h-5 mr-2 text-teal-400" />
+                      Select Dates
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          if (calendarMonth === 0) {
+                            setCalendarMonth(11);
+                            setCalendarYear(prev => prev - 1);
+                          } else {
+                            setCalendarMonth(prev => prev - 1);
+                          }
+                        }}
+                        className="p-1 hover:bg-slate-700 rounded"
+                      >
+                        <ChevronLeft className="w-5 h-5 text-gray-400" />
+                      </button>
+                      <span className="text-sm font-medium text-white min-w-[140px] text-center">{calendarMonthName}</span>
+                      <button
+                        onClick={() => {
+                          if (calendarMonth === 11) {
+                            setCalendarMonth(0);
+                            setCalendarYear(prev => prev + 1);
+                          } else {
+                            setCalendarMonth(prev => prev + 1);
+                          }
+                        }}
+                        className="p-1 hover:bg-slate-700 rounded"
+                      >
+                        <ChevronRight className="w-5 h-5 text-gray-400" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Hours</label>
-                    <Input
-                      type="number"
-                      value={quickAddData.hours || ''}
-                      onChange={(e) => setQuickAddData({ ...quickAddData, hours: parseFloat(e.target.value) || 0 })}
-                      min="0.5"
-                      max="24"
-                      step="0.5"
-                      placeholder="8"
-                    />
+
+                  {/* Date Selection Mode */}
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-xs text-gray-400">Mode:</span>
+                    {(['single', 'multi', 'range'] as const).map(mode => (
+                      <button
+                        key={mode}
+                        onClick={() => { setDateSelectionMode(mode); setSelectedDates([]); setRangeStart(null); }}
+                        className={`px-2 py-1 text-xs rounded font-medium transition-colors ${
+                          dateSelectionMode === mode
+                            ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30'
+                            : 'bg-slate-700/50 text-gray-400 border border-slate-600/50 hover:text-white'
+                        }`}
+                      >
+                        {mode === 'single' ? 'Single Date' : mode === 'multi' ? 'Multiple' : 'Date Range'}
+                      </button>
+                    ))}
                   </div>
-                  <div className="md:col-span-5">
+
+                  {/* Calendar Grid */}
+                  <div className="grid grid-cols-7 gap-1">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                      <div key={day} className="text-center text-xs font-medium text-gray-500 py-1">{day}</div>
+                    ))}
+                    {/* Empty cells for days before month start */}
+                    {Array.from({ length: calendarDaysInMonth.firstDayOfMonth }, (_, i) => (
+                      <div key={`empty-${i}`} className="h-9" />
+                    ))}
+                    {/* Day cells */}
+                    {Array.from({ length: calendarDaysInMonth.daysInMonth }, (_, i) => {
+                      const day = i + 1;
+                      const dateStr = formatLocalDate(new Date(calendarYear, calendarMonth, day));
+                      const isFuture = dateStr > todayStr;
+                      const isSelected = selectedDates.includes(dateStr);
+                      const hasEntry = datesWithEntries.has(dateStr);
+                      const isToday = dateStr === todayStr;
+
+                      return (
+                        <button
+                          key={day}
+                          onClick={() => !isFuture && handleCalendarDateClick(day)}
+                          disabled={isFuture}
+                          className={`h-9 w-full rounded-lg text-sm font-medium transition-all relative ${
+                            isFuture
+                              ? 'text-gray-600 cursor-not-allowed'
+                              : isSelected
+                                ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/30'
+                                : isToday
+                                  ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30 hover:bg-blue-500/30'
+                                  : hasEntry
+                                    ? 'bg-slate-600/50 text-gray-300 hover:bg-slate-600'
+                                    : 'text-gray-400 hover:bg-slate-700 hover:text-white'
+                          }`}
+                        >
+                          {day}
+                          {hasEntry && !isSelected && (
+                            <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-teal-400" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Selected Dates Summary */}
+                  {selectedDates.length > 0 && (
+                    <div className="mt-4 p-3 bg-teal-500/10 border border-teal-500/20 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-teal-300">
+                          {selectedDates.length} date{selectedDates.length > 1 ? 's' : ''} selected
+                        </span>
+                        <button
+                          onClick={() => { setSelectedDates([]); setRangeStart(null); }}
+                          className="text-xs text-gray-400 hover:text-white"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {selectedDates.slice(0, 7).map(date => (
+                          <span key={date} className="px-2 py-0.5 bg-teal-500/20 text-teal-300 text-xs rounded">
+                            {new Date(date + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                          </span>
+                        ))}
+                        {selectedDates.length > 7 && (
+                          <span className="px-2 py-0.5 text-gray-400 text-xs">
+                            +{selectedDates.length - 7} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Card>
+
+              {/* Activity & Hours Section */}
+              <Card className="bg-slate-800/50 border-slate-700/50">
+                <div className="p-4">
+                  <h3 className="text-lg font-medium text-white mb-4 flex items-center">
+                    <Clock className="w-5 h-5 mr-2 text-teal-400" />
+                    Activities & Hours
+                  </h3>
+
+                  {/* Activity Rows */}
+                  <div className="space-y-3 mb-4">
+                    {activityRows.map((row, index) => (
+                      <div key={index} className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <UnifiedDropdown
+                            value={row.activityId || ''}
+                            onChange={(value) => updateActivityRow(index, 'activityId', value ? Number(value) : null)}
+                            options={[
+                              { value: '', label: 'No Activity' },
+                              ...activities.map(a => ({ value: a.id, label: a.name }))
+                            ]}
+                            size="sm"
+                            showLabel={false}
+                            className="w-full"
+                          />
+                        </div>
+                        <div className="w-24">
+                          <Input
+                            type="number"
+                            value={row.hours || ''}
+                            onChange={(e) => updateActivityRow(index, 'hours', parseFloat(e.target.value) || 0)}
+                            min="0"
+                            max="24"
+                            step="0.5"
+                            placeholder="Hours"
+                          />
+                        </div>
+                        {activityRows.length > 1 && (
+                          <button
+                            onClick={() => removeActivityRow(index)}
+                            className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded"
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={addActivityRow}
+                    className="flex items-center gap-1.5 text-sm text-teal-400 hover:text-teal-300 mb-4"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Activity
+                  </button>
+
+                  {/* Total Hours Display */}
+                  <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg mb-4">
+                    <span className="text-sm text-gray-400">Total Hours per Day</span>
+                    <span className={`text-lg font-bold ${totalActivityHours > 24 ? 'text-red-400' : 'text-white'}`}>
+                      {totalActivityHours}h
+                    </span>
+                  </div>
+
+                  {/* Description */}
+                  <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-400 mb-2">Description (optional)</label>
                     <Input
+                      id="bulk-description"
                       type="text"
-                      value={quickAddData.description}
-                      onChange={(e) => setQuickAddData({ ...quickAddData, description: e.target.value })}
                       placeholder="What did you work on?"
                     />
                   </div>
-                  <div className="md:col-span-2 flex gap-2">
+
+                  {/* Submit Buttons */}
+                  <div className="flex gap-3">
                     <Button
-                      onClick={handleQuickAdd}
+                      onClick={handleBulkSubmit}
                       loading={loading}
                       icon={<Plus className="w-4 h-4" />}
                       className="flex-1"
+                      disabled={selectedDates.length === 0 || totalActivityHours <= 0}
                     >
-                      Add
+                      Submit {selectedDates.length > 0 ? `${selectedDates.length * activityRows.filter(r => r.hours > 0).length} Entries` : 'Entries'}
                     </Button>
                     <Button
-                      onClick={() => setShowQuickAdd(false)}
+                      onClick={() => { setShowQuickAdd(false); setSelectedDates([]); setActivityRows([{ activityId: null, hours: 8 }]); }}
                       variant="secondary"
                     >
                       Cancel
                     </Button>
                   </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </div>
           </>
         )}
 
@@ -726,6 +1139,23 @@ const TimesheetEntry: React.FC = () => {
                     onChange={(e) => setFormData(prev => ({ ...prev, hours: parseFloat(e.target.value) || 0 }))}
                     placeholder="Number of hours worked"
                     required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Activity
+                  </label>
+                  <UnifiedDropdown
+                    value={formData.activityId || ''}
+                    onChange={(value) => setFormData(prev => ({ ...prev, activityId: value ? Number(value) : null }))}
+                    options={[
+                      { value: '', label: 'No Activity' },
+                      ...activities.map(a => ({ value: a.id, label: a.name }))
+                    ]}
+                    size="md"
+                    showLabel={false}
+                    className="w-full"
                   />
                 </div>
 
@@ -982,6 +1412,9 @@ const TimesheetEntry: React.FC = () => {
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider whitespace-nowrap">
                         Hours
                       </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                        Activity
+                      </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
                         Description
                       </th>
@@ -1031,6 +1464,15 @@ const TimesheetEntry: React.FC = () => {
                           <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
                             {entry.hours}h
                           </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {entry.ActivityMaster ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                              {entry.ActivityMaster.name}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-500 italic">None</span>
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-300 max-w-md">
@@ -1132,6 +1574,17 @@ const TimesheetEntry: React.FC = () => {
                       <span className="text-sm font-medium text-white">{entry.hours}h</span>
                     </div>
                     
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-400">Activity</span>
+                      {entry.ActivityMaster ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                          {entry.ActivityMaster.name}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-500 italic">None</span>
+                      )}
+                    </div>
+                    
                     {entry.description && (
                       <div className="flex items-start justify-between">
                         <span className="text-xs text-gray-400">Description</span>
@@ -1196,6 +1649,180 @@ const TimesheetEntry: React.FC = () => {
             </>
           )}
         </Card>
+
+        {/* Manage Activities Tab */}
+        {activeTab === 'manage-activities' && canManageActivities && (
+          <>
+            {/* Create Activity Form */}
+            <Card className="mb-6 bg-teal-600/10 border-teal-600/30">
+              <div className="p-4">
+                <h3 className="text-lg font-medium text-white mb-4 flex items-center">
+                  <Plus className="w-5 h-5 mr-2" />
+                  Add New Activity
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                  <div className="md:col-span-4">
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Activity Name *</label>
+                    <Input
+                      type="text"
+                      value={activityForm.name}
+                      onChange={(e) => setActivityForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="e.g., Development, Testing, Meeting"
+                    />
+                  </div>
+                  <div className="md:col-span-5">
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Description (optional)</label>
+                    <Input
+                      type="text"
+                      value={activityForm.description}
+                      onChange={(e) => setActivityForm(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Brief description of this activity"
+                    />
+                  </div>
+                  <div className="md:col-span-3 flex gap-2">
+                    <Button
+                      onClick={handleCreateActivity}
+                      loading={loading}
+                      icon={<Plus className="w-4 h-4" />}
+                      className="flex-1"
+                    >
+                      Create
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Activities List */}
+            <Card className="overflow-hidden border-slate-700/50">
+              <div className="px-6 py-4 border-b border-slate-700/50">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-white flex items-center">
+                    <Activity className="w-5 h-5 mr-2 text-teal-400" />
+                    Activities
+                  </h2>
+                  <span className="text-sm text-gray-400">
+                    {allActivities.length} activit{allActivities.length === 1 ? 'y' : 'ies'}
+                  </span>
+                </div>
+              </div>
+
+              {allActivities.length === 0 ? (
+                <div className="text-center py-12">
+                  <Activity className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+                  <p className="text-gray-400 text-lg">No activities found</p>
+                  <p className="text-gray-500 text-sm mt-2">Create your first activity using the form above.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-700/50">
+                  {allActivities.map(activity => (
+                    <div key={activity.id} className="px-6 py-4 hover:bg-slate-700/40 transition-colors">
+                      {editingActivityId === activity.id ? (
+                        /* Edit Mode */
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                          <div className="md:col-span-4">
+                            <label className="block text-xs font-medium text-gray-400 mb-1">Name</label>
+                            <Input
+                              type="text"
+                              value={editingActivityForm.name}
+                              onChange={(e) => setEditingActivityForm(prev => ({ ...prev, name: e.target.value }))}
+                            />
+                          </div>
+                          <div className="md:col-span-4">
+                            <label className="block text-xs font-medium text-gray-400 mb-1">Description</label>
+                            <Input
+                              type="text"
+                              value={editingActivityForm.description || ''}
+                              onChange={(e) => setEditingActivityForm(prev => ({ ...prev, description: e.target.value }))}
+                            />
+                          </div>
+                          <div className="md:col-span-2 flex items-end gap-2">
+                            <Button
+                              onClick={() => handleUpdateActivity(activity.id)}
+                              loading={loading}
+                              size="sm"
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              onClick={() => setEditingActivityId(null)}
+                              variant="secondary"
+                              size="sm"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Display Mode */
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-white">{activity.name}</span>
+                                {!activity.isActive && (
+                                  <span className="px-1.5 py-0.5 text-xs rounded bg-red-500/20 text-red-400 border border-red-500/30">
+                                    Inactive
+                                  </span>
+                                )}
+                              </div>
+                              {activity.description && (
+                                <p className="text-xs text-gray-400 mt-0.5">{activity.description}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                setEditingActivityId(activity.id);
+                                setEditingActivityForm({ 
+                                  name: activity.name, 
+                                  description: activity.description || '',
+                                  isActive: activity.isActive
+                                });
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-white hover:bg-slate-600 rounded"
+                              title="Edit"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await updateActivity(activity.id, { isActive: !activity.isActive });
+                                  setSuccess(`Activity ${activity.isActive ? 'deactivated' : 'activated'} successfully`);
+                                  fetchAllActivities();
+                                  fetchActivities();
+                                } catch (err: any) {
+                                  setError(err.message || 'Failed to toggle activity');
+                                }
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-white hover:bg-slate-600 rounded"
+                              title={activity.isActive ? 'Deactivate' : 'Activate'}
+                            >
+                              {activity.isActive ? (
+                                <ToggleRight className="w-4 h-4 text-teal-400" />
+                              ) : (
+                                <ToggleLeft className="w-4 h-4 text-gray-500" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteActivity(activity.id)}
+                              className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </>
+        )}
 
         {/* Pagination Controls */}
         {pagination && pagination.pages > 1 && (

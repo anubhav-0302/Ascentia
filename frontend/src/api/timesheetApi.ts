@@ -44,6 +44,7 @@ export interface TimesheetEntry {
   date: string;
   hours: number;
   description?: string;
+  activityId?: number | null;
   status: 'Pending' | 'Approved' | 'Rejected';
   approvedBy?: number;
   approvedAt?: string;
@@ -60,17 +61,23 @@ export interface TimesheetEntry {
     name: string;
     email: string;
   };
+  ActivityMaster?: {
+    id: number;
+    name: string;
+  };
 }
 
 export interface CreateTimesheetRequest {
   date: string;
   hours: number;
   description?: string;
+  activityId?: number | null;
 }
 
 export interface UpdateTimesheetRequest {
   hours?: number;
   description?: string;
+  activityId?: number | null;
 }
 
 export interface ApproveTimesheetRequest {
@@ -155,6 +162,75 @@ export const bulkApproveTimesheets = async (data: {
   comments?: string;
 }) => {
   const response = await apiClient.post('/timesheet/bulk-approve', data);
+  return response.data;
+};
+
+// ===================== ACTIVITY MASTER =====================
+
+export interface ActivityMaster {
+  id: number;
+  name: string;
+  description?: string | null;
+  createdBy: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  Employee?: {
+    id: number;
+    name: string;
+  };
+}
+
+export interface CreateActivityRequest {
+  name: string;
+  description?: string;
+}
+
+export interface UpdateActivityRequest {
+  name?: string;
+  description?: string;
+  isActive?: boolean;
+}
+
+// Get all active activities
+export const getActivities = async (includeInactive = false) => {
+  const queryString = includeInactive ? '?includeInactive=true' : '';
+  const response = await apiClient.get(`/timesheet/activities${queryString}`);
+  return response.data;
+};
+
+// Create new activity
+export const createActivity = async (data: CreateActivityRequest) => {
+  const response = await apiClient.post('/timesheet/activities', data);
+  return response.data;
+};
+
+// Update activity
+export const updateActivity = async (id: number, data: UpdateActivityRequest) => {
+  const response = await apiClient.put(`/timesheet/activities/${id}`, data);
+  return response.data;
+};
+
+// Delete activity
+export const deleteActivity = async (id: number) => {
+  const response = await apiClient.delete(`/timesheet/activities/${id}`);
+  return response.data;
+};
+
+// ===================== BULK CREATE =====================
+
+export interface BulkCreateTimesheetRequest {
+  entries: Array<{
+    date: string;
+    hours: number;
+    description?: string;
+    activityId?: number | null;
+  }>;
+}
+
+// Bulk create timesheet entries
+export const bulkCreateTimesheet = async (data: BulkCreateTimesheetRequest) => {
+  const response = await apiClient.post('/timesheet/bulk-create', data);
   return response.data;
 };
 

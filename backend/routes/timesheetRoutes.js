@@ -7,7 +7,12 @@ import {
   approveTimesheetEntry, 
   deleteTimesheetEntry,
   getTimesheetHistory,
-  bulkApproveTimesheets
+  bulkApproveTimesheets,
+  bulkCreateTimesheet,
+  getActivities,
+  createActivity,
+  updateActivity,
+  deleteActivity
 } from '../timesheetController.js';
 import { requireAuth } from '../middleware/auth.js';
 import { checkPermission } from '../middleware/permissions.js';
@@ -31,8 +36,23 @@ router.get('/', requireAuth, generalApiLimiter, getMyTimesheet);
 // GET /api/timesheet/all - Get all timesheets
 router.get('/all', requireAuth, checkPermission('timesheet', 'view'), generalApiLimiter, getAllTimesheets);
 
+// GET /api/timesheet/activities - Get all active activities
+router.get('/activities', requireAuth, generalApiLimiter, getActivities);
+
+// POST /api/timesheet/activities - Create new activity (admin/HR only)
+router.post('/activities', requireAuth, checkPermission('timesheet', 'create'), generalApiLimiter, createActivity);
+
+// PUT /api/timesheet/activities/:id - Update activity (admin/HR only)
+router.put('/activities/:id', requireAuth, checkPermission('timesheet', 'edit'), generalApiLimiter, updateActivity);
+
+// DELETE /api/timesheet/activities/:id - Delete activity (admin/HR only)
+router.delete('/activities/:id', requireAuth, checkPermission('timesheet', 'delete'), generalApiLimiter, deleteActivity);
+
 // POST /api/timesheet - Create new timesheet entry
 router.post('/', requireAuth, checkPermission('timesheet', 'create'), timesheetSubmissionLimiter, createTimesheetEntry);
+
+// POST /api/timesheet/bulk-create - Bulk create timesheet entries
+router.post('/bulk-create', requireAuth, checkPermission('timesheet', 'create'), timesheetSubmissionLimiter, bulkCreateTimesheet);
 
 // PUT /api/timesheet/:id - Update timesheet entry
 router.put('/', requireAuth, checkPermission('timesheet', 'edit'), timesheetSubmissionLimiter, updateTimesheetEntry);
