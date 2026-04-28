@@ -119,6 +119,85 @@ export const getDashboardStats = async (req, res) => {
       payrollStatus = 'Not Available';
     }
 
+    // Get project data for managers and team leads
+    let managedProjects = null;
+    if (userRole === 'manager' || userRole === 'teamlead') {
+      // Projects where user is the manager
+      const projects = await prisma.project.findMany({
+        where: {
+          managerId: userId,
+          organizationId: req.user.organizationId
+        },
+        include: {
+          assignments: {
+            include: {
+              employee: {
+                select: { id: true, name: true, email: true, jobTitle: true, status: true }
+              }
+            }
+          },
+          tasks: {
+            select: { id: true, status: true }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      // Also include projects where user is a team lead
+      const leadProjects = await prisma.project.findMany({
+        where: {
+          assignments: {
+            some: {
+              employeeId: userId,
+              role: 'lead'
+            }
+          },
+          organizationId: req.user.organizationId
+        },
+        include: {
+          assignments: {
+            include: {
+              employee: {
+                select: { id: true, name: true, email: true, jobTitle: true, status: true }
+              }
+            }
+          },
+          tasks: {
+            select: { id: true, status: true }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      // Merge and deduplicate projects
+      const projectMap = new Map();
+      [...projects, ...leadProjects].forEach(p => {
+        if (!projectMap.has(p.id)) projectMap.set(p.id, p);
+      });
+
+      managedProjects = Array.from(projectMap.values()).map(p => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        status: p.status,
+        priority: p.priority,
+        startDate: p.startDate,
+        endDate: p.endDate,
+        memberCount: p.assignments.length,
+        taskCount: p.tasks.length,
+        completedTasks: p.tasks.filter(t => t.status === 'done').length,
+        members: p.assignments.map(a => ({
+          id: a.employee.id,
+          name: a.employee.name,
+          email: a.employee.email,
+          jobTitle: a.employee.jobTitle,
+          status: a.employee.status,
+          role: a.role,
+          allocation: a.allocation
+        }))
+      }));
+    }
+
     // Build monthly leave trends for the last 6 months
     const now = new Date();
     const leaveTrends = Array.from({ length: 6 }, (_, i) => {
@@ -146,7 +225,8 @@ export const getDashboardStats = async (req, res) => {
         leaveStatus, leaveTrends,
         teamAttendance, avgPerformance,
         hoursLogged, performanceRating,
-        pendingTimesheetReviews, payrollStatus
+        pendingTimesheetReviews, payrollStatus,
+        managedProjects
       }
     });
   } catch (error) {

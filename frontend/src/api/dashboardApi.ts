@@ -36,6 +36,28 @@ export interface DashboardStats {
   performanceRating?: number;
   pendingTimesheetReviews?: number;
   payrollStatus?: string;
+  // Project data for managers/team leads
+  managedProjects?: Array<{
+    id: number;
+    name: string;
+    description?: string;
+    status: string;
+    priority: string;
+    startDate?: string;
+    endDate?: string;
+    memberCount: number;
+    taskCount: number;
+    completedTasks: number;
+    members: Array<{
+      id: number;
+      name: string;
+      email: string;
+      jobTitle: string;
+      status: string;
+      role: string;
+      allocation?: number;
+    }>;
+  }>;
 }
 
 // Get dashboard statistics

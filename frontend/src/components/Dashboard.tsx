@@ -73,8 +73,8 @@ const Dashboard = () => {
       const data = await getDashboardStats();
       setStats(data);
       
-      // Fetch personal leave data for employees and HR users
-      if (!isAdmin && !isManager) {
+      // Fetch personal leave data for employees, team leads, and managers
+      if (!isAdmin && !isHR) {
         const leavesData = await getMyLeaves();
         setMyLeaves(leavesData.data || []);
       }
@@ -323,8 +323,12 @@ const Dashboard = () => {
               </div>
             </Link>
 
-            <div className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn hover:border-blue-500/40 hover:shadow-blue-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-              style={{ animationDelay: '0.2s' }}>
+            <Link 
+              to="/leave-attendance"
+              onClick={() => handleNavigateToLeaveAttendance('leave-status')}
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-blue-500/40 hover:shadow-blue-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              style={{ animationDelay: '0.2s' }}
+            >
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-blue-500/20 rounded-xl group-hover:bg-blue-500/30 transition-colors duration-300">
                   <i className="fas fa-calendar text-blue-400 text-xl"></i>
@@ -337,43 +341,43 @@ const Dashboard = () => {
                 <span>Review Requests</span>
                 <i className="fas fa-arrow-right ml-2"></i>
               </div>
+            </Link>
+
+            <div className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn hover:border-purple-500/40 hover:shadow-purple-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              style={{ animationDelay: '0.3s' }}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-purple-500/20 rounded-xl group-hover:bg-purple-500/30 transition-colors duration-300">
+                  <i className="fas fa-project-diagram text-purple-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Projects</span>
+              </div>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-purple-100 transition-colors duration-300">{stats?.managedProjects?.length || 0}</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Assigned Projects</p>
+              <div className="mt-4 flex items-center text-xs text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>View Projects</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
             </div>
 
             <Link 
               to="/leave-attendance"
               onClick={() => handleNavigateToLeaveAttendance('leave-status')}
-              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-purple-500/40 hover:shadow-purple-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-              style={{ animationDelay: '0.3s' }}
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-orange-500/40 hover:shadow-orange-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              style={{ animationDelay: '0.4s' }}
             >
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-purple-500/20 rounded-xl group-hover:bg-purple-500/30 transition-colors duration-300">
-                  <i className="fas fa-chart-pie text-purple-400 text-xl"></i>
+                <div className="p-3 bg-orange-500/20 rounded-xl group-hover:bg-orange-500/30 transition-colors duration-300">
+                  <i className="fas fa-calendar-check text-orange-400 text-xl"></i>
                 </div>
-                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Status</span>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Available</span>
               </div>
-              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-purple-100 transition-colors duration-300">{stats?.teamAttendance || 0}%</h3>
-              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Team Attendance</p>
-              <div className="mt-4 flex items-center text-xs text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <span>View Attendance</span>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-orange-100 transition-colors duration-300">{leaveBalance}</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">My Leave Days</p>
+              <div className="mt-4 flex items-center text-xs text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>Request Leave</span>
                 <i className="fas fa-arrow-right ml-2"></i>
               </div>
             </Link>
-
-            <div className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn hover:border-orange-500/40 hover:shadow-orange-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-              style={{ animationDelay: '0.4s' }}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-orange-500/20 rounded-xl group-hover:bg-orange-500/30 transition-colors duration-300">
-                  <i className="fas fa-star text-orange-400 text-xl"></i>
-                </div>
-                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Avg</span>
-              </div>
-              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-orange-100 transition-colors duration-300">{stats?.avgPerformance || 'N/A'}/5</h3>
-              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Team Performance</p>
-              <div className="mt-4 flex items-center text-xs text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <span>View Reviews</span>
-                <i className="fas fa-arrow-right ml-2"></i>
-              </div>
-            </div>
           </>
         )}
 
@@ -460,6 +464,87 @@ const Dashboard = () => {
           </>
         )}
 
+        {/* TEAM LEAD VIEW - Team & Project Focused Metrics */}
+        {isTeamLead && (
+          <>
+            <Link 
+              to="/my-team"
+              onClick={() => handleNavigateToMyTeam()}
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-green-500/40 hover:shadow-green-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              style={{ animationDelay: '0.1s' }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-green-500/20 rounded-xl group-hover:bg-green-500/30 transition-colors duration-300">
+                  <i className="fas fa-users text-green-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Team</span>
+              </div>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-green-100 transition-colors duration-300">{stats?.activeEmployees || 0}</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Team Members</p>
+              <div className="mt-4 flex items-center text-xs text-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>View Team</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
+            </Link>
+
+            <Link 
+              to="/leave-attendance"
+              onClick={() => handleNavigateToLeaveAttendance('leave-status')}
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-yellow-500/40 hover:shadow-yellow-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              style={{ animationDelay: '0.2s' }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-yellow-500/20 rounded-xl group-hover:bg-yellow-500/30 transition-colors duration-300">
+                  <i className="fas fa-calendar-times text-yellow-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Pending</span>
+              </div>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-yellow-100 transition-colors duration-300">{stats?.leaveStatus?.find(l => l.status === 'Pending')?.count || 0}</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Leave Approvals</p>
+              <div className="mt-4 flex items-center text-xs text-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>Review Requests</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
+            </Link>
+
+            <div className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn hover:border-blue-500/40 hover:shadow-blue-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              style={{ animationDelay: '0.3s' }}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-blue-500/20 rounded-xl group-hover:bg-blue-500/30 transition-colors duration-300">
+                  <i className="fas fa-project-diagram text-blue-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Projects</span>
+              </div>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-blue-100 transition-colors duration-300">{stats?.managedProjects?.length || 0}</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Assigned Projects</p>
+              <div className="mt-4 flex items-center text-xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>View Projects</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
+            </div>
+
+            <Link 
+              to="/leave-attendance"
+              onClick={() => handleNavigateToLeaveAttendance('leave-status')}
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-purple-500/40 hover:shadow-purple-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              style={{ animationDelay: '0.4s' }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-purple-500/20 rounded-xl group-hover:bg-purple-500/30 transition-colors duration-300">
+                  <i className="fas fa-calendar-check text-purple-400 text-xl"></i>
+                </div>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Available</span>
+              </div>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-purple-100 transition-colors duration-300">{leaveBalance}</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">My Leave Days</p>
+              <div className="mt-4 flex items-center text-xs text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span>Request Leave</span>
+                <i className="fas fa-arrow-right ml-2"></i>
+              </div>
+            </Link>
+          </>
+        )}
+
         {/* EMPLOYEE VIEW - Personal Focused Metrics */}
         {!isAdmin && !isManager && !isHR && !isTeamLead && (
           <>
@@ -537,7 +622,7 @@ const Dashboard = () => {
       </div>
 
       {/* Insights & Alerts Section - Role Based */}
-      {(isAdmin || isHR || isManager) && (
+      {(isAdmin || isHR || isManager || isTeamLead) && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* AI Insights */}
           <div className="lg:col-span-2 bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-6 animate-fadeIn" style={{ animationDelay: '0.8s' }}>
@@ -623,8 +708,8 @@ const Dashboard = () => {
                 </>
               )}
 
-              {/* Manager sees team-specific insights */}
-              {isManager && (
+              {/* Manager/TeamLead sees team-specific insights */}
+              {(isManager || isTeamLead) && (
                 <>
                   <div className="p-4 bg-gradient-to-r from-blue-500/5 to-transparent rounded-lg">
                     <div className="flex items-start space-x-3">
@@ -713,7 +798,7 @@ const Dashboard = () => {
                   </div>
                 </Link>
               )}
-              {(isAdmin || isHR || isManager) && (
+              {(isAdmin || isHR || isManager || isTeamLead) && (
                 <Link 
                   to="/leave-attendance"
                   className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group block"
@@ -776,56 +861,52 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Charts Section - Role Based */}
-      {(isAdmin || isHR || isManager) && (
+      {/* Charts Section - Admin/HR only */}
+      {(isAdmin || isHR) && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Department Distribution Pie Chart - Admin/HR only */}
-          {(isAdmin || isHR) && (
-            <Link 
-              to="/directory"
-              onClick={() => handleNavigateToDirectory('departments')}
-              className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
-              style={{ animationDelay: '0.5s' }}
-            >
-              <h3 className="text-lg font-semibold text-white mb-4">Department Distribution</h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={stats?.departmentDistribution || []}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : '0'}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="count"
-                  >
-                    {(stats?.departmentDistribution || []).map((_entry, index) => (
-                      <Cell key={`cell-${index}`} fill={DEPARTMENT_COLORS[index % DEPARTMENT_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#1e293b', 
-                      border: '1px solid #475569',
-                      borderRadius: '8px'
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </Link>
-          )}
+          {/* Department Distribution Pie Chart */}
+          <Link 
+            to="/directory"
+            onClick={() => handleNavigateToDirectory('departments')}
+            className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
+            style={{ animationDelay: '0.5s' }}
+          >
+            <h3 className="text-lg font-semibold text-white mb-4">Department Distribution</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={stats?.departmentDistribution || []}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : '0'}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="count"
+                >
+                  {(stats?.departmentDistribution || []).map((_entry, index) => (
+                    <Cell key={`cell-${index}`} fill={DEPARTMENT_COLORS[index % DEPARTMENT_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1e293b', 
+                    border: '1px solid #475569',
+                    borderRadius: '8px'
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </Link>
 
-          {/* Leave Status Bar Chart - All roles except Employee */}
+          {/* Leave Status Bar Chart */}
           <Link 
             to="/leave-attendance"
             onClick={() => handleNavigateToLeaveAttendance('leave-status')}
             className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
             style={{ animationDelay: '0.6s' }}
           >
-            <h3 className="text-lg font-semibold text-white mb-4">
-              {isAdmin || isHR ? 'Organization Leave Status' : 'Team Leave Status'}
-            </h3>
+            <h3 className="text-lg font-semibold text-white mb-4">Organization Leave Status</h3>
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={stats?.leaveStatus || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
@@ -858,65 +939,63 @@ const Dashboard = () => {
             </ResponsiveContainer>
           </Link>
 
-          {/* Leave Trends Line Chart - Admin/HR only */}
-          {(isAdmin || isHR) && (
-            <Link 
-              to="/reports"
-              onClick={() => handleNavigateToReports()}
-              className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
-              style={{ animationDelay: '0.7s' }}
-            >
-              <h3 className="text-lg font-semibold text-white mb-4">Leave Trends (6 Months)</h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={stats?.leaveTrends || []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
-                  <XAxis 
-                    dataKey="month" 
-                    stroke="#94a3b8"
-                    tick={{ fill: '#94a3b8' }}
-                  />
-                  <YAxis 
-                    stroke="#94a3b8"
-                    tick={{ fill: '#94a3b8' }}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#1e293b', 
-                      border: '1px solid #475569',
-                      borderRadius: '8px'
-                    }}
-                  />
-                  <Legend 
-                    wrapperStyle={{ color: '#94a3b8' }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="approved" 
-                    stroke={TREND_COLORS.approved} 
-                    strokeWidth={2}
-                    dot={{ fill: TREND_COLORS.approved, r: 4 }}
-                    activeDot={{ r: 6 }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="pending" 
-                    stroke={TREND_COLORS.pending} 
-                    strokeWidth={2}
-                    dot={{ fill: TREND_COLORS.pending, r: 4 }}
-                    activeDot={{ r: 6 }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="rejected" 
-                    stroke={TREND_COLORS.rejected} 
-                    strokeWidth={2}
-                    dot={{ fill: TREND_COLORS.rejected, r: 4 }}
-                    activeDot={{ r: 6 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </Link>
-          )}
+          {/* Leave Trends Line Chart */}
+          <Link 
+            to="/reports"
+            onClick={() => handleNavigateToReports()}
+            className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
+            style={{ animationDelay: '0.7s' }}
+          >
+            <h3 className="text-lg font-semibold text-white mb-4">Leave Trends (6 Months)</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={stats?.leaveTrends || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
+                <XAxis 
+                  dataKey="month" 
+                  stroke="#94a3b8"
+                  tick={{ fill: '#94a3b8' }}
+                />
+                <YAxis 
+                  stroke="#94a3b8"
+                  tick={{ fill: '#94a3b8' }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1e293b', 
+                    border: '1px solid #475569',
+                    borderRadius: '8px'
+                  }}
+                />
+                <Legend 
+                  wrapperStyle={{ color: '#94a3b8' }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="approved" 
+                  stroke={TREND_COLORS.approved} 
+                  strokeWidth={2}
+                  dot={{ fill: TREND_COLORS.approved, r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="pending" 
+                  stroke={TREND_COLORS.pending} 
+                  strokeWidth={2}
+                  dot={{ fill: TREND_COLORS.pending, r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="rejected" 
+                  stroke={TREND_COLORS.rejected} 
+                  strokeWidth={2}
+                  dot={{ fill: TREND_COLORS.rejected, r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </Link>
         </div>
       )}
 
@@ -968,13 +1047,117 @@ const Dashboard = () => {
         </Link>
       )}
 
-      {/* Activity Feed - Role Restricted */}
+      {/* Managed Projects Section - Manager/TeamLead */}
+      {(isManager || isTeamLead) && stats?.managedProjects && stats.managedProjects.length > 0 && (
+        <div className="mb-8 animate-fadeIn" style={{ animationDelay: '0.5s' }}>
+          <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+            <i className="fas fa-project-diagram text-blue-400 mr-2"></i>
+            Your Projects
+          </h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {stats.managedProjects.map((project) => (
+              <div
+                key={project.id}
+                className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-6 hover:border-blue-500/30 transition-all duration-200"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">{project.name}</h3>
+                    {project.description && (
+                      <p className="text-gray-400 text-sm mt-1">{project.description}</p>
+                    )}
+                  </div>
+                  <StatusBadge status={project.status} />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="text-center p-2 bg-slate-700/30 rounded-lg">
+                    <p className="text-2xl font-bold text-white">{project.memberCount}</p>
+                    <p className="text-gray-400 text-xs">Members</p>
+                  </div>
+                  <div className="text-center p-2 bg-slate-700/30 rounded-lg">
+                    <p className="text-2xl font-bold text-white">{project.taskCount}</p>
+                    <p className="text-gray-400 text-xs">Tasks</p>
+                  </div>
+                  <div className="text-center p-2 bg-slate-700/30 rounded-lg">
+                    <p className="text-2xl font-bold text-teal-400">{project.completedTasks}</p>
+                    <p className="text-gray-400 text-xs">Completed</p>
+                  </div>
+                </div>
+
+                {/* Task Progress Bar */}
+                {project.taskCount > 0 && (
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+                      <span>Progress</span>
+                      <span>{Math.round((project.completedTasks / project.taskCount) * 100)}%</span>
+                    </div>
+                    <div className="w-full bg-slate-700/50 rounded-full h-2">
+                      <div
+                        className="bg-gradient-to-r from-teal-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${(project.completedTasks / project.taskCount) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Project Members */}
+                {project.members.length > 0 && (
+                  <div>
+                    <p className="text-gray-400 text-xs font-medium mb-2">Team Members</p>
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {project.members.slice(0, 5).map((member) => (
+                        <div key={member.id} className="flex items-center justify-between text-sm">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-6 h-6 bg-slate-600 rounded-full flex items-center justify-center text-xs text-white font-medium">
+                              {member.name?.charAt(0)?.toUpperCase() || '?'}
+                            </div>
+                            <span className="text-gray-300">{member.name}</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-500">{member.role}</span>
+                            {member.allocation && (
+                              <span className="text-xs text-blue-400">{member.allocation}%</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {project.members.length > 5 && (
+                        <p className="text-gray-500 text-xs">+{project.members.length - 5} more</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Priority & Dates */}
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-700/50">
+                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                    project.priority === 'critical' ? 'bg-red-500/20 text-red-400' :
+                    project.priority === 'high' ? 'bg-orange-500/20 text-orange-400' :
+                    project.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                    'bg-green-500/20 text-green-400'
+                  }`}>
+                    {project.priority}
+                  </span>
+                  {project.endDate && (
+                    <span className="text-gray-500 text-xs">
+                      Due: {new Date(project.endDate).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Activity Feed - Admin/HR/Manager only */}
       {(isAdmin || isHR || isManager) && (
         <ActivityFeed />
       )}
 
-      {/* Advanced Analytics - Only for Admin, HR, Manager */}
-      {(isAdmin || isHR || isManager) && (
+      {/* Advanced Analytics - Admin/HR only */}
+      {(isAdmin || isHR) && (
         <div className="mt-8">
           <AdvancedAnalytics />
         </div>
