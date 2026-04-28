@@ -1,16 +1,17 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { StandardLayout } from './StandardLayout';
 import { useFilters } from '../contexts/FilterContext';
 import Filter from './Filter';
-import { Users, UserPlus, TrendingUp, Award, Calendar, Target, Star } from 'lucide-react';
+import { Users, TrendingUp, Award, Calendar, Target, Star, ChevronDown, ChevronRight } from 'lucide-react';
 import Card from './Card';
-import Button from './Button';
 import { PageTransition, FadeIn } from './PageTransition';
 import { useEmployeeStore } from '../store/useEmployeeStore';
 
 const MyTeam: React.FC = () => {
   const { filters } = useFilters();
   const { employees, fetchEmployees } = useEmployeeStore();
+  const [expandedDepts, setExpandedDepts] = useState<Set<string>>(new Set());
+  const [expandedManagers, setExpandedManagers] = useState<Set<string>>(new Set());
 
   useEffect(() => { fetchEmployees(); }, [fetchEmployees]);
 
@@ -188,9 +189,23 @@ const MyTeam: React.FC = () => {
                     <p className="text-gray-500 text-sm mt-2">Assign managers to employees to see the team structure</p>
                   </div>
                 ) : (
-                  Object.entries(hierarchy).map(([managerName, members]) => (
+                  Object.entries(hierarchy).map(([managerName, members]) => {
+                    const isExpanded = expandedManagers.has(managerName);
+                    const toggleManager = () => {
+                      setExpandedManagers(prev => {
+                        const next = new Set(prev);
+                        if (next.has(managerName)) next.delete(managerName);
+                        else next.add(managerName);
+                        return next;
+                      });
+                    };
+                    return (
                     <div key={managerName} className="space-y-3">
-                      <div className="flex items-center space-x-3 pb-2 border-b border-slate-700/50">
+                      <button
+                        onClick={toggleManager}
+                        className="w-full flex items-center space-x-3 pb-2 border-b border-slate-700/50 hover:bg-slate-700/20 rounded-lg px-2 py-1.5 transition-colors"
+                      >
+                        {isExpanded ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
                         <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center">
                           <Users className="w-4 h-4 text-purple-400" />
                         </div>
@@ -198,8 +213,9 @@ const MyTeam: React.FC = () => {
                           <h4 className="text-white font-medium">{managerName}</h4>
                           <p className="text-gray-400 text-xs">{members.length} direct {members.length === 1 ? 'report' : 'reports'}</p>
                         </div>
-                      </div>
+                      </button>
                       
+                      {isExpanded && (
                       <div className="ml-11 space-y-2">
                         {members.map((member) => (
                           <div key={member.id} className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg hover:bg-slate-700/50 transition-colors">
@@ -223,8 +239,10 @@ const MyTeam: React.FC = () => {
                           </div>
                         ))}
                       </div>
+                      )}
                     </div>
-                  ))
+                    );
+                  })
                 );
               })()}
             </div>
@@ -239,12 +257,6 @@ const MyTeam: React.FC = () => {
                     <Users className="w-5 h-5 mr-2 text-blue-400" />
                     Team Members {filteredTeamMembers.length !== teamMembers.length && `(${filteredTeamMembers.length}/${teamMembers.length})`}
                   </h3>
-                  <Button
-                    icon={<UserPlus className="w-4 h-4" />}
-                    size="sm"
-                  >
-                    Add Member
-                  </Button>
                 </div>
                 
                 {/* Department Groups */}
@@ -254,18 +266,33 @@ const MyTeam: React.FC = () => {
                       <p className="text-gray-400">No team members found matching your filters.</p>
                     </div>
                   ) : (
-                    Object.entries(employeesByDepartment).map(([department, members]) => (
+                    Object.entries(employeesByDepartment).map(([department, members]) => {
+                      const isExpanded = expandedDepts.has(department);
+                      const toggleDept = () => {
+                        setExpandedDepts(prev => {
+                          const next = new Set(prev);
+                          if (next.has(department)) next.delete(department);
+                          else next.add(department);
+                          return next;
+                        });
+                      };
+                      return (
                       <div key={department} className="space-y-3">
-                        {/* Department Header */}
-                        <div className="flex items-center space-x-2 pb-2 border-b border-slate-700/50">
+                        {/* Department Header - Clickable Dropdown */}
+                        <button
+                          onClick={toggleDept}
+                          className="w-full flex items-center space-x-2 pb-2 border-b border-slate-700/50 hover:bg-slate-700/20 rounded-lg px-2 py-1.5 transition-colors"
+                        >
+                          {isExpanded ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
                           <Award className="w-4 h-4 text-yellow-400" />
                           <h4 className="text-white font-medium">{department}</h4>
                           <span className="text-xs text-gray-500 bg-slate-700/50 px-2 py-1 rounded-full">
                             {members.length} {members.length === 1 ? 'member' : 'members'}
                           </span>
-                        </div>
+                        </button>
                         
-                        {/* Employee Cards */}
+                        {/* Employee Cards - Collapsible */}
+                        {isExpanded && (
                         <div className="grid grid-cols-1 gap-3">
                           {members.map((member) => (
                             <div key={member.id} className="bg-slate-800/60 rounded-xl p-4 hover:bg-slate-800/80 transition-all duration-200">
@@ -292,8 +319,10 @@ const MyTeam: React.FC = () => {
                             </div>
                           ))}
                         </div>
+                        )}
                       </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </Card>

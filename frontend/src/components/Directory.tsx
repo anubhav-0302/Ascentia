@@ -223,13 +223,8 @@ function Directory() {
                   {filteredEmployees.map((emp: Employee) => (
                     <Card key={emp.id} className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-500/5 transition-all duration-300 transform hover:-translate-y-1">
                       <div className="flex items-start mb-4">
-                        <div className="relative flex-shrink-0">
-                          <img
-                            src={`https://picsum.photos/seed/${emp.id}/40/40.jpg`}
-                            alt={emp.name}
-                            className="w-12 h-12 rounded-full ring-2 ring-slate-700 group-hover:ring-teal-500/50 transition-all duration-300 group-hover:scale-110"
-                          />
-                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-slate-800"></div>
+                        <div className="w-12 h-12 bg-teal-500/20 rounded-full flex items-center justify-center flex-shrink-0 ring-2 ring-slate-700 group-hover:ring-teal-500/50 transition-all duration-300 group-hover:scale-110">
+                          <span className="text-sm font-bold text-teal-400">{emp.name.split(' ').map(n => n[0]).join('')}</span>
                         </div>
                         <div className="flex-1 min-w-0 ml-3">
                           <h3 
