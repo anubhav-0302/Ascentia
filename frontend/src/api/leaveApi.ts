@@ -4,12 +4,14 @@ import { apiClient } from "./apiClient";
 export interface LeaveRequest {
   id: number;
   userId: number;
+  employeeId?: number;
   type: string;
   startDate: string;
   endDate: string;
   reason: string;
   status: string;
   createdAt: string;
+  managerId?: number | null;
   user: {
     id: number;
     name: string;

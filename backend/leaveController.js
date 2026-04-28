@@ -32,24 +32,35 @@ export const getAllLeaveRequests = async (req, res) => {
   try {
     const userRole = req.user.role.toLowerCase();
     const userId = req.user.id;
-    // console.log(`🔍 Fetching all leave requests for role: ${userRole}`);
     
     let leaveRequests = await getAllLeaveRequestsFromDB();
     
     // Filter by tenant first
     const orgEmployees = await prisma.employee.findMany({
       where: tenantWhere(req),
-      select: { id: true }
+      select: { id: true, managerId: true }
     });
     const orgEmployeeIds = orgEmployees.map(emp => emp.id);
-    leaveRequests = leaveRequests.filter(l => orgEmployeeIds.includes(l.employeeId));
+    // Leave requests use 'userId' field (not 'employeeId')
+    leaveRequests = leaveRequests.filter(l => orgEmployeeIds.includes(l.userId));
     
     // Filter data based on user role using access control helper
     if (!['admin', 'hr'].includes(userRole)) {
       const accessibleIds = await getAccessibleEmployeeIds(userId, userRole, req.user.organizationId);
-      leaveRequests = leaveRequests.filter(l => accessibleIds.includes(l.employeeId));
+      leaveRequests = leaveRequests.filter(l => accessibleIds.includes(l.userId));
     }
     // Admin and HR see all requests (no additional filtering)
+    
+    // Enrich each leave with the employee's managerId for frontend authorization
+    const managerIdMap = {};
+    orgEmployees.forEach(emp => {
+      managerIdMap[emp.id] = emp.managerId;
+    });
+    leaveRequests = leaveRequests.map(l => ({
+      ...l,
+      employeeId: l.userId,
+      managerId: managerIdMap[l.userId] || null
+    }));
     
     res.json({
       success: true,
@@ -148,19 +159,45 @@ export const cancelLeaveRequest = async (req, res) => {
   }
 };
 
-// PUT /api/leave/:id - Update leave request status (admin only)
+// PUT /api/leave/:id - Update leave request status (admin/HR or assigned manager only)
 export const updateLeaveRequestStatus = async (req, res) => {
   try {
-    // console.log("🔍 Updating leave request status:", req.params.id, req.body);
     const { id } = req.params;
     const { status } = req.body;
-    const adminUserId = req.user.id;
+    const approverId = req.user.id;
+    const userRole = req.user.role.toLowerCase();
     
     if (!status || !['Approved', 'Rejected'].includes(status)) {
       return res.status(400).json({
         success: false,
         message: 'Valid status (Approved or Rejected) is required'
       });
+    }
+    
+    // Fetch the leave request to find the employee
+    const leaveRequests = await getAllLeaveRequestsFromDB();
+    const leaveRequest = leaveRequests.find(l => l.id === parseInt(id));
+    
+    if (!leaveRequest) {
+      return res.status(404).json({
+        success: false,
+        message: 'Leave request not found'
+      });
+    }
+    
+    // Authorization: admin/HR can approve any leave, managers can only approve their direct reports
+    if (!['admin', 'hr'].includes(userRole)) {
+      const employee = await prisma.employee.findUnique({
+        where: { id: leaveRequest.userId },
+        select: { managerId: true }
+      });
+      
+      if (!employee || employee.managerId !== approverId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Only the assigned manager, admin, or HR can approve/reject this leave request'
+        });
+      }
     }
     
     const updatedLeaveRequest = await updateLeaveRequestStatusInDB(id, status);
@@ -172,10 +209,8 @@ export const updateLeaveRequestStatus = async (req, res) => {
       });
     }
     
-    // console.log("✅ Leave request status updated:", { id: updatedLeaveRequest.id, status });
-    
     // Create notifications for the employee and other admins
-    await createLeaveStatusUpdateNotifications(updatedLeaveRequest, status, adminUserId);
+    await createLeaveStatusUpdateNotifications(updatedLeaveRequest, status, approverId);
     
     res.json({
       success: true,

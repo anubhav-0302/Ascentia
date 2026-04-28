@@ -265,6 +265,11 @@ export const useIsTeamLead = () => {
   return user?.role === 'teamlead';
 };
 
+export const useCanApproveLeave = () => {
+  const user = useUser();
+  return ['admin', 'hr', 'manager'].includes(user?.role || '');
+};
+
 export const useIsHR = () => {
   const { user } = useAuthStore();
   return user?.role === 'hr';
