@@ -38,6 +38,11 @@ const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
   });
 };
 
+export interface ActivityEntry {
+  activityId: number | null;
+  hours: number;
+}
+
 export interface TimesheetEntry {
   id: number;
   employeeId: number;
@@ -45,6 +50,7 @@ export interface TimesheetEntry {
   hours: number;
   description?: string;
   activityId?: number | null;
+  activities?: ActivityEntry[];
   status: 'Pending' | 'Approved' | 'Rejected';
   approvedBy?: number;
   approvedAt?: string;
@@ -72,12 +78,14 @@ export interface CreateTimesheetRequest {
   hours: number;
   description?: string;
   activityId?: number | null;
+  activities?: ActivityEntry[];
 }
 
 export interface UpdateTimesheetRequest {
   hours?: number;
   description?: string;
   activityId?: number | null;
+  activities?: ActivityEntry[];
 }
 
 export interface ApproveTimesheetRequest {
@@ -103,7 +111,7 @@ export const getMyTimesheet = async (params?: {
     : '/timesheet';
   
   const response = await apiClient.get(url);
-  return response.data;
+  return response;
 };
 
 // Get all timesheets (admin only)
@@ -128,31 +136,31 @@ export const getAllTimesheets = async (params?: {
     : '/timesheet/all';
   
   const response = await apiClient.get(url);
-  return response.data;
+  return response;
 };
 
 // Create new timesheet entry
 export const createTimesheetEntry = async (data: CreateTimesheetRequest) => {
   const response = await apiClient.post('/timesheet', data);
-  return response.data;
+  return response;
 };
 
 // Update timesheet entry
 export const updateTimesheetEntry = async (id: number, data: UpdateTimesheetRequest) => {
   const response = await apiClient.put(`/timesheet/${id}`, data);
-  return response.data;
+  return response;
 };
 
 // Approve/reject timesheet entry
 export const approveTimesheetEntry = async (id: number, data: ApproveTimesheetRequest) => {
   const response = await apiClient.put(`/timesheet/${id}/approve`, data);
-  return response.data;
+  return response;
 };
 
 // Delete timesheet entry
 export const deleteTimesheetEntry = async (id: number) => {
   const response = await apiClient.delete(`/timesheet/${id}`);
-  return response.data;
+  return response;
 };
 
 // Bulk approve/reject timesheet entries
@@ -162,7 +170,7 @@ export const bulkApproveTimesheets = async (data: {
   comments?: string;
 }) => {
   const response = await apiClient.post('/timesheet/bulk-approve', data);
-  return response.data;
+  return response;
 };
 
 // ===================== ACTIVITY MASTER =====================
@@ -196,25 +204,25 @@ export interface UpdateActivityRequest {
 export const getActivities = async (includeInactive = false) => {
   const queryString = includeInactive ? '?includeInactive=true' : '';
   const response = await apiClient.get(`/timesheet/activities${queryString}`);
-  return response.data;
+  return response;
 };
 
 // Create new activity
 export const createActivity = async (data: CreateActivityRequest) => {
   const response = await apiClient.post('/timesheet/activities', data);
-  return response.data;
+  return response;
 };
 
 // Update activity
 export const updateActivity = async (id: number, data: UpdateActivityRequest) => {
   const response = await apiClient.put(`/timesheet/activities/${id}`, data);
-  return response.data;
+  return response;
 };
 
 // Delete activity
 export const deleteActivity = async (id: number) => {
   const response = await apiClient.delete(`/timesheet/activities/${id}`);
-  return response.data;
+  return response;
 };
 
 // ===================== BULK CREATE =====================
@@ -231,7 +239,7 @@ export interface BulkCreateTimesheetRequest {
 // Bulk create timesheet entries
 export const bulkCreateTimesheet = async (data: BulkCreateTimesheetRequest) => {
   const response = await apiClient.post('/timesheet/bulk-create', data);
-  return response.data;
+  return response;
 };
 
 // Get timesheet history for export
@@ -265,5 +273,5 @@ export const getTimesheetHistory = async (params?: {
   }
   
   const response = await apiClient.get(url);
-  return response.data;
+  return response;
 };

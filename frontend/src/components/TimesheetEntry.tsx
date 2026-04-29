@@ -14,6 +14,7 @@ import {
   updateActivity,
   deleteActivity,
   type TimesheetEntry as TimesheetEntryType, 
+  type ActivityEntry,
   type CreateTimesheetRequest,
   type ApproveTimesheetRequest,
   type ActivityMaster,
@@ -38,9 +39,7 @@ import {
   CheckCircle, 
   XCircle, 
   Download, 
-  Filter as FilterIcon,
   TrendingUp,
-  Info,
   ChevronLeft,
   ChevronRight,
   Activity,
@@ -86,8 +85,6 @@ const TimesheetEntry: React.FC = () => {
   const [selectedEntries, setSelectedEntries] = useState<number[]>([]);
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [bulkComments, setBulkComments] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filteredTimesheets, setFilteredTimesheets] = useState<TimesheetEntryType[]>([]);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
 
   // Form state
@@ -95,7 +92,8 @@ const TimesheetEntry: React.FC = () => {
     date: '',
     hours: 0,
     description: '',
-    activityId: null
+    activityId: null,
+    activities: undefined
   });
 
   // Quick add form state - now supports multiple activities per date
@@ -154,25 +152,6 @@ const TimesheetEntry: React.FC = () => {
     }
   }, [activeTab, filters]);
 
-  // Filter timesheets based on search query
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredTimesheets(timesheets);
-    } else {
-      const query = searchQuery.toLowerCase();
-      const filtered = timesheets.filter(entry => {
-        const dateMatch = new Date(entry.date).toLocaleDateString().toLowerCase().includes(query);
-        const descriptionMatch = entry.description?.toLowerCase().includes(query) || false;
-        const employeeMatch = entry.employee?.name?.toLowerCase().includes(query) || false;
-        const statusMatch = entry.status?.toLowerCase().includes(query) || '';
-        const hoursMatch = entry.hours?.toString().includes(query) || '';
-        const activityMatch = entry.ActivityMaster?.name?.toLowerCase().includes(query) || false;
-        
-        return dateMatch || descriptionMatch || employeeMatch || statusMatch || hoursMatch || activityMatch;
-      });
-      setFilteredTimesheets(filtered);
-    }
-  }, [timesheets, searchQuery]);
 
   const fetchTimesheets = async (page = 1) => {
     try {
@@ -187,7 +166,7 @@ const TimesheetEntry: React.FC = () => {
         limit: 50,
         ...(activeTab === 'approvals' && {
           employeeId: filters.employeeId ? parseInt(filters.employeeId) : undefined,
-          status: filters.status || 'Pending'
+          status: filters.status || undefined
         }),
         // History tab gets all historical data, My Timesheet gets recent entries
         ...(activeTab === 'history' && {
@@ -210,14 +189,12 @@ const TimesheetEntry: React.FC = () => {
       // Safely handle response
       const timesheetsData = Array.isArray(response) ? response : (response?.data || []);
       setTimesheets(Array.isArray(timesheetsData) ? timesheetsData : []);
-      setFilteredTimesheets(Array.isArray(timesheetsData) ? timesheetsData : []);
       setPagination(response?.pagination || null);
       setCurrentPage(page);
     } catch (err: any) {
       console.error('❌ Fetch timesheets error:', err);
       setError(err.message || 'Failed to fetch timesheet entries');
       setTimesheets([]);
-      setFilteredTimesheets([]);
     } finally {
       setLoading(false);
     }
@@ -354,7 +331,7 @@ const TimesheetEntry: React.FC = () => {
       }
 
       const response = await bulkCreateTimesheet({ entries });
-      setSuccess(response.message || `Successfully created ${entries.length} timesheet entries`);
+      setSuccess(response.message || `Successfully created timesheet entries`);
       
       // Reset form
       setSelectedDates([]);
@@ -457,7 +434,8 @@ const TimesheetEntry: React.FC = () => {
         const response = await updateTimesheetEntry(editingEntry.id, {
           hours: formData.hours,
           description: formData.description,
-          activityId: formData.activityId
+          activityId: formData.activityId,
+          activities: formData.activities
         });
         setSuccess(response.message || 'Timesheet entry updated successfully');
       } else {
@@ -470,7 +448,7 @@ const TimesheetEntry: React.FC = () => {
 
       setShowForm(false);
       setEditingEntry(null);
-      setFormData({ date: '', hours: 0, description: '', activityId: null });
+      setFormData({ date: '', hours: 0, description: '', activityId: null, activities: undefined });
       fetchTimesheets();
     } catch (err: any) {
       // console.error('❌ Form submission error:', err);
@@ -486,7 +464,8 @@ const TimesheetEntry: React.FC = () => {
       date: entry.date.split('T')[0],
       hours: entry.hours,
       description: entry.description || '',
-      activityId: entry.activityId || null
+      activityId: entry.activityId || null,
+      activities: entry.activities || undefined
     });
     setShowForm(true);
   };
@@ -522,76 +501,31 @@ const TimesheetEntry: React.FC = () => {
     }
   };
 
-  const handleExport = async (format: 'csv' | 'pdf' = 'csv') => {
+  const handleExport = async () => {
     try {
       const params = {
         startDate: activeTab === 'history' ? (filters.startDate || new Date(new Date().setMonth(new Date().getMonth() - 12)).toISOString().split('T')[0]) : filters.startDate,
         endDate: filters.endDate,
-        format: format
+        format: 'csv' as const
       };
       
-      if (format === 'pdf') {
-        // For PDF export, we'll create a simple PDF-like text format for now
-        const csvData = await getTimesheetHistory({ ...params, format: 'csv' });
-        if (csvData.success) {
-          const pdfContent = generatePDFContent(csvData.data);
-          const blob = new Blob([pdfContent], { type: 'text/plain' });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `timesheet-history-${new Date().toISOString().split('T')[0]}.txt`;
-          document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-          
-          setSuccess('Timesheet history exported successfully');
-        }
-      } else {
-        const response = await getTimesheetHistory(params);
-        
-        if (response.success) {
-          // Create download link
-          const blob = new Blob([response.data], { type: 'text/csv' });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `timesheet-history-${new Date().toISOString().split('T')[0]}.csv`;
-          document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-          
-          setSuccess('Timesheet history exported successfully');
-        }
-      }
+      // getTimesheetHistory with format='csv' returns a Blob
+      const blob = await getTimesheetHistory(params);
+      const url = window.URL.createObjectURL(blob as Blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `timesheet-history-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      setSuccess('Timesheet history exported successfully');
     } catch (err: any) {
       setError(err.message || 'Failed to export timesheet history');
     }
   };
 
-  const generatePDFContent = (csvData: string) => {
-    const lines = csvData.split('\n');
-    const headers = lines[0].split(',');
-    let content = 'TIMESHEET HISTORY REPORT\n';
-    content += 'Generated: ' + new Date().toLocaleDateString() + '\n';
-    content += '=====================================\n\n';
-    
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].trim()) {
-        const values = lines[i].split(',');
-        content += `Entry ${i + 1}:\n`;
-        headers.forEach((header, index) => {
-          if (values[index]) {
-            content += `  ${header.trim()}: ${values[index].trim()}\n`;
-          }
-        });
-        content += '\n';
-      }
-    }
-    
-    return content;
-  };
 
   const handleBulkApprove = async (status: 'Approved' | 'Rejected') => {
     if (selectedEntries.length === 0) {
@@ -728,56 +662,56 @@ const TimesheetEntry: React.FC = () => {
         {/* Tabs */}
         <div className="border-b border-slate-700 mb-6">
           <nav className="flex space-x-8">
-            <button
-              onClick={() => setActiveTab('my-timesheet')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'my-timesheet'
-                  ? 'border-teal-500 text-teal-400'
-                  : 'border-transparent text-gray-400 hover:text-gray-300'
-              }`}
-            >
-              My Timesheet
-            </button>
-            
-            {canApproveTimesheet && (
               <button
-                onClick={() => setActiveTab('approvals')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  activeTab === 'approvals'
-                    ? 'bg-teal-600 text-white shadow-lg shadow-teal-500/30'
-                    : 'text-gray-400 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                Approvals
-              </button>
-            )}
-            
-            <button
-              onClick={() => setActiveTab('history')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'history'
-                  ? 'border-teal-500 text-teal-400'
-                  : 'border-transparent text-gray-400 hover:text-gray-300'
-              }`}
-            >
-              History & Export
-            </button>
-            
-            {canManageActivities && (
-              <button
-                onClick={() => setActiveTab('manage-activities')}
+                onClick={() => setActiveTab('my-timesheet')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'manage-activities'
+                  activeTab === 'my-timesheet'
                     ? 'border-teal-500 text-teal-400'
                     : 'border-transparent text-gray-400 hover:text-gray-300'
                 }`}
               >
-                <span className="flex items-center gap-1.5">
-                  <Activity className="w-4 h-4" />
-                  Manage Activities
-                </span>
+                My Timesheet
               </button>
-            )}
+              
+              {canApproveTimesheet && (
+                <button
+                  onClick={() => setActiveTab('approvals')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                    activeTab === 'approvals'
+                      ? 'bg-teal-600 text-white shadow-lg shadow-teal-500/30'
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Approvals
+                </button>
+              )}
+              
+              <button
+                onClick={() => setActiveTab('history')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'history'
+                    ? 'border-teal-500 text-teal-400'
+                    : 'border-transparent text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                History & Export
+              </button>
+              
+              {canManageActivities && (
+                <button
+                  onClick={() => setActiveTab('manage-activities')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'manage-activities'
+                      ? 'border-teal-500 text-teal-400'
+                      : 'border-transparent text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Activity className="w-4 h-4" />
+                    Manage Activities
+                  </span>
+                </button>
+              )}
           </nav>
         </div>
 
@@ -824,33 +758,11 @@ const TimesheetEntry: React.FC = () => {
             )}
           </div>
           
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={handleExport}
-              variant="secondary"
-              icon={<Download className="w-4 h-4" />}
-              size="sm"
-            >
-              Export
-            </Button>
-          </div>
         </div>
 
         {/* Quick Add Form - Calendar + Multi-Activity */}
         {showQuickAdd && activeTab === 'my-timesheet' && (
           <>
-            <Card className="mb-6 bg-blue-600/10 border-blue-600/30">
-              <div className="p-4">
-                <div className="flex items-center mb-3">
-                  <Info className="w-5 h-5 mr-2 text-blue-400" />
-                  <h3 className="text-lg font-medium text-white">Add Timesheet Entries</h3>
-                </div>
-                <p className="text-gray-300 text-sm mb-4">
-                  Select dates from the calendar, choose activities, and enter hours. You can select multiple dates and add multiple activities per day.
-                </p>
-              </div>
-            </Card>
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
               {/* Calendar Section */}
               <Card className="bg-slate-800/50 border-slate-700/50">
@@ -1018,6 +930,7 @@ const TimesheetEntry: React.FC = () => {
                             max="24"
                             step="0.5"
                             placeholder="Hours"
+                            className="appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [moz-appearance:textfield]"
                           />
                         </div>
                         {activityRows.length > 1 && (
@@ -1067,7 +980,7 @@ const TimesheetEntry: React.FC = () => {
                       className="flex-1"
                       disabled={selectedDates.length === 0 || totalActivityHours <= 0}
                     >
-                      Submit {selectedDates.length > 0 ? `${selectedDates.length * activityRows.filter(r => r.hours > 0).length} Entries` : 'Entries'}
+                      Submit {selectedDates.length > 0 ? `${selectedDates.length} Entr${selectedDates.length === 1 ? 'y' : 'ies'}` : 'Entries'}
                     </Button>
                     <Button
                       onClick={() => { setShowQuickAdd(false); setSelectedDates([]); setActivityRows([{ activityId: null, hours: 8 }]); }}
@@ -1082,27 +995,8 @@ const TimesheetEntry: React.FC = () => {
           </>
         )}
 
-        {activeTab === 'history' && (
-          <Card className="mb-6 bg-purple-600/10 border-purple-600/30">
-            <div className="p-4">
-              <div className="flex items-center mb-3">
-                <Calendar className="w-5 h-5 mr-2 text-purple-400" />
-                <h3 className="text-lg font-medium text-white">History & Export</h3>
-              </div>
-              <p className="text-gray-300 text-sm mb-4">
-                View your complete timesheet history from the past 12 months. Access detailed analytics and export your data in CSV or PDF format for reporting.
-              </p>
-              <div className="flex items-center gap-4 text-sm">
-                <span className="text-gray-400">Showing entries from:</span>
-                <span className="text-purple-300 font-medium">
-                  {new Date(new Date().setMonth(new Date().getMonth() - 12)).toLocaleDateString()} - Present
-                </span>
-              </div>
-            </div>
-          </Card>
-        )}
 
-        
+
         {/* Timesheet Form Modal */}
         {showForm && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -1139,6 +1033,7 @@ const TimesheetEntry: React.FC = () => {
                     onChange={(e) => setFormData(prev => ({ ...prev, hours: parseFloat(e.target.value) || 0 }))}
                     placeholder="Number of hours worked"
                     required
+                    className="appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [moz-appearance:textfield]"
                   />
                 </div>
 
@@ -1255,37 +1150,6 @@ const TimesheetEntry: React.FC = () => {
           </Card>
         )}
 
-        {/* Search Bar */}
-        <Card className="mb-4">
-          <div className="p-4">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FilterIcon className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search timesheets by date, description, employee, status, or hours..."
-                className="block w-full pl-10 pr-3 py-2 border border-slate-600 rounded-lg bg-slate-700/60 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                >
-                  <XCircle className="h-5 w-5 text-gray-400 hover:text-gray-300" />
-                </button>
-              )}
-            </div>
-            {searchQuery && (
-              <div className="mt-2 text-sm text-gray-400">
-                Found {filteredTimesheets.length} result{filteredTimesheets.length !== 1 ? 's' : ''} for "{searchQuery}"
-              </div>
-            )}
-          </div>
-        </Card>
-
         {activeTab === 'history' && (
           /* Analytics Section for History Tab */
           <Card className="mb-6 bg-gradient-to-r from-slate-800/50 to-slate-700/50 border-slate-600/50">
@@ -1297,25 +1161,25 @@ const TimesheetEntry: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-slate-700/50 rounded-lg p-4">
                   <div className="text-2xl font-bold text-blue-400">
-                    {filteredTimesheets.reduce((sum, entry) => sum + entry.hours, 0)}h
+                    {timesheets.reduce((sum, entry) => sum + entry.hours, 0)}h
                   </div>
                   <div className="text-sm text-gray-400">Total Hours</div>
                 </div>
                 <div className="bg-slate-700/50 rounded-lg p-4">
                   <div className="text-2xl font-bold text-green-400">
-                    {filteredTimesheets.filter(entry => entry.status === 'Approved').length}
+                    {timesheets.filter(entry => entry.status === 'Approved').length}
                   </div>
                   <div className="text-sm text-gray-400">Approved</div>
                 </div>
                 <div className="bg-slate-700/50 rounded-lg p-4">
                   <div className="text-2xl font-bold text-yellow-400">
-                    {filteredTimesheets.filter(entry => entry.status === 'Pending').length}
+                    {timesheets.filter(entry => entry.status === 'Pending').length}
                   </div>
                   <div className="text-sm text-gray-400">Pending</div>
                 </div>
                 <div className="bg-slate-700/50 rounded-lg p-4">
                   <div className="text-2xl font-bold text-red-400">
-                    {filteredTimesheets.filter(entry => entry.status === 'Rejected').length}
+                    {timesheets.filter(entry => entry.status === 'Rejected').length}
                   </div>
                   <div className="text-sm text-gray-400">Rejected</div>
                 </div>
@@ -1324,7 +1188,8 @@ const TimesheetEntry: React.FC = () => {
           </Card>
         )}
 
-        {/* Timesheet Entries Table */}
+        {/* Timesheet Entries Table - hidden on Manage Activities tab */}
+        {activeTab !== 'manage-activities' && (
         <Card className="overflow-hidden border-slate-700/50">
           <div className="px-6 py-4 border-b border-slate-700/50">
             <div className="flex items-center justify-between">
@@ -1334,24 +1199,17 @@ const TimesheetEntry: React.FC = () => {
               </h2>
               <div className="flex items-center gap-4">
                 <div className="text-sm text-gray-400">
-                  {filteredTimesheets.length} {filteredTimesheets.length === 1 ? 'entry' : 'entries'}
+                  {timesheets.length} {timesheets.length === 1 ? 'entry' : 'entries'}
                 </div>
                 {activeTab === 'history' && (
                   <div className="flex gap-2">
                     <Button
-                      onClick={() => handleExport('csv')}
+                      onClick={handleExport}
                       variant="secondary"
                       icon={<Download className="w-4 h-4" />}
                       size="sm"
                     >
                       Export CSV
-                    </Button>
-                    <Button
-                      onClick={() => handleExport('pdf')}
-                      variant="secondary"
-                      size="sm"
-                    >
-                      Export PDF
                     </Button>
                   </div>
                 )}
@@ -1370,17 +1228,14 @@ const TimesheetEntry: React.FC = () => {
                 <CardSkeleton rows={3} />
               </div>
             </>
-          ) : filteredTimesheets.length === 0 ? (
+          ) : timesheets.length === 0 ? (
             <div className="text-center py-12">
               <Clock className="w-12 h-12 text-gray-500 mx-auto mb-4" />
               <p className="text-gray-400 text-lg">
-                {searchQuery ? 'No results found' : 'No timesheet entries found'}
+                No timesheet entries found
               </p>
               <p className="text-gray-500 text-sm mt-2">
-                {searchQuery 
-                  ? `No entries match "${searchQuery}"`
-                  : (activeTab === 'my-timesheet' ? 'Add your first timesheet entry to get started.' : 'No entries match the current filters.')
-                }
+                {activeTab === 'my-timesheet' ? 'Add your first timesheet entry to get started.' : 'No entries match the current filters.'}
               </p>
             </div>
           ) : (
@@ -1396,7 +1251,7 @@ const TimesheetEntry: React.FC = () => {
                           <input
                             type="checkbox"
                             onChange={handleSelectAll}
-                            checked={filteredTimesheets.filter(entry => entry.status === 'Pending').every(entry => selectedEntries.includes(entry.id))}
+                            checked={timesheets.filter(entry => entry.status === 'Pending').every(entry => selectedEntries.includes(entry.id))}
                             className="rounded border-slate-600 bg-slate-700 text-teal-500 focus:ring-teal-500 focus:ring-offset-0"
                           />
                         </th>
@@ -1427,7 +1282,7 @@ const TimesheetEntry: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/50">
-                    {Array.isArray(filteredTimesheets) && filteredTimesheets.map((entry) => {
+                    {Array.isArray(timesheets) && timesheets.map((entry) => {
                       if (!entry || !entry.id) return null;
                       return (
                       <tr key={entry.id} className="hover:bg-slate-700/40 transition-colors">
@@ -1465,8 +1320,19 @@ const TimesheetEntry: React.FC = () => {
                             {entry.hours}h
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {entry.ActivityMaster ? (
+                        <td className="px-6 py-4">
+                          {entry.activities && Array.isArray(entry.activities) && entry.activities.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {entry.activities.map((act: ActivityEntry, idx: number) => {
+                                const actName = activities.find(a => a.id === act.activityId)?.name;
+                                return (
+                                  <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                    {actName || 'General'} ({act.hours}h)
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          ) : entry.ActivityMaster ? (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">
                               {entry.ActivityMaster.name}
                             </span>
@@ -1542,7 +1408,7 @@ const TimesheetEntry: React.FC = () => {
 
             {/* Mobile Card View */}
             <div className="lg:hidden mt-4 space-y-4">
-              {filteredTimesheets.map((entry) => (
+              {timesheets.map((entry) => (
                 <Card key={entry.id} className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center space-x-3">
@@ -1576,7 +1442,18 @@ const TimesheetEntry: React.FC = () => {
                     
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-gray-400">Activity</span>
-                      {entry.ActivityMaster ? (
+                      {entry.activities && Array.isArray(entry.activities) && entry.activities.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 justify-end">
+                          {entry.activities.map((act: ActivityEntry, idx: number) => {
+                            const actName = activities.find(a => a.id === act.activityId)?.name;
+                            return (
+                              <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                {actName || 'General'} ({act.hours}h)
+                              </span>
+                            );
+                          })}
+                        </div>
+                      ) : entry.ActivityMaster ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">
                           {entry.ActivityMaster.name}
                         </span>
@@ -1649,6 +1526,7 @@ const TimesheetEntry: React.FC = () => {
             </>
           )}
         </Card>
+        )}
 
         {/* Manage Activities Tab */}
         {activeTab === 'manage-activities' && canManageActivities && (

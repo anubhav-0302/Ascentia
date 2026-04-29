@@ -173,7 +173,7 @@ const getAllTimesheets = async (req, res) => {
 // POST /api/timesheet - Create new timesheet entry
 const createTimesheetEntry = async (req, res) => {
   try {
-    const { date, hours, description, activityId } = req.body;
+    const { date, hours, description, activityId, activities } = req.body;
     
     if (!date || !hours) {
       return res.status(400).json({ 
@@ -192,8 +192,8 @@ const createTimesheetEntry = async (req, res) => {
     // Validate date is not in the future
     const entryDate = new Date(date);
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Set to start of day for fair comparison
-    entryDate.setHours(0, 0, 0, 0); // Set to start of day for fair comparison
+    today.setHours(0, 0, 0, 0);
+    entryDate.setHours(0, 0, 0, 0);
     
     if (entryDate > today) {
       return res.status(400).json({ 
@@ -202,29 +202,45 @@ const createTimesheetEntry = async (req, res) => {
       });
     }
     
-    // Check if entry already exists for this date (+ activity combination if activityId provided)
-    const existingWhere = {
-      employeeId: req.user.id,
-      date: new Date(date),
-      organizationId: req.user.organizationId
-    };
-    if (activityId) {
-      existingWhere.activityId = activityId;
-    }
+    // Build activities JSON - if activities array provided use it, otherwise build from single activityId+hours
+    const activitiesJson = activities || [{ activityId: activityId || null, hours: parseFloat(hours) }];
+    
+    // Check if entry already exists for this date (one entry per date)
     const existingEntry = await prisma.timesheet.findFirst({
-      where: existingWhere
+      where: {
+        employeeId: req.user.id,
+        date: new Date(date),
+        organizationId: req.user.organizationId
+      }
     });
     
     let timesheet;
     
     if (existingEntry) {
-      // Update existing entry
+      // Update existing entry - merge activities
+      const existingActivities = Array.isArray(existingEntry.activities) ? existingEntry.activities : [];
+      const activityMap = {};
+      for (const act of existingActivities) {
+        const actKey = act.activityId || 'none';
+        activityMap[actKey] = (activityMap[actKey] || 0) + act.hours;
+      }
+      for (const act of activitiesJson) {
+        const actKey = act.activityId || 'none';
+        activityMap[actKey] = (activityMap[actKey] || 0) + act.hours;
+      }
+      const mergedActivities = Object.entries(activityMap).map(([key, hrs]) => ({
+        activityId: key === 'none' ? null : parseInt(key),
+        hours: hrs
+      }));
+      const totalHours = mergedActivities.reduce((sum, a) => sum + a.hours, 0);
+      
       timesheet = await prisma.timesheet.update({
         where: { id: existingEntry.id },
         data: {
-          hours: parseFloat(hours),
-          description: description || null,
-          activityId: activityId || null,
+          hours: totalHours,
+          description: description || existingEntry.description,
+          activityId: activityId || existingEntry.activityId,
+          activities: mergedActivities,
           updatedAt: new Date()
         },
         include: {
@@ -238,7 +254,6 @@ const createTimesheetEntry = async (req, res) => {
       });
       
       await logDatabaseOperation('UPDATE', 'timesheet', timesheet.id, req.user.id);
-      // console.log(`✅ Updated timesheet entry: ${timesheet.id}`);
       res.json({ 
         success: true, 
         data: timesheet,
@@ -253,6 +268,7 @@ const createTimesheetEntry = async (req, res) => {
           hours: parseFloat(hours),
           description: description || null,
           activityId: activityId || null,
+          activities: activitiesJson,
           organizationId: req.user.organizationId
         },
         include: {
@@ -287,7 +303,7 @@ const createTimesheetEntry = async (req, res) => {
 const updateTimesheetEntry = async (req, res) => {
   try {
     const { id } = req.params;
-    const { hours, description } = req.body;
+    const { hours, description, activityId, activities } = req.body;
     
     const existingEntry = await prisma.timesheet.findFirst({
       where: { 
@@ -332,13 +348,21 @@ const updateTimesheetEntry = async (req, res) => {
     if (description !== undefined) {
       updateData.description = description;
     }
-    
+    if (activityId !== undefined) {
+      updateData.activityId = activityId || null;
+    }
+    if (activities !== undefined) {
+      updateData.activities = activities;
+    }
     const timesheet = await prisma.timesheet.update({
       where: { id: parseInt(id) },
       data: updateData,
       include: {
         employee: {
           select: { id: true, name: true, email: true }
+        },
+        ActivityMaster: {
+          select: { id: true, name: true }
         },
         approver: {
           select: { id: true, name: true, email: true }
@@ -482,7 +506,7 @@ const getTimesheetHistory = async (req, res) => {
   try {
     const { startDate, endDate, employeeId, format = 'json' } = req.query;
     
-    const whereClause = {};
+    const whereClause = tenantWhere(req);
     
     if (startDate && endDate) {
       whereClause.date = {
@@ -773,7 +797,8 @@ const deleteActivity = async (req, res) => {
 
 // ===================== BULK CREATE TIMESHEET =====================
 
-// POST /api/timesheet/bulk-create - Create multiple timesheet entries at once
+// POST /api/timesheet/bulk-create - Create timesheet entries grouped by date
+// Multiple activities for the same date become ONE timesheet entry with activities JSON
 const bulkCreateTimesheet = async (req, res) => {
   try {
     const { entries } = req.body;
@@ -782,8 +807,7 @@ const bulkCreateTimesheet = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Entries array is required' });
     }
     
-    // Validate total hours across all entries for each date
-    const hoursByDate = {};
+    // Validate all entries
     for (const entry of entries) {
       if (!entry.date || !entry.hours || entry.hours <= 0) {
         return res.status(400).json({ success: false, message: 'Each entry must have a valid date and hours > 0' });
@@ -791,12 +815,6 @@ const bulkCreateTimesheet = async (req, res) => {
       if (entry.hours > 24) {
         return res.status(400).json({ success: false, message: 'Hours cannot exceed 24 per entry' });
       }
-      const key = entry.date;
-      hoursByDate[key] = (hoursByDate[key] || 0) + entry.hours;
-      if (hoursByDate[key] > 24) {
-        return res.status(400).json({ success: false, message: `Total hours for ${key} exceed 24` });
-      }
-      // Validate date is not in the future
       const entryDate = new Date(entry.date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -806,32 +824,69 @@ const bulkCreateTimesheet = async (req, res) => {
       }
     }
     
-    const results = [];
+    // Group entries by date - multiple activities for same date become one entry
+    const groupedByDate = {};
     for (const entry of entries) {
+      const key = entry.date;
+      if (!groupedByDate[key]) {
+        groupedByDate[key] = { date: entry.date, description: entry.description || '', activities: [], totalHours: 0 };
+      }
+      groupedByDate[key].activities.push({
+        activityId: entry.activityId || null,
+        hours: parseFloat(entry.hours)
+      });
+      groupedByDate[key].totalHours += parseFloat(entry.hours);
+    }
+    
+    // Validate total hours per date
+    for (const [date, group] of Object.entries(groupedByDate)) {
+      if (group.totalHours > 24) {
+        return res.status(400).json({ success: false, message: `Total hours for ${date} exceed 24` });
+      }
+    }
+    
+    const results = [];
+    for (const [date, group] of Object.entries(groupedByDate)) {
       try {
-        // Check if entry already exists for this date + activity combination
-        const existingWhere = {
-          employeeId: req.user.id,
-          date: new Date(entry.date),
-          organizationId: req.user.organizationId
-        };
-        if (entry.activityId) {
-          existingWhere.activityId = entry.activityId;
-        }
-        
+        // Check if entry already exists for this date
         const existingEntry = await prisma.timesheet.findFirst({
-          where: existingWhere
+          where: {
+            employeeId: req.user.id,
+            date: new Date(date),
+            organizationId: req.user.organizationId
+          }
         });
+        
+        // Use first activityId for backward compat, store all in activities JSON
+        const primaryActivityId = group.activities[0]?.activityId || null;
         
         let timesheet;
         if (existingEntry) {
-          // Update existing entry
+          // Update existing entry - merge activities
+          const existingActivities = Array.isArray(existingEntry.activities) ? existingEntry.activities : [];
+          // Build a map to merge hours by activityId
+          const activityMap = {};
+          for (const act of existingActivities) {
+            const actKey = act.activityId || 'none';
+            activityMap[actKey] = (activityMap[actKey] || 0) + act.hours;
+          }
+          for (const act of group.activities) {
+            const actKey = act.activityId || 'none';
+            activityMap[actKey] = (activityMap[actKey] || 0) + act.hours;
+          }
+          const mergedActivities = Object.entries(activityMap).map(([key, hours]) => ({
+            activityId: key === 'none' ? null : parseInt(key),
+            hours
+          }));
+          const totalHours = mergedActivities.reduce((sum, a) => sum + a.hours, 0);
+          
           timesheet = await prisma.timesheet.update({
             where: { id: existingEntry.id },
             data: {
-              hours: parseFloat(entry.hours),
-              description: entry.description || null,
-              activityId: entry.activityId || null,
+              hours: totalHours,
+              description: group.description || existingEntry.description,
+              activityId: primaryActivityId,
+              activities: mergedActivities,
               updatedAt: new Date()
             },
             include: {
@@ -840,14 +895,15 @@ const bulkCreateTimesheet = async (req, res) => {
             }
           });
         } else {
-          // Create new entry
+          // Create new entry with activities
           timesheet = await prisma.timesheet.create({
             data: {
               employeeId: req.user.id,
-              date: new Date(entry.date),
-              hours: parseFloat(entry.hours),
-              description: entry.description || null,
-              activityId: entry.activityId || null,
+              date: new Date(date),
+              hours: group.totalHours,
+              description: group.description || null,
+              activityId: primaryActivityId,
+              activities: group.activities,
               organizationId: req.user.organizationId
             },
             include: {
@@ -860,7 +916,7 @@ const bulkCreateTimesheet = async (req, res) => {
         await logDatabaseOperation('CREATE', 'timesheet', timesheet.id, req.user.id);
         results.push({ success: true, data: timesheet });
       } catch (error) {
-        results.push({ success: false, error: error.message, date: entry.date });
+        results.push({ success: false, error: error.message, date });
       }
     }
     
@@ -871,7 +927,7 @@ const bulkCreateTimesheet = async (req, res) => {
       success: true,
       message: `Successfully created/updated ${successCount} timesheet entries${failureCount > 0 ? ` (${failureCount} failed)` : ''}`,
       results,
-      summary: { total: entries.length, successful: successCount, failed: failureCount }
+      summary: { total: Object.keys(groupedByDate).length, successful: successCount, failed: failureCount }
     });
   } catch (error) {
     console.error("❌ BULK CREATE TIMESHEET ERROR:", error);

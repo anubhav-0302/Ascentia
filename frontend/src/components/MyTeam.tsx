@@ -6,14 +6,18 @@ import { Users, TrendingUp, Award, Calendar, Target, Star, ChevronDown, ChevronR
 import Card from './Card';
 import { PageTransition, FadeIn } from './PageTransition';
 import { useEmployeeStore } from '../store/useEmployeeStore';
+import { useAuthStore } from '../store/useAuthStore';
 
 const MyTeam: React.FC = () => {
   const { filters } = useFilters();
   const { employees, fetchEmployees } = useEmployeeStore();
+  const { user } = useAuthStore();
   const [expandedDepts, setExpandedDepts] = useState<Set<string>>(new Set());
   const [expandedManagers, setExpandedManagers] = useState<Set<string>>(new Set());
 
-  useEffect(() => { fetchEmployees(); }, [fetchEmployees]);
+  const isAdminOrHR = user?.role === 'admin' || user?.role === 'hr';
+
+  useEffect(() => { fetchEmployees(isAdminOrHR ? 'all' : undefined); }, [fetchEmployees, isAdminOrHR]);
 
   const teamStats = useMemo(() => [
     { title: 'Team Members', value: String(employees.length), change: 'Total employees', icon: Users, color: 'text-blue-400' },
@@ -176,10 +180,12 @@ const MyTeam: React.FC = () => {
                 });
 
                 // Find employees without managers (top level)
-                const topLevel = filteredTeamMembers.filter(member => !member.managerId);
-                
-                if (topLevel.length > 0) {
-                  hierarchy['Unassigned (No Manager)'] = topLevel;
+                // Only show "Unassigned" group for admin/HR
+                if (isAdminOrHR) {
+                  const topLevel = filteredTeamMembers.filter(member => !member.managerId);
+                  if (topLevel.length > 0) {
+                    hierarchy['Unassigned (No Manager)'] = topLevel;
+                  }
                 }
 
                 return Object.keys(hierarchy).length === 0 ? (
@@ -248,8 +254,9 @@ const MyTeam: React.FC = () => {
             </div>
           </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Team Members */}
+          <div className={`grid grid-cols-1 ${isAdminOrHR ? 'lg:grid-cols-3' : ''} gap-6`}>
+            {/* Team Members - Only for Admin/HR */}
+            {isAdminOrHR && (
             <div className="lg:col-span-2">
               <Card className="p-6">
                 <div className="flex items-center justify-between mb-6">
@@ -327,9 +334,10 @@ const MyTeam: React.FC = () => {
                 </div>
               </Card>
             </div>
+            )}
 
             {/* Upcoming Events */}
-            <div className="lg:col-span-1">
+            <div className={isAdminOrHR ? 'lg:col-span-1' : ''}>
               <Card className="p-6">
                 <h3 className="text-lg font-semibold text-white mb-6 flex items-center">
                   <Calendar className="w-5 h-5 mr-2 text-purple-400" />

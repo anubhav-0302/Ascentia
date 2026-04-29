@@ -119,6 +119,7 @@ model Timesheet {
   hours         Float
   description   String?
   activityId    Int?
+  activities    Json?
   status        String    @default("Pending")
   approvedBy    Int?
   approvedAt    DateTime?
