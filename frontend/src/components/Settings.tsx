@@ -20,7 +20,7 @@ const Settings: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [deletePassword, setDeletePassword] = useState('');
-  const [authLoading, setAuthLoading] = useState(false);
+  const [_authLoading, setAuthLoading] = useState(false);
   const [passwordErrors, setPasswordErrors] = useState<{ currentPassword?: string; newPassword?: string; general?: string }>({});
   
   // Backup/Restore state

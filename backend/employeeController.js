@@ -72,6 +72,46 @@ export const getEmployees = async (req, res) => {
   }
 };
 
+// GET /api/employees/dropdown/list - Get employees for dropdowns (lightweight, auth-only)
+export const getEmployeesForDropdown = async (req, res) => {
+  try {
+    const userRole = req.user.role.toLowerCase();
+    let whereClause = tenantWhere(req);
+
+    // Exclude superAdmin from dropdowns
+    whereClause.role = { not: 'superAdmin' };
+
+    // Non-admin/HR users only see employees they have access to
+    if (userRole !== 'admin' && userRole !== 'hr') {
+      const accessWhere = await buildEmployeeAccessWhere(req.user.id, userRole, req.user.organizationId);
+      whereClause = { ...whereClause, ...accessWhere };
+    }
+
+    const employees = await prisma.employee.findMany({
+      where: whereClause,
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        department: true,
+        managerId: true,
+        manager: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
+    });
+
+    res.json({ success: true, data: employees });
+  } catch (error) {
+    console.error("❌ GET EMPLOYEES FOR DROPDOWN ERROR:", error.message);
+    res.status(500).json({ success: false, message: "Failed to fetch employees for dropdown" });
+  }
+};
+
 // GET /api/employees/:id - Get single employee by ID
 export const getEmployee = async (req, res) => {
   try {

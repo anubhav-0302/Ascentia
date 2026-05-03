@@ -154,7 +154,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     try {
       set({ error: null });
       const response = await settingsApi.exportData();
-      return response.data;
+      return response;
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'An error occurred' });
       throw error;

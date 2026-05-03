@@ -1,5 +1,5 @@
 import express from 'express';
-import { getEmployees, getEmployee, createEmployee, updateEmployee, deleteEmployee } from '../employeeController.js';
+import { getEmployees, getEmployee, createEmployee, updateEmployee, deleteEmployee, getEmployeesForDropdown } from '../employeeController.js';
 import { requireAuth } from '../middleware/auth.js';
 import { checkPermission } from '../middleware/permissions.js';
 
@@ -13,6 +13,9 @@ router.use((req, res, next) => {
 
 // GET /api/employees - Get all employees
 router.get('/', requireAuth, checkPermission('employees', 'view'), getEmployees);
+
+// GET /api/employees/dropdown/list - Get employees for dropdowns (auth-only, no employees.view needed)
+router.get('/dropdown/list', requireAuth, getEmployeesForDropdown);
 
 // GET /api/employees/:id - Get single employee (admin only or own profile)
 router.get('/:id', requireAuth, getEmployee);

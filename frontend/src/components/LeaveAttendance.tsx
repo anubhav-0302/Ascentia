@@ -84,6 +84,18 @@ const LeaveAttendance = () => {
       return;
     }
 
+    // Validate that start and end dates are not weekends
+    const startDay = start.getDay();
+    const endDay = end.getDay();
+    if (startDay === 0 || startDay === 6) {
+      setError('Start date cannot be a weekend (Saturday/Sunday)');
+      return;
+    }
+    if (endDay === 0 || endDay === 6) {
+      setError('End date cannot be a weekend (Saturday/Sunday)');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -542,12 +554,18 @@ const LeaveAttendance = () => {
                       <div>
                         <label htmlFor="startDate" className="block text-sm font-medium text-gray-300 mb-2">Start Date *</label>
                         <Input type="date" id="startDate" name="startDate" value={formData.startDate} onChange={handleInputChange} icon={<Calendar className="w-4 h-4" />} required />
+                        {formData.startDate && (new Date(formData.startDate + 'T00:00:00').getDay() === 0 || new Date(formData.startDate + 'T00:00:00').getDay() === 6) && (
+                          <p className="mt-1 text-xs text-yellow-400">Start date falls on a weekend</p>
+                        )}
                       </div>
                       <div>
                         <label htmlFor="endDate" className={`block text-sm font-medium mb-2 ${!formData.startDate ? 'text-gray-500' : 'text-gray-300'}`}>End Date *</label>
                         <Input type="date" id="endDate" name="endDate" value={formData.endDate} onChange={handleInputChange} min={formData.startDate} disabled={!formData.startDate} icon={<Calendar className="w-4 h-4" />} required />
                         {!formData.startDate && <p className="mt-1 text-xs text-gray-500">Select a start date first</p>}
-                        {formDuration > 0 && <p className="mt-2 text-sm text-teal-400">Duration: {formDuration} day{formDuration > 1 ? 's' : ''}</p>}
+                        {formData.endDate && (new Date(formData.endDate + 'T00:00:00').getDay() === 0 || new Date(formData.endDate + 'T00:00:00').getDay() === 6) && (
+                          <p className="mt-1 text-xs text-yellow-400">End date falls on a weekend</p>
+                        )}
+                        {formDuration > 0 && <p className="mt-2 text-sm text-teal-400">Duration: {formDuration} day{formDuration > 1 ? 's' : ''} (weekdays only)</p>}
                       </div>
                     </div>
                     <div className="flex justify-end space-x-4">

@@ -46,7 +46,7 @@ import {
 const PerformanceGoals: React.FC = () => {
   const isAdmin = useIsAdmin();
   const { user } = useAuthStore();
-  const { employees, fetchEmployees } = useEmployeeStore();
+  const { employees, fetchEmployeesForDropdown } = useEmployeeStore();
   
   // Initialize activeTab from localStorage, default to 'my-goals'
   const [activeTab, setActiveTab] = useState(() => {
@@ -271,9 +271,16 @@ const PerformanceGoals: React.FC = () => {
   // Fetch employees on component mount
   useEffect(() => {
     if (employees.length === 0) {
-      fetchEmployees();
+      fetchEmployeesForDropdown();
     }
   }, []);
+
+  // Re-fetch employees when goal modal opens (in case initial fetch failed)
+  useEffect(() => {
+    if (showGoalModal && employees.length === 0) {
+      fetchEmployeesForDropdown();
+    }
+  }, [showGoalModal]);
 
   // Fetch data on component mount and when tab changes
   useEffect(() => {
@@ -288,13 +295,10 @@ const PerformanceGoals: React.FC = () => {
 
   // Filter employees based on user role
   useEffect(() => {
-    if (isAdmin) {
-      // Admins see all employees
+    if (isAdmin || user?.role === 'manager' || user?.role === 'teamlead') {
+      // Admins, Managers, Team Leads see all employees returned by the API
+      // (backend already filters via buildEmployeeAccessWhere to only accessible employees)
       setFilteredEmployees(employees);
-    } else if (user?.role === 'manager' || user?.role === 'teamlead') {
-      // Managers/Team Leads see only their team members (employees who report to them)
-      const teamMembers = employees.filter(emp => emp.manager?.id === user?.id);
-      setFilteredEmployees(teamMembers);
     } else {
       // Regular employees see only themselves
       setFilteredEmployees(user ? [user] : []);

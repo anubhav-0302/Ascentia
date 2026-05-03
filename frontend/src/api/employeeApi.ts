@@ -80,6 +80,10 @@ export const employeeApi = {
     const url = scope ? `/employees?scope=${scope}` : "/employees";
     return apiClient.get(url);
   },
+
+  getEmployeesForDropdown: () => {
+    return apiClient.get("/employees/dropdown/list");
+  },
   
   getEmployee: (id: number) => {
     console.log("🔍 Fetching employee:", id);

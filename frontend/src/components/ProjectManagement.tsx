@@ -22,9 +22,9 @@ import {
   updateProject,
   deleteProject,
   removeEmployee,
+  getAvailableEmployees,
   type Project,
-  type MyProject,
-  type UpdateProjectData
+  type MyProject
 } from '../api/projectApi';
 import CreateProjectModal from './CreateProjectModal';
 import AssignEmployeesModal from './AssignEmployeesModal';

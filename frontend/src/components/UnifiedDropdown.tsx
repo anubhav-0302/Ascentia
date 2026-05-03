@@ -80,7 +80,11 @@ const UnifiedDropdown: React.FC<UnifiedDropdownProps> = ({
         setIsOpen(false);
       }
     };
-    const handleScroll = () => setIsOpen(false);
+    const handleScroll = (event: Event) => {
+      // Don't close if scrolling inside the dropdown list itself
+      if (listRef.current && listRef.current.contains(event.target as Node)) return;
+      setIsOpen(false);
+    };
     const handleResize = () => updatePosition();
 
     document.addEventListener('mousedown', handleClickOutside);

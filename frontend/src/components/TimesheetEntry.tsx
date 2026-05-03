@@ -244,8 +244,10 @@ const TimesheetEntry: React.FC = () => {
 
   const handleCalendarDateClick = (day: number) => {
     const dateStr = formatLocalDate(new Date(calendarYear, calendarMonth, day));
-    // Don't allow future dates
+    const dayOfWeek = new Date(calendarYear, calendarMonth, day).getDay();
+    // Don't allow future dates or weekends
     if (dateStr > todayStr) return;
+    if (dayOfWeek === 0 || dayOfWeek === 6) return;
 
     if (dateSelectionMode === 'single') {
       setSelectedDates([dateStr]);
@@ -263,7 +265,9 @@ const TimesheetEntry: React.FC = () => {
         const range: string[] = [];
         let current = new Date(start);
         while (formatLocalDate(current) <= end) {
-          if (formatLocalDate(current) <= todayStr) {
+          const dayOfWeek = current.getDay(); // 0=Sunday, 6=Saturday
+          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+          if (formatLocalDate(current) <= todayStr && !isWeekend) {
             range.push(formatLocalDate(current));
           }
           current.setDate(current.getDate() + 1);
@@ -835,29 +839,34 @@ const TimesheetEntry: React.FC = () => {
                       const day = i + 1;
                       const dateStr = formatLocalDate(new Date(calendarYear, calendarMonth, day));
                       const isFuture = dateStr > todayStr;
+                      const dayOfWeek = new Date(calendarYear, calendarMonth, day).getDay();
+                      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
                       const isSelected = selectedDates.includes(dateStr);
                       const hasEntry = datesWithEntries.has(dateStr);
                       const isToday = dateStr === todayStr;
+                      const isDisabled = isFuture || isWeekend;
 
                       return (
                         <button
                           key={day}
-                          onClick={() => !isFuture && handleCalendarDateClick(day)}
-                          disabled={isFuture}
+                          onClick={() => !isDisabled && handleCalendarDateClick(day)}
+                          disabled={isDisabled}
                           className={`h-9 w-full rounded-lg text-sm font-medium transition-all relative ${
-                            isFuture
-                              ? 'text-gray-600 cursor-not-allowed'
-                              : isSelected
-                                ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/30'
-                                : isToday
-                                  ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30 hover:bg-blue-500/30'
-                                  : hasEntry
-                                    ? 'bg-slate-600/50 text-gray-300 hover:bg-slate-600'
-                                    : 'text-gray-400 hover:bg-slate-700 hover:text-white'
+                            isWeekend
+                              ? 'text-gray-700 cursor-not-allowed'
+                              : isFuture
+                                ? 'text-gray-600 cursor-not-allowed'
+                                : isSelected
+                                  ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/30'
+                                  : isToday
+                                    ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30 hover:bg-blue-500/30'
+                                    : hasEntry
+                                      ? 'bg-slate-600/50 text-gray-300 hover:bg-slate-600'
+                                      : 'text-gray-400 hover:bg-slate-700 hover:text-white'
                           }`}
                         >
                           {day}
-                          {hasEntry && !isSelected && (
+                          {hasEntry && !isSelected && !isWeekend && (
                             <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-teal-400" />
                           )}
                         </button>

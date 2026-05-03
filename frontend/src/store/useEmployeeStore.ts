@@ -7,6 +7,7 @@ interface EmployeeStore {
   loading: boolean;
   error: string | null;
   fetchEmployees: (scope?: string) => Promise<void>;
+  fetchEmployeesForDropdown: () => Promise<void>;
   clearError: () => void;
   reset: () => void;
 }
@@ -62,6 +63,26 @@ export const useEmployeeStore = create<EmployeeStore>((set, get) => ({
     }
   },
 
+  // Fetch employees for dropdowns (lightweight, auth-only endpoint)
+  fetchEmployeesForDropdown: async () => {
+    const { loading, employees } = get();
+    
+    // Don't re-fetch if we already have employees
+    if (loading || employees.length > 0) return;
+
+    set({ loading: true, error: null });
+
+    try {
+      const res = await employeeApi.getEmployeesForDropdown();
+      const employees = res.data || [];
+      
+      set({ employees, loading: false });
+    } catch (error: any) {
+      console.error('Failed to fetch employees for dropdown:', error);
+      set({ error: error?.message || 'Failed to fetch employees', loading: false });
+    }
+  },
+
   // Clear error state
   clearError: () => {
     set({ error: null });
@@ -83,6 +104,7 @@ export const useEmployeesLoading = () => useEmployeeStore((state) => state.loadi
 export const useEmployeesError = () => useEmployeeStore((state) => state.error);
 export const useEmployeeActions = () => useEmployeeStore((state) => ({
   fetchEmployees: state.fetchEmployees,
+  fetchEmployeesForDropdown: state.fetchEmployeesForDropdown,
   clearError: state.clearError,
   reset: state.reset,
 }));

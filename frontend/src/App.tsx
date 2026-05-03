@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { Component, type ErrorInfo, type ReactNode, useState, useEffect } from 'react';
+import { type ReactNode, useState, useEffect } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
@@ -229,7 +229,7 @@ function App() {
                       <Route path="/project-management" element={
                         <ProtectedRoute requiredRoles={['admin', 'hr']}>
                           <RouteErrorBoundary routeName="Project Management">
-                            <ProjectManagementPage token={token} />
+                            <ProjectManagementPage token={token || ''} />
                           </RouteErrorBoundary>
                         </ProtectedRoute>
                       } />

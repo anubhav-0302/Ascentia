@@ -75,8 +75,11 @@ const LeaveCalendar: React.FC<LeaveCalendarProps> = ({ className = '', onDateSel
       const startDate = new Date(leave.startDate);
       const endDate = new Date(leave.endDate);
       
-      // Iterate through each day of the leave period
+      // Iterate through each day of the leave period (skip weekends)
       for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+        const dayOfWeek = date.getDay();
+        // Skip Saturday (6) and Sunday (0)
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
         const dateStr = date.toISOString().split('T')[0];
         if (!leavesByDate.has(dateStr)) {
           leavesByDate.set(dateStr, []);

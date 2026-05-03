@@ -2,6 +2,13 @@ import prisma from './lib/prisma.js';
 import { logDatabaseOperation } from './databaseLogger.js';
 import { tenantWhere, tenantWhereWith } from './helpers/tenantHelper.js';
 
+// Helper: Parse date string as local date (avoids UTC timezone shift)
+// "2026-05-01" -> May 1 2026 00:00:00 LOCAL TIME (not UTC)
+const parseLocalDate = (dateStr) => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
 // GET /api/timesheet - Get timesheet entries for current user
 const getMyTimesheet = async (req, res) => {
   try {
@@ -13,8 +20,8 @@ const getMyTimesheet = async (req, res) => {
     
     if (startDate && endDate) {
       whereClause.date = {
-        gte: new Date(startDate),
-        lte: new Date(endDate)
+        gte: parseLocalDate(startDate),
+        lte: parseLocalDate(endDate)
       };
     }
     
@@ -93,8 +100,8 @@ const getAllTimesheets = async (req, res) => {
     // Apply additional filters
     if (startDate && endDate) {
       whereClause.date = {
-        gte: new Date(startDate),
-        lte: new Date(endDate)
+        gte: parseLocalDate(startDate),
+        lte: parseLocalDate(endDate)
       };
     }
     
@@ -190,10 +197,9 @@ const createTimesheetEntry = async (req, res) => {
     }
     
     // Validate date is not in the future
-    const entryDate = new Date(date);
+    const entryDate = parseLocalDate(date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    entryDate.setHours(0, 0, 0, 0);
     
     if (entryDate > today) {
       return res.status(400).json({ 
@@ -209,7 +215,7 @@ const createTimesheetEntry = async (req, res) => {
     const existingEntry = await prisma.timesheet.findFirst({
       where: {
         employeeId: req.user.id,
-        date: new Date(date),
+        date: parseLocalDate(date),
         organizationId: req.user.organizationId
       }
     });
@@ -264,7 +270,7 @@ const createTimesheetEntry = async (req, res) => {
       timesheet = await prisma.timesheet.create({
         data: {
           employeeId: req.user.id,
-          date: new Date(date),
+          date: parseLocalDate(date),
           hours: parseFloat(hours),
           description: description || null,
           activityId: activityId || null,
@@ -510,8 +516,8 @@ const getTimesheetHistory = async (req, res) => {
     
     if (startDate && endDate) {
       whereClause.date = {
-        gte: new Date(startDate),
-        lte: new Date(endDate)
+        gte: parseLocalDate(startDate),
+        lte: parseLocalDate(endDate)
       };
     }
     
@@ -799,6 +805,7 @@ const deleteActivity = async (req, res) => {
 
 // POST /api/timesheet/bulk-create - Create timesheet entries grouped by date
 // Multiple activities for the same date become ONE timesheet entry with activities JSON
+
 const bulkCreateTimesheet = async (req, res) => {
   try {
     const { entries } = req.body;
@@ -815,10 +822,9 @@ const bulkCreateTimesheet = async (req, res) => {
       if (entry.hours > 24) {
         return res.status(400).json({ success: false, message: 'Hours cannot exceed 24 per entry' });
       }
-      const entryDate = new Date(entry.date);
+      const entryDate = parseLocalDate(entry.date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      entryDate.setHours(0, 0, 0, 0);
       if (entryDate > today) {
         return res.status(400).json({ success: false, message: `Date ${entry.date} cannot be in the future` });
       }
@@ -852,7 +858,7 @@ const bulkCreateTimesheet = async (req, res) => {
         const existingEntry = await prisma.timesheet.findFirst({
           where: {
             employeeId: req.user.id,
-            date: new Date(date),
+            date: parseLocalDate(date),
             organizationId: req.user.organizationId
           }
         });
@@ -899,7 +905,7 @@ const bulkCreateTimesheet = async (req, res) => {
           timesheet = await prisma.timesheet.create({
             data: {
               employeeId: req.user.id,
-              date: new Date(date),
+              date: parseLocalDate(date),
               hours: group.totalHours,
               description: group.description || null,
               activityId: primaryActivityId,
