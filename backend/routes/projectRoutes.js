@@ -16,12 +16,6 @@ import { checkPermission } from '../middleware/permissions.js';
 
 const router = express.Router();
 
-// Debug logging
-router.use((req, res, next) => {
-  console.log("🔍 PROJECT ROUTE:", req.method, req.url);
-  next();
-});
-
 // Specific routes BEFORE dynamic :id routes
 // GET /api/projects/my - Get current user's projects
 router.get('/my', requireAuth, getMyProjects);

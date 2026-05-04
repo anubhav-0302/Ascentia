@@ -3,7 +3,7 @@ import PageTransition, { FadeIn } from './PageTransition';
 import StandardLayout from './StandardLayout';
 import ProjectManagement from './ProjectManagement';
 
-const ProjectManagementPage: React.FC<{ token: string }> = ({ token }) => {
+const ProjectManagementPage: React.FC = () => {
   return (
     <PageTransition>
       <FadeIn>
@@ -11,7 +11,7 @@ const ProjectManagementPage: React.FC<{ token: string }> = ({ token }) => {
           title="Project Management"
           description="Create and manage projects, assign team members"
         >
-          <ProjectManagement token={token} />
+          <ProjectManagement />
         </StandardLayout>
       </FadeIn>
     </PageTransition>

@@ -227,9 +227,9 @@ function App() {
                         </ProtectedRoute>
                       } />
                       <Route path="/project-management" element={
-                        <ProtectedRoute requiredRoles={['admin', 'hr']}>
+                        <ProtectedRoute requiredRoles={['admin', 'hr', 'manager', 'teamlead']}>
                           <RouteErrorBoundary routeName="Project Management">
-                            <ProjectManagementPage token={token || ''} />
+                            <ProjectManagementPage />
                           </RouteErrorBoundary>
                         </ProtectedRoute>
                       } />

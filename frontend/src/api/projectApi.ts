@@ -1,4 +1,4 @@
-import { BASE_URL } from './apiClient';
+import { apiClient } from './apiClient';
 
 export interface ProjectAssignment {
   id: number;
@@ -63,6 +63,7 @@ export interface Project {
 export interface CreateProjectData {
   name: string;
   description?: string;
+  status?: string;
   startDate?: string;
   endDate?: string;
   managerId?: number;
@@ -132,199 +133,61 @@ export interface AssignEmployeeData {
 }
 
 // Get all projects
-export const getProjects = async (token: string): Promise<Project[]> => {
-  const response = await fetch(`${BASE_URL}/projects`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to fetch projects');
-  }
-
-  const data = await response.json();
-  return data.data;
+export const getProjects = async (): Promise<Project[]> => {
+  const result = await apiClient.get('/projects');
+  return result.data;
 };
 
 // Get single project
-export const getProject = async (id: number, token: string): Promise<Project> => {
-  const response = await fetch(`${BASE_URL}/projects/${id}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to fetch project');
-  }
-
-  const data = await response.json();
-  return data.data;
+export const getProject = async (id: number): Promise<Project> => {
+  const result = await apiClient.get(`/projects/${id}`);
+  return result.data;
 };
 
 // Create project
-export const createProject = async (projectData: CreateProjectData, token: string): Promise<Project> => {
-  const response = await fetch(`${BASE_URL}/projects`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(projectData),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to create project');
-  }
-
-  const data = await response.json();
-  return data.data;
+export const createProject = async (projectData: CreateProjectData): Promise<Project> => {
+  const result = await apiClient.post('/projects', projectData);
+  return result.data;
 };
 
 // Update project
-export const updateProject = async (id: number, projectData: UpdateProjectData, token: string): Promise<Project> => {
-  const response = await fetch(`${BASE_URL}/projects/${id}`, {
-    method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(projectData),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to update project');
-  }
-
-  const data = await response.json();
-  return data.data;
+export const updateProject = async (id: number, projectData: UpdateProjectData): Promise<Project> => {
+  const result = await apiClient.put(`/projects/${id}`, projectData);
+  return result.data;
 };
 
 // Delete project
-export const deleteProject = async (id: number, token: string): Promise<void> => {
-  const response = await fetch(`${BASE_URL}/projects/${id}`, {
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to delete project');
-  }
+export const deleteProject = async (id: number): Promise<void> => {
+  await apiClient.delete(`/projects/${id}`);
 };
 
 // Assign employees to project
-export const assignEmployees = async (id: number, assignments: AssignEmployeeData[], token: string): Promise<void> => {
-  const url = `${BASE_URL}/projects/${id}/assign`;
-  console.log('📡 API Call:', url, { id, assignments });
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ assignments }),
-  });
-
-  console.log('📡 Response status:', response.status, response.statusText);
-
-  if (!response.ok) {
-    const text = await response.text();
-    console.error('📡 Error response:', text.substring(0, 200));
-    
-    // Try to parse as JSON, fallback to text
-    let errorMessage = 'Failed to assign employees';
-    try {
-      const errorJson = JSON.parse(text);
-      errorMessage = errorJson.message || errorMessage;
-    } catch {
-      errorMessage = text.substring(0, 100) || `HTTP ${response.status}: ${response.statusText}`;
-    }
-    throw new Error(errorMessage);
-  }
+export const assignEmployees = async (id: number, assignments: AssignEmployeeData[]): Promise<void> => {
+  await apiClient.post(`/projects/${id}/assign`, { assignments });
 };
 
 // Remove employee from project
-export const removeEmployee = async (projectId: number, employeeId: number, token: string): Promise<void> => {
-  const response = await fetch(`${BASE_URL}/projects/${projectId}/assign/${employeeId}`, {
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to remove employee');
-  }
+export const removeEmployee = async (projectId: number, employeeId: number): Promise<void> => {
+  await apiClient.delete(`/projects/${projectId}/assign/${employeeId}`);
 };
 
 // Get current user's projects (where they are manager, lead, or assigned)
-export const getMyProjects = async (token: string): Promise<MyProject[]> => {
-  const response = await fetch(`${BASE_URL}/projects/my`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to fetch my projects');
-  }
-
-  const data = await response.json();
-  return data.data;
+export const getMyProjects = async (): Promise<MyProject[]> => {
+  const result = await apiClient.get('/projects/my');
+  return result.data;
 };
 
 // Get all members of a project
-export const getProjectMembers = async (projectId: number, token: string): Promise<ProjectMember[]> => {
-  const response = await fetch(`${BASE_URL}/projects/${projectId}/members`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to fetch project members');
-  }
-
-  const data = await response.json();
-  return data.data;
+export const getProjectMembers = async (projectId: number): Promise<ProjectMember[]> => {
+  const result = await apiClient.get(`/projects/${projectId}/members`);
+  return result.data;
 };
 
 // Get employees available for project assignment
-export const getAvailableEmployees = async (token: string, excludeProjectId?: number): Promise<AvailableEmployee[]> => {
-  const url = excludeProjectId
-    ? `${BASE_URL}/projects/available-employees?excludeProjectId=${excludeProjectId}`
-    : `${BASE_URL}/projects/available-employees`;
-
-  const response = await fetch(url, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to fetch available employees');
-  }
-
-  const data = await response.json();
-  return data.data;
+export const getAvailableEmployees = async (excludeProjectId?: number): Promise<AvailableEmployee[]> => {
+  const endpoint = excludeProjectId
+    ? `/projects/available-employees?excludeProjectId=${excludeProjectId}`
+    : '/projects/available-employees';
+  const result = await apiClient.get(endpoint);
+  return result.data;
 };

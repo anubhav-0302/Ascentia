@@ -14,31 +14,27 @@ import {
   UserMinus,
   CheckCircle,
   AlertCircle,
-  Loader
+  Loader,
+  X
 } from 'lucide-react';
 import {
   getProjects,
-  getMyProjects,
   updateProject,
   deleteProject,
   removeEmployee,
   getAvailableEmployees,
-  type Project,
-  type MyProject
+  type Project
 } from '../api/projectApi';
 import CreateProjectModal from './CreateProjectModal';
 import AssignEmployeesModal from './AssignEmployeesModal';
-import ProjectSelector from './ProjectSelector';
+import { useAuthStore } from '../store/useAuthStore';
 
-interface ProjectManagementProps {
-  token: string;
-}
-
-const ProjectManagement: React.FC<ProjectManagementProps> = ({ token }) => {
+const ProjectManagement: React.FC = () => {
+  const { user } = useAuthStore();
   const [projects, setProjects] = useState<Project[]>([]);
-  const [myProjects, setMyProjects] = useState<MyProject[]>([]);
-  const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<number>(0);
+  const currentUserId = user?.id || 0;
+  const userRole = user?.role || '';
+  const canModify = ['admin', 'hr'].includes(userRole);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -53,12 +49,17 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ token }) => {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [expandedProject, setExpandedProject] = useState<number | null>(null);
 
-  // Form data for edit (simplified to match create)
+  // Form data for edit (includes all updatable fields)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     managerId: 0,
-    teamLeadId: null as number | null
+    teamLeadId: null as number | null,
+    status: 'planning' as string,
+    priority: 'medium' as string,
+    budget: '' as string,
+    startDate: '' as string,
+    endDate: '' as string
   });
   const [editAvailableEmployees, setEditAvailableEmployees] = useState<any[]>([]);
   const [editModalLoading, setEditModalLoading] = useState(false);
@@ -69,9 +70,9 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ token }) => {
   const [priorityFilter, setPriorityFilter] = useState('all');
 
   // Fetch available employees for edit modal
-  const fetchEditAvailableEmployees = async () => {
+  const fetchEditAvailableEmployees = async (excludeProjectId?: number) => {
     try {
-      const employees = await getAvailableEmployees(token);
+      const employees = await getAvailableEmployees(excludeProjectId);
       setEditAvailableEmployees(employees);
       return employees;
     } catch (err) {
@@ -139,18 +140,12 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ token }) => {
 
   useEffect(() => {
     fetchProjects();
-    fetchMyProjectsList();
-    // Get current user ID from token
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (user.id) {
-      setCurrentUserId(user.id);
-    }
   }, []);
 
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const data = await getProjects(token);
+      const data = await getProjects();
       setProjects(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch projects');
@@ -159,25 +154,12 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ token }) => {
     }
   };
 
-  const fetchMyProjectsList = async () => {
-    try {
-      const data = await getMyProjects(token);
-      setMyProjects(data);
-      // Set first project as current if none selected
-      if (data.length > 0 && !currentProjectId) {
-        setCurrentProjectId(data[0].id);
-      }
-    } catch (err) {
-      console.error('Failed to fetch my projects:', err);
-    }
-  };
 
   // New simplified handlers for the new modals
   const handleProjectCreated = (project: any) => {
     setSuccess('Project created successfully');
     setShowCreateModal(false);
     fetchProjects();
-    fetchMyProjectsList();
 
     // If user chose to assign employees immediately
     if (project.assignEmployees) {
@@ -198,13 +180,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ token }) => {
     setShowAssignModal(false);
     setProjectToAssign(null);
     fetchProjects();
-    fetchMyProjectsList();
     setTimeout(() => setSuccess(null), 3000);
-  };
-
-  const handleSwitchProject = (projectId: number) => {
-    setCurrentProjectId(projectId);
-    // Could also fetch project-specific data here
   };
 
   // Legacy handlers (kept for edit/update/delete functionality)
@@ -215,12 +191,21 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ token }) => {
     try {
       setLoading(true);
       setError(null);
-      await updateProject(selectedProject.id, formData, token);
+      await updateProject(selectedProject.id, {
+        name: formData.name,
+        description: formData.description || undefined,
+        managerId: formData.managerId || undefined,
+        teamLeadId: formData.teamLeadId,
+        status: formData.status,
+        priority: formData.priority,
+        budget: formData.budget ? Number(formData.budget) : undefined,
+        startDate: formData.startDate || undefined,
+        endDate: formData.endDate || undefined
+      });
       setSuccess('Project updated successfully');
       setShowEditModal(false);
       setSelectedProject(null);
       fetchProjects();
-      fetchMyProjectsList();
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update project');
@@ -234,10 +219,9 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ token }) => {
 
     try {
       setLoading(true);
-      await deleteProject(id, token);
+      await deleteProject(id);
       setSuccess('Project deleted successfully');
       fetchProjects();
-      fetchMyProjectsList();
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete project');
@@ -250,7 +234,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ token }) => {
     if (!confirm('Remove this employee from the project?')) return;
     
     try {
-      await removeEmployee(projectId, employeeId, token);
+      await removeEmployee(projectId, employeeId);
       setSuccess('Employee removed from project');
       fetchProjects();
       setTimeout(() => setSuccess(null), 3000);
@@ -298,22 +282,16 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ token }) => {
           <p className="text-gray-400">Manage projects and assign team members</p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          {/* Project Selector - shown when user has multiple projects */}
-          <ProjectSelector
-            projects={myProjects}
-            currentProjectId={currentProjectId}
-            onProjectChange={handleSwitchProject}
-            isLoading={loading}
-          />
-
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition whitespace-nowrap"
-          >
-            <Plus size={20} />
-            New Project
-          </button>
+        <div className="flex items-center gap-4">
+          {canModify && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition whitespace-nowrap"
+            >
+              <Plus size={20} />
+              New Project
+            </button>
+          )}
         </div>
       </div>
 
@@ -422,41 +400,51 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ token }) => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={async () => {
-                        setSelectedProject(project);
-                        // Find team lead from assignments (role = 'lead', but NOT the manager who is auto-assigned as lead)
-                        const teamLeadAssignment = project.assignments.find(
-                          a => a.role === 'lead' && a.employeeId !== project.managerId
-                        );
-                        setFormData({
-                          name: project.name,
-                          description: project.description || '',
-                          managerId: project.managerId,
-                          teamLeadId: teamLeadAssignment?.employeeId || null
-                        });
-                        setEditModalLoading(true);
-                        setShowEditModal(true);
-                        await fetchEditAvailableEmployees();
-                        setEditModalLoading(false);
-                      }}
-                      className="p-2 text-gray-400 hover:text-white hover:bg-slate-700 rounded transition"
-                    >
-                      <Edit size={18} />
-                    </button>
-                    <button
-                      onClick={() => handleOpenAssignModal(project)}
-                      className="p-2 text-gray-400 hover:text-white hover:bg-slate-700 rounded transition"
-                      title="Assign Employees"
-                    >
-                      <UserPlus size={18} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteProject(project.id)}
-                      className="p-2 text-gray-400 hover:text-red-400 hover:bg-slate-700 rounded transition"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                    {canModify && (
+                      <button
+                        onClick={async () => {
+                          setSelectedProject(project);
+                          const teamLeadAssignment = project.assignments.find(
+                            a => a.role === 'lead' && a.employeeId !== project.managerId
+                          );
+                          setFormData({
+                            name: project.name,
+                            description: project.description || '',
+                            managerId: project.managerId,
+                            teamLeadId: teamLeadAssignment?.employeeId || null,
+                            status: project.status,
+                            priority: project.priority,
+                            budget: project.budget?.toString() || '',
+                            startDate: project.startDate ? project.startDate.split('T')[0] : '',
+                            endDate: project.endDate ? project.endDate.split('T')[0] : ''
+                          });
+                          setEditModalLoading(true);
+                          setShowEditModal(true);
+                          await fetchEditAvailableEmployees(project.id);
+                          setEditModalLoading(false);
+                        }}
+                        className="p-2 text-gray-400 hover:text-white hover:bg-slate-700 rounded transition"
+                      >
+                        <Edit size={18} />
+                      </button>
+                    )}
+                    {canModify && (
+                      <button
+                        onClick={() => handleOpenAssignModal(project)}
+                        className="p-2 text-gray-400 hover:text-white hover:bg-slate-700 rounded transition"
+                        title="Assign Employees"
+                      >
+                        <UserPlus size={18} />
+                      </button>
+                    )}
+                    {canModify && (
+                      <button
+                        onClick={() => handleDeleteProject(project.id)}
+                        className="p-2 text-gray-400 hover:text-red-400 hover:bg-slate-700 rounded transition"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
                     <button
                       onClick={() => setExpandedProject(expandedProject === project.id ? null : project.id)}
                       className="p-2 text-gray-400 hover:text-white hover:bg-slate-700 rounded transition"
@@ -487,12 +475,14 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ token }) => {
                                   {assignment.allocation && ` • ${assignment.allocation}% allocation`}
                                 </p>
                               </div>
-                              <button
-                                onClick={() => handleRemoveEmployee(project.id, assignment.employeeId)}
-                                className="p-1 text-gray-400 hover:text-red-400 hover:bg-slate-600 rounded transition"
-                              >
-                                <UserMinus size={16} />
-                              </button>
+                              {canModify && (
+                                <button
+                                  onClick={() => handleRemoveEmployee(project.id, assignment.employeeId)}
+                                  className="p-1 text-gray-400 hover:text-red-400 hover:bg-slate-600 rounded transition"
+                                >
+                                  <UserMinus size={16} />
+                                </button>
+                              )}
                             </div>
                           ))}
                         {project.assignments.filter(a => a.employeeId !== project.managerId).length === 0 && (
@@ -508,99 +498,212 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ token }) => {
         )}
       </div>
 
-      {/* Edit Modal - simplified to match CreateProjectModal */}
+      {/* Edit Modal */}
       {showEditModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-white mb-4">Edit Project</h2>
-            <form onSubmit={handleUpdateProject}>
-              <div className="space-y-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl max-w-lg w-full max-h-[90vh] flex flex-col">
+            {/* Header - fixed */}
+            <div className="flex items-center justify-between p-5 border-b border-slate-700 flex-shrink-0">
+              <h2 className="text-lg font-semibold text-white">Edit Project</h2>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setSelectedProject(null);
+                }}
+                className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                <X size={20} className="text-slate-400" />
+              </button>
+            </div>
+            <form onSubmit={handleUpdateProject} className="flex flex-col flex-1 min-h-0">
+              {/* Scrollable body */}
+              <div className="p-5 space-y-3 overflow-y-auto flex-1">
+                {error && (
+                  <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
+                    {error}
+                  </div>
+                )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Project Name *</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">
+                    Project Name <span className="text-red-400">*</span>
+                  </label>
                   <input
                     type="text"
                     required
                     value={formData.name || ''}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-teal-500"
+                    disabled={loading}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Description</label>
                   <textarea
                     value={formData.description || ''}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    rows={2}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-teal-500 resize-none"
+                    disabled={loading}
                   />
                 </div>
                 {editModalLoading && (
-                  <div className="text-center py-2 text-gray-400">
+                  <div className="flex items-center justify-center py-2 text-slate-400">
+                    <div className="w-4 h-4 border-2 border-teal-500/30 border-t-teal-500 rounded-full animate-spin mr-2" />
                     Loading employees...
                   </div>
                 )}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
-                    <span className="flex items-center gap-2">
-                      <Briefcase size={16} />
-                      Project Manager
-                    </span>
-                  </label>
-                  <select
-                    value={formData.managerId || ''}
-                    onChange={(e) => setFormData({ ...formData, managerId: Number(e.target.value) })}
-                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50"
-                    required
-                    disabled={editModalLoading}
-                  >
-                    <option value="">Select a manager...</option>
-                    {getEditManagerOptions().map((emp) => (
-                      <option key={emp.id} value={emp.id}>
-                        {emp.name} ({emp.jobTitle || emp.role})
-                      </option>
-                    ))}
-                  </select>
+                {/* Manager + Team Lead row */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">
+                      <span className="flex items-center gap-1">
+                        <Briefcase size={14} />
+                        Manager
+                      </span>
+                    </label>
+                    <select
+                      value={formData.managerId || ''}
+                      onChange={(e) => setFormData({ ...formData, managerId: Number(e.target.value) })}
+                      className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-teal-500 disabled:opacity-50 text-sm"
+                      required
+                      disabled={editModalLoading || loading}
+                    >
+                      <option value="">Select...</option>
+                      {getEditManagerOptions().map((emp) => (
+                        <option key={emp.id} value={emp.id}>
+                          {emp.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">
+                      <span className="flex items-center gap-1">
+                        <Users size={14} />
+                        Team Lead
+                      </span>
+                    </label>
+                    <select
+                      value={formData.teamLeadId || ''}
+                      onChange={(e) => setFormData({ ...formData, teamLeadId: e.target.value ? Number(e.target.value) : null })}
+                      className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-teal-500 disabled:opacity-50 text-sm"
+                      disabled={editModalLoading || loading}
+                    >
+                      <option value="">Select...</option>
+                      {getEditTeamLeadOptions().map((emp) => (
+                        <option key={emp.id} value={emp.id}>
+                          {emp.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
-                    <span className="flex items-center gap-2">
-                      <Users size={16} />
-                      Team Lead (Optional)
-                    </span>
-                  </label>
-                  <select
-                    value={formData.teamLeadId || ''}
-                    onChange={(e) => setFormData({ ...formData, teamLeadId: e.target.value ? Number(e.target.value) : null })}
-                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50"
-                    disabled={editModalLoading}
-                  >
-                    <option value="">Select a team lead...</option>
-                    {getEditTeamLeadOptions().map((emp) => (
-                      <option key={emp.id} value={emp.id}>
-                        {emp.name} ({emp.jobTitle || emp.role})
-                      </option>
-                    ))}
-                  </select>
+                {/* Status + Priority row */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Status</label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-teal-500 text-sm"
+                      disabled={loading}
+                    >
+                      <option value="planning">Planning</option>
+                      <option value="active">Active</option>
+                      <option value="on-hold">On Hold</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Priority</label>
+                    <select
+                      value={formData.priority}
+                      onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-teal-500 text-sm"
+                      disabled={loading}
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="critical">Critical</option>
+                    </select>
+                  </div>
+                </div>
+                {/* Budget + Dates row */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">
+                      <span className="flex items-center gap-1">
+                        <DollarSign size={14} />
+                        Budget
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.budget}
+                      onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                      placeholder="0"
+                      className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-teal-500 text-sm"
+                      disabled={loading}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">
+                      <span className="flex items-center gap-1">
+                        <Calendar size={14} />
+                        Start
+                      </span>
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.startDate}
+                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-teal-500 text-sm"
+                      disabled={loading}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">End</label>
+                    <input
+                      type="date"
+                      value={formData.endDate}
+                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-teal-500 text-sm"
+                      disabled={loading}
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="flex gap-3 mt-6">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white py-2 rounded-lg transition"
-                >
-                  {loading ? 'Saving...' : 'Update'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setSelectedProject(null);
-                  }}
-                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg transition"
-                >
-                  Cancel
-                </button>
+              {/* Sticky footer */}
+              <div className="p-5 border-t border-slate-700 flex-shrink-0">
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setSelectedProject(null);
+                    }}
+                    className="flex-1 px-4 py-2 border border-slate-600 text-slate-300 rounded-lg hover:bg-slate-800 transition-colors"
+                    disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-500 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {loading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      'Update Project'
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -612,7 +715,6 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ token }) => {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSuccess={handleProjectCreated}
-        token={token}
         currentUserId={currentUserId}
       />
 
@@ -626,7 +728,6 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ token }) => {
         onSuccess={handleEmployeesAssigned}
         projectId={projectToAssign?.id || 0}
         projectName={projectToAssign?.name || ''}
-        token={token}
       />
     </div>
   );

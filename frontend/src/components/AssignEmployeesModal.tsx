@@ -8,7 +8,6 @@ interface AssignEmployeesModalProps {
   onSuccess: () => void;
   projectId: number;
   projectName: string;
-  token: string;
 }
 
 interface SelectedEmployee {
@@ -21,8 +20,7 @@ const AssignEmployeesModal: React.FC<AssignEmployeesModalProps> = ({
   onClose,
   onSuccess,
   projectId,
-  projectName,
-  token
+  projectName
 }) => {
   const [availableEmployees, setAvailableEmployees] = useState<AvailableEmployee[]>([]);
   const [currentMembers, setCurrentMembers] = useState<ProjectMember[]>([]);
@@ -45,8 +43,8 @@ const AssignEmployeesModal: React.FC<AssignEmployeesModalProps> = ({
 
       // Fetch available employees (excluding those already assigned)
       const [available, members] = await Promise.all([
-        getAvailableEmployees(token, projectId),
-        getProjectMembers(projectId, token)
+        getAvailableEmployees(projectId),
+        getProjectMembers(projectId)
       ]);
 
       setAvailableEmployees(available);
@@ -93,9 +91,7 @@ const AssignEmployeesModal: React.FC<AssignEmployeesModalProps> = ({
         allocation: se.role === 'member' ? 50 : 25
       }));
 
-      console.log('📤 Assigning employees:', { projectId, assignments });
-      await assignEmployees(projectId, assignments, token);
-      console.log('✅ Employees assigned successfully');
+      await assignEmployees(projectId, assignments);
 
       onSuccess();
       handleClose();
@@ -133,15 +129,15 @@ const AssignEmployeesModal: React.FC<AssignEmployeesModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-900 border border-slate-700 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-700">
+      <div className="bg-slate-900 border border-slate-700 rounded-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+        {/* Header - fixed */}
+        <div className="flex items-center justify-between p-5 border-b border-slate-700 flex-shrink-0">
           <div>
-            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
               <UserPlus className="w-5 h-5 text-teal-400" />
               Assign Employees
             </h2>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-sm text-slate-400 mt-0.5">
               to "{projectName}"
             </p>
           </div>
@@ -153,7 +149,8 @@ const AssignEmployeesModal: React.FC<AssignEmployeesModalProps> = ({
           </button>
         </div>
 
-        <div className="p-6 space-y-4">
+        {/* Scrollable body */}
+        <div className="p-5 space-y-3 overflow-y-auto flex-1">
           {error && (
             <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
               {error}
@@ -222,7 +219,7 @@ const AssignEmployeesModal: React.FC<AssignEmployeesModalProps> = ({
                 </p>
               </div>
             ) : (
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="space-y-2 max-h-52 overflow-y-auto">
                 {filteredEmployees.map((employee) => (
                   <div
                     key={employee.id}
@@ -278,9 +275,11 @@ const AssignEmployeesModal: React.FC<AssignEmployeesModalProps> = ({
               </p>
             </div>
           )}
+        </div>
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-4">
+        {/* Sticky footer */}
+        <div className="p-5 border-t border-slate-700 flex-shrink-0">
+          <div className="flex gap-3">
             <button
               type="button"
               onClick={handleClose}

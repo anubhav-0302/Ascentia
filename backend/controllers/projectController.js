@@ -11,11 +11,11 @@ export const getProjects = async (req, res) => {
     let whereClause = tenantWhere(req);
     
     // Role-based filtering
-    if (userRole === 'manager' || userRole === 'teamlead') {
-      // Managers/TeamLeads see only projects they manage
+    if (userRole === 'manager') {
+      // Managers see projects they manage
       whereClause.managerId = userId;
-    } else if (userRole === 'employee') {
-      // Employees see only projects they're assigned to
+    } else if (userRole === 'teamlead' || userRole === 'employee') {
+      // TeamLeads and Employees see only projects they're assigned to
       whereClause.assignments = {
         some: {
           employeeId: userId
@@ -85,9 +85,9 @@ export const getProject = async (req, res) => {
     };
     
     // Role-based access check
-    if (userRole === 'manager' || userRole === 'teamlead') {
+    if (userRole === 'manager') {
       whereClause.managerId = userId;
-    } else if (userRole === 'employee') {
+    } else if (userRole === 'teamlead' || userRole === 'employee') {
       whereClause.assignments = {
         some: {
           employeeId: userId
@@ -217,8 +217,7 @@ export const createProject = async (req, res) => {
           projectId: project.id,
           employeeId: empId,
           role: 'member'
-        })),
-        skipDuplicates: true
+        }))
       });
     }
 
@@ -494,14 +493,32 @@ export const assignEmployees = async (req, res) => {
     }
     
     // Create assignments - parse employeeId as integer
+    // Filter out employees already assigned to avoid unique constraint errors
+    const existingAssignments = await prisma.projectAssignment.findMany({
+      where: { projectId: parseInt(id) },
+      select: { employeeId: true }
+    });
+    const existingIds = new Set(existingAssignments.map(a => a.employeeId));
+
+    const newAssignments = assignments.filter(
+      ({ employeeId }) => !existingIds.has(parseInt(employeeId))
+    );
+
+    if (newAssignments.length === 0) {
+      return res.json({
+        success: true,
+        message: 'All selected employees are already assigned to this project',
+        data: { assignedCount: 0 }
+      });
+    }
+
     const results = await prisma.projectAssignment.createMany({
-      data: assignments.map(({ employeeId, role = 'member', allocation }) => ({
+      data: newAssignments.map(({ employeeId, role = 'member', allocation }) => ({
         projectId: parseInt(id),
         employeeId: parseInt(employeeId),
         role,
         allocation: allocation ? parseFloat(allocation) : null
-      })),
-      skipDuplicates: true
+      }))
     });
     
     res.json({
@@ -620,13 +637,27 @@ export const getMyProjects = async (req, res) => {
     });
 
     // Add computed fields and user's role in project
-    const projectsWithUserInfo = projects.map(project => ({
-      ...project,
-      myRole: project.managerId === userId ? 'manager' : (project.assignments[0]?.role || 'member'),
-      myAllocation: project.assignments[0]?.allocation || null,
-      teamSize: project._count.assignments,
-      totalTasks: project._count.tasks
-    }));
+    const projectsWithUserInfo = projects.map(project => {
+      // Determine user's role: manager takes precedence over assignment role
+      let myRole = 'member';
+      let myAllocation = null;
+      if (project.managerId === userId) {
+        myRole = 'manager';
+        // Find assignment for allocation info
+        const mgrAssignment = project.assignments.find(a => a.employeeId === userId);
+        myAllocation = mgrAssignment?.allocation || null;
+      } else if (project.assignments.length > 0) {
+        myRole = project.assignments[0].role || 'member';
+        myAllocation = project.assignments[0].allocation || null;
+      }
+      return {
+        ...project,
+        myRole,
+        myAllocation,
+        teamSize: project._count.assignments,
+        totalTasks: project._count.tasks
+      };
+    });
 
     res.json({
       success: true,

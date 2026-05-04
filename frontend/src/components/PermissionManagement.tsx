@@ -255,11 +255,24 @@ const PermissionManagement = () => {
   };
 
   const getRoleIcon = (role: string) => {
-    return role === 'admin' ? <Crown className="w-4 h-4" /> : <UserIcon className="w-4 h-4" />;
+    switch (role) {
+      case 'admin': return <Crown className="w-4 h-4" />;
+      case 'hr': return <Shield className="w-4 h-4" />;
+      case 'manager': return <Users className="w-4 h-4" />;
+      case 'teamlead': return <UserIcon className="w-4 h-4" />;
+      default: return <UserIcon className="w-4 h-4" />;
+    }
   };
 
   const getRoleColor = (role: string) => {
-    return role === 'admin' ? 'text-yellow-400 bg-yellow-400/10' : 'text-blue-400 bg-blue-400/10';
+    switch (role) {
+      case 'admin': return 'text-yellow-400 bg-yellow-400/10';
+      case 'hr': return 'text-purple-400 bg-purple-400/10';
+      case 'manager': return 'text-blue-400 bg-blue-400/10';
+      case 'teamlead': return 'text-teal-400 bg-teal-400/10';
+      case 'employee': return 'text-green-400 bg-green-400/10';
+      default: return 'text-gray-400 bg-gray-400/10';
+    }
   };
 
   

@@ -15,8 +15,8 @@ const ProjectSelector: React.FC<ProjectSelectorProps> = ({
   onProjectChange,
   isLoading
 }) => {
-  // Don't show if user has 0 or 1 projects
-  if (projects.length <= 1 && !isLoading) {
+  // Don't show if user has 0 projects
+  if (projects.length === 0 && !isLoading) {
     return null;
   }
 
