@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { clearTokenCache } from '../api/apiClient';
+import { clearTokenCache, BASE_URL as API_BASE } from '../api/apiClient';
 
 // User interface
 interface User {
@@ -44,9 +44,6 @@ interface AuthStore {
   setLoading: (loading: boolean) => void;
   initializeAuth: () => Promise<void>;
 }
-
-// API base URL
-const API_BASE = 'http://localhost:5000/api';
 
 export const useAuthStore = create<AuthStore>()(
   persist(

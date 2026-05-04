@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { BASE_URL } from '../api/apiClient';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/useAuthStore';
 import { useOrganizationStore } from '../store/useOrganizationStore';
@@ -84,7 +85,7 @@ const Login = () => {
 
     setForgotPasswordLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
+      const response = await fetch(`${BASE_URL}/auth/forgot-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

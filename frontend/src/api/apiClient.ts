@@ -1,4 +1,5 @@
-export const BASE_URL = "http://localhost:5000/api";
+// Default: /api (Vite proxies to backend). Override with VITE_API_URL in .env
+export const BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
 // Get token from localStorage (Zustand persist format)
 const getToken = (): string | null => {

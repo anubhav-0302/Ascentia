@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BASE_URL } from '../api/apiClient';
 import { createPortal } from 'react-dom';
 import { X, Eye, EyeOff, Lock } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
@@ -41,7 +42,7 @@ const PasswordVerificationModal: React.FC<PasswordVerificationModalProps> = ({
         return;
       }
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/verify-password`, {
+      const response = await fetch(`${BASE_URL}/auth/verify-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

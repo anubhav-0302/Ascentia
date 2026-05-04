@@ -1,4 +1,4 @@
-import { apiClient, getActiveOrgHeader } from './apiClient';
+import { apiClient, getActiveOrgHeader, BASE_URL } from './apiClient';
 
 export const documentsApi = {
   // Upload a document
@@ -11,7 +11,7 @@ export const documentsApi = {
     const storage = localStorage.getItem('auth-storage');
     const token = storage ? JSON.parse(storage).state?.token : null;
     
-    const response = await fetch(`http://localhost:5000/api/documents/upload`, {
+    const response = await fetch(`${BASE_URL}/documents/upload`, {
       method: 'POST',
       headers: {
         'Authorization': token ? `Bearer ${token}` : '',
@@ -46,7 +46,7 @@ export const documentsApi = {
     const storage = localStorage.getItem('auth-storage');
     const token = storage ? JSON.parse(storage).state?.token : null;
     
-    const response = await fetch(`http://localhost:5000/api/documents/${documentId}/download`, {
+    const response = await fetch(`${BASE_URL}/documents/${documentId}/download`, {
       headers: {
         'Authorization': token ? `Bearer ${token}` : '',
         ...getActiveOrgHeader(),

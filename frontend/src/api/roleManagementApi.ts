@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { getActiveOrgHeader } from './apiClient';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+import { BASE_URL } from './apiClient';
+const API_BASE_URL = BASE_URL;
 
 // Build headers with Authorization + optional X-Organization-Id for SuperAdmin scoping
 const authHeaders = (token?: string): Record<string, string> => ({

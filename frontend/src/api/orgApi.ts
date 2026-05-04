@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+import { BASE_URL } from './apiClient';
+const API_BASE_URL = BASE_URL;
 
 export interface Organization {
   id: number;

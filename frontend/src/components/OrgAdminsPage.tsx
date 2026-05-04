@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { BASE_URL } from '../api/apiClient';
 import { Shield, Building2, UserPlus, AlertTriangle, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/useAuthStore';
@@ -56,7 +57,7 @@ const OrgAdminsPage: React.FC = () => {
     // by setting the org temporarily via X-Organization-Id. But apiClient reads
     // from localStorage, so do a direct fetch with the header here.
     try {
-      const res = await fetch(`http://localhost:5000/api/employees`, {
+      const res = await fetch(`${BASE_URL}/employees`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'X-Organization-Id': String(org.id),
