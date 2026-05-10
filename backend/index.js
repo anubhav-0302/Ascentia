@@ -1,6 +1,8 @@
 import { env } from './config/env.js';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import bcrypt from 'bcryptjs';
 
 console.log('🚀 Starting server initialization...');
@@ -152,8 +154,21 @@ const initializeDatabase = async () => {
 };
 
 // Middleware
-app.use(cors());
+app.use(helmet());
+app.use(cors({
+  origin: env.CORS_ORIGIN === '*' ? true : env.CORS_ORIGIN.split(',').map(o => o.trim()),
+  credentials: true,
+}));
 app.use(express.json());
+
+// General API rate limiter — 200 requests per 15 min per IP
+app.use('/api', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests, please try again later.' },
+}));
 
 // Debug logging for all requests
 app.use((req, res, next) => {
@@ -193,14 +208,14 @@ app.use('/api/payroll', requireAuth, payrollRoutes);
 app.use('/api/logs', requireAuth, logsRoutes);
 app.use('/api/settings', requireAuth, settingsRoutes);
 app.use('/api/documents', requireAuth, documentRoutes);
-app.use('/api/admin/roles', roleManagementRoutes);
+app.use('/api/admin/roles', requireAuth, roleManagementRoutes);
 app.use('/api/data-protection', requireAuth, dataProtectionRoutes);
 app.use('/api/analytics', requireAuth, analyticsRoutes);
-app.use('/api/organizations', orgRoutes);
-app.use('/api/workflows', workflowRoutes);
-app.use('/api/recruiting', recruitingRoutes);
-app.use('/api/command-center', commandCenterRoutes);
-app.use('/api/projects', projectRoutes);
+app.use('/api/organizations', requireAuth, orgRoutes);
+app.use('/api/workflows', requireAuth, workflowRoutes);
+app.use('/api/recruiting', requireAuth, recruitingRoutes);
+app.use('/api/command-center', requireAuth, commandCenterRoutes);
+app.use('/api/projects', requireAuth, projectRoutes);
 
 // Start server
 app.listen(PORT, async () => {

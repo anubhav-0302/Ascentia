@@ -112,13 +112,6 @@ export const useAuthStore = create<AuthStore>()(
           });
 
           const data = await response.json();
-          console.log('=== LOGIN DEBUG ===');
-          console.log('Full response:', data);
-          console.log('data.success:', data.success);
-          console.log('data.data exists:', !!data.data);
-          console.log('data.data.token exists:', !!(data.data && data.data.token));
-          console.log('Token value:', data.data?.token);
-          console.log('===================');
 
           if (!response.ok || !data.success) {
             throw new Error(data.message || 'Login failed');
@@ -133,8 +126,6 @@ export const useAuthStore = create<AuthStore>()(
             error: null,
             authInitialized: true,
           });
-
-          console.log('Auth state set - token:', data.data?.token ? 'PRESENT' : 'NULL');
         } catch (error: any) {
           set({
             user: null,

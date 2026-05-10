@@ -21,13 +21,13 @@ export const login = async (req, res) => {
     const employee = await prisma.employee.findFirst({ where: { email } });
     if (!employee || !employee.password) {
       // console.log("❌ Employee not found or no password:", email);
-      return res.status(401).json({ message: "User not found" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const validPassword = await bcrypt.compare(password, employee.password);
     if (!validPassword) {
       // console.log("❌ Invalid password for:", email);
-      return res.status(401).json({ message: "Invalid password" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     // Update last login
@@ -39,7 +39,6 @@ export const login = async (req, res) => {
     const token = jwt.sign({ id: employee.id, role: employee.role }, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN });
 
     console.log("✅ Login successful:", employee.email);
-    console.log("Token generated:", token ? "YES (length: " + token.length + ")" : "NO");
     
     const responseData = {
       success: true,
@@ -57,11 +56,10 @@ export const login = async (req, res) => {
       }
     };
     
-    console.log("Login response data:", JSON.stringify(responseData, null, 2));
     return res.json(responseData);
   } catch (err) {
     console.error("❌ LOGIN ERROR:", err.message);
-    return res.status(500).json({ success: false, message: "Internal server error", error: err.message });
+    return res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
@@ -101,7 +99,8 @@ export const verifyPassword = async (req, res) => {
 // Register: database only - now works with Employee model
 export const register = async (req, res) => {
   try {
-    const { name, email, password, role = 'employee', jobTitle, department } = req.body;
+    const { name, email, password, jobTitle, department } = req.body;
+    const role = 'employee'; // Public registration always creates employee role
 
     if (!name || !email || !password)
       return res.status(400).json({ success: false, message: "Name, email, and password are required" });
@@ -168,7 +167,7 @@ export const register = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ REGISTRATION ERROR:", error.message);
-    return res.status(500).json({ success: false, message: "Internal server error during registration", error: error.message });
+    return res.status(500).json({ success: false, message: "Internal server error during registration" });
   }
 };
 

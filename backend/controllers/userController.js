@@ -1,11 +1,14 @@
 import prisma from '../lib/prisma.js';
 import { logDatabaseOperation } from '../databaseLogger.js';
 import bcrypt from 'bcryptjs';
+import { tenantWhere } from '../helpers/tenantHelper.js';
 
 // GET /api/users - Get all users (admin only)
 export const getAllUsers = async (req, res) => {
   try {
+    const tenant = tenantWhere(req);
     const users = await prisma.employee.findMany({
+      where: tenant,
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -21,7 +24,7 @@ export const getAllUsers = async (req, res) => {
     res.json({ success: true, data: users });
   } catch (error) {
     console.error("❌ GET ALL USERS ERROR:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch users", error: error.message });
+    res.status(500).json({ success: false, message: "Failed to fetch users" });
   }
 };
 
@@ -29,8 +32,9 @@ export const getAllUsers = async (req, res) => {
 export const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
-    const user = await prisma.employee.findUnique({
-      where: { id: parseInt(id) },
+    const tenant = tenantWhere(req);
+    const user = await prisma.employee.findFirst({
+      where: { id: parseInt(id), ...tenant },
       select: {
         id: true,
         name: true,
@@ -45,7 +49,7 @@ export const getUserById = async (req, res) => {
     res.json({ success: true, data: user });
   } catch (error) {
     console.error("❌ GET USER BY ID ERROR:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch user", error: error.message });
+    res.status(500).json({ success: false, message: "Failed to fetch user" });
   }
 };
 
@@ -55,8 +59,9 @@ export const updateUser = async (req, res) => {
     const { id } = req.params;
     const { name, email, role, status } = req.body;
     const adminUserId = req.user.id;
+    const tenant = tenantWhere(req);
 
-    const existing = await prisma.employee.findUnique({ where: { id: parseInt(id) } });
+    const existing = await prisma.employee.findFirst({ where: { id: parseInt(id), ...tenant } });
     if (!existing) return res.status(404).json({ success: false, message: 'User not found' });
 
     if (parseInt(id) === adminUserId && role && role !== existing.role)
@@ -82,7 +87,7 @@ export const updateUser = async (req, res) => {
     res.json({ success: true, message: 'User updated successfully', data: updated });
   } catch (error) {
     console.error("❌ UPDATE USER ERROR:", error);
-    res.status(500).json({ success: false, message: "Failed to update user", error: error.message });
+    res.status(500).json({ success: false, message: "Failed to update user" });
   }
 };
 
@@ -92,11 +97,15 @@ export const resetUserPassword = async (req, res) => {
     const { id } = req.params;
     const { newPassword } = req.body;
     const adminUserId = req.user.id;
+    const tenant = tenantWhere(req);
 
     if (!newPassword || newPassword.length < 6)
       return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long' });
 
-    const existing = await prisma.employee.findUnique({ where: { id: parseInt(id) } });
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword))
+      return res.status(400).json({ success: false, message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number' });
+
+    const existing = await prisma.employee.findFirst({ where: { id: parseInt(id), ...tenant } });
     if (!existing) return res.status(404).json({ success: false, message: 'User not found' });
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -110,7 +119,7 @@ export const resetUserPassword = async (req, res) => {
     res.json({ success: true, message: 'Password reset successfully', data: { id: parseInt(id), email: existing.email } });
   } catch (error) {
     console.error("❌ RESET PASSWORD ERROR:", error);
-    res.status(500).json({ success: false, message: "Failed to reset password", error: error.message });
+    res.status(500).json({ success: false, message: "Failed to reset password" });
   }
 };
 
@@ -119,6 +128,7 @@ export const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const userId = req.user.id;
+    const tenant = tenantWhere(req);
 
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ 
@@ -128,15 +138,22 @@ export const changePassword = async (req, res) => {
     }
 
     if (newPassword.length < 6) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'New password must be at least 6 characters long' 
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters long'
       });
     }
 
-    // Get current user
-    const user = await prisma.employee.findUnique({ 
-      where: { id: parseInt(userId) } 
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number'
+      });
+    }
+
+    // Get current user (scoped to tenant)
+    const user = await prisma.employee.findFirst({ 
+      where: { id: parseInt(userId), ...tenant } 
     });
 
     if (!user) {
@@ -197,8 +214,7 @@ export const changePassword = async (req, res) => {
     console.error("❌ CHANGE PASSWORD ERROR:", error);
     res.status(500).json({ 
       success: false, 
-      message: "Failed to change password", 
-      error: error.message 
+      message: "Failed to change password" 
     });
   }
 };
@@ -208,11 +224,12 @@ export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
     const adminUserId = req.user.id;
+    const tenant = tenantWhere(req);
 
     if (parseInt(id) === adminUserId)
       return res.status(400).json({ success: false, message: 'Cannot delete your own account' });
 
-    const existing = await prisma.employee.findUnique({ where: { id: parseInt(id) } });
+    const existing = await prisma.employee.findFirst({ where: { id: parseInt(id), ...tenant } });
     if (!existing) return res.status(404).json({ success: false, message: 'User not found' });
 
     await prisma.employee.delete({ where: { id: parseInt(id) } });
@@ -221,7 +238,7 @@ export const deleteUser = async (req, res) => {
     res.json({ success: true, message: 'User deleted successfully', data: { id: parseInt(id), email: existing.email } });
   } catch (error) {
     console.error("❌ DELETE USER ERROR:", error);
-    res.status(500).json({ success: false, message: "Failed to delete user", error: error.message });
+    res.status(500).json({ success: false, message: "Failed to delete user" });
   }
 };
 
@@ -229,6 +246,7 @@ export const deleteUser = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
+    const tenant = tenantWhere(req);
     const { name, email, phone, address } = req.body;
 
     if (!name || !email) {
@@ -238,11 +256,12 @@ export const updateProfile = async (req, res) => {
       });
     }
 
-    // Check if email is already taken by another user
+    // Check if email is already taken by another user (scoped to tenant)
     const existingUser = await prisma.employee.findFirst({
       where: { 
         email: email,
-        NOT: { id: parseInt(userId) }
+        NOT: { id: parseInt(userId) },
+        ...tenant
       }
     });
 
@@ -290,8 +309,7 @@ export const updateProfile = async (req, res) => {
     console.error("❌ UPDATE PROFILE ERROR:", error);
     res.status(500).json({ 
       success: false, 
-      message: "Failed to update profile", 
-      error: error.message 
+      message: "Failed to update profile" 
     });
   }
 };
@@ -334,8 +352,7 @@ export const setupTwoFactor = async (req, res) => {
     console.error("❌ 2FA SETUP ERROR:", error);
     res.status(500).json({ 
       success: false, 
-      message: "Failed to setup 2FA", 
-      error: error.message 
+      message: "Failed to setup 2FA" 
     });
   }
 };
@@ -370,8 +387,7 @@ export const disableTwoFactor = async (req, res) => {
     console.error("❌ 2FA DISABLE ERROR:", error);
     res.status(500).json({ 
       success: false, 
-      message: "Failed to disable 2FA", 
-      error: error.message 
+      message: "Failed to disable 2FA" 
     });
   }
 };
@@ -421,8 +437,7 @@ export const uploadProfilePicture = async (req, res) => {
     console.error("❌ UPLOAD PROFILE PICTURE ERROR:", error);
     res.status(500).json({ 
       success: false, 
-      message: "Failed to upload profile picture", 
-      error: error.message 
+      message: "Failed to upload profile picture" 
     });
   }
 };
@@ -432,6 +447,7 @@ export const createNewUser = async (req, res) => {
   try {
     const { name, email, password, role = 'employee' } = req.body;
     const adminUserId = req.user.id;
+    const tenant = tenantWhere(req);
 
     if (!name || !email || !password)
       return res.status(400).json({ success: false, message: 'Name, email, and password are required' });
@@ -446,7 +462,7 @@ export const createNewUser = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await prisma.employee.create({
-      data: { name, email, password: hashedPassword, role, status: 'active', createdBy: adminUserId },
+      data: { name, email, password: hashedPassword, role, status: 'active', createdBy: adminUserId, ...tenant },
       select: { id: true, name: true, email: true, role: true, status: true, createdAt: true }
     });
 
@@ -455,7 +471,7 @@ export const createNewUser = async (req, res) => {
     res.status(201).json({ success: true, message: 'User created successfully', data: newUser });
   } catch (error) {
     console.error("❌ CREATE USER ERROR:", error);
-    res.status(500).json({ success: false, message: "Failed to create user", error: error.message });
+    res.status(500).json({ success: false, message: "Failed to create user" });
   }
 };
 

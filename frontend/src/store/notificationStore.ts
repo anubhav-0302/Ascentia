@@ -27,9 +27,20 @@ interface NotificationStore {
 }
 
 // API functions
+const getToken = (): string | null => {
+  try {
+    const storage = localStorage.getItem('auth-storage');
+    if (storage) {
+      const parsed = JSON.parse(storage);
+      return parsed.state?.token || null;
+    }
+  } catch { return null; }
+  return null;
+};
+
 const fetchNotificationsFromAPI = async (): Promise<Notification[]> => {
   try {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (!token) return [];
     
     const response = await fetch('/api/notifications', {
@@ -53,7 +64,7 @@ const fetchNotificationsFromAPI = async (): Promise<Notification[]> => {
 
 const fetchUnreadCountFromAPI = async (): Promise<number> => {
   try {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (!token) return 0;
     
     const response = await fetch('/api/notifications/unread-count', {
@@ -74,7 +85,7 @@ const fetchUnreadCountFromAPI = async (): Promise<number> => {
 
 const markAsReadInAPI = async (id: string): Promise<boolean> => {
   try {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (!token) return false;
     
     const response = await fetch(`/api/notifications/${id}/read`, {
@@ -93,7 +104,7 @@ const markAsReadInAPI = async (id: string): Promise<boolean> => {
 
 const markAllAsReadInAPI = async (): Promise<boolean> => {
   try {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (!token) return false;
     
     const response = await fetch('/api/notifications/read-all', {
@@ -112,7 +123,7 @@ const markAllAsReadInAPI = async (): Promise<boolean> => {
 
 const clearNotificationsInAPI = async (): Promise<boolean> => {
   try {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (!token) return false;
     
     const response = await fetch('/api/notifications', {

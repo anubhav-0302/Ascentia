@@ -3,11 +3,14 @@ import {
   MODULE_ACTIONS,
   SIDEBAR_ITEMS,
 } from '../config/permissionRegistry.js';
+import { tenantWhere } from '../helpers/tenantHelper.js';
 
 // GET /api/admin/roles - Get all roles with permission counts
 export const getRoles = async (req, res) => {
   try {
+    const tenant = tenantWhere(req);
     const roles = await prisma.roleConfig.findMany({
+      where: tenant,
       include: {
         permissions: {
           select: {
@@ -50,9 +53,10 @@ export const getRoles = async (req, res) => {
 export const getRolePermissions = async (req, res) => {
   try {
     const { id } = req.params;
+    const tenant = tenantWhere(req);
 
-    const role = await prisma.roleConfig.findUnique({
-      where: { id: parseInt(id) },
+    const role = await prisma.roleConfig.findFirst({
+      where: { id: parseInt(id), ...tenant },
       include: {
         permissions: {
           orderBy: [{ module: 'asc' }, { action: 'asc' }]
@@ -124,6 +128,7 @@ export const updateRolePermissions = async (req, res) => {
   try {
     // console.log('🔥 UPDATE ROLE PERMISSIONS REQUEST RECEIVED');
     const { id } = req.params;
+    const tenant = tenantWhere(req);
     const { permissions, reason } = req.body;
     const adminId = req.user.id;
     
@@ -143,9 +148,9 @@ export const updateRolePermissions = async (req, res) => {
     //   adminId: adminId
     // });
 
-    // Verify role exists
-    const role = await prisma.roleConfig.findUnique({
-      where: { id: parseInt(id) },
+    // Verify role exists (scoped to tenant)
+    const role = await prisma.roleConfig.findFirst({
+      where: { id: parseInt(id), ...tenant },
       include: { permissions: true }
     });
 
@@ -256,6 +261,7 @@ export const updateRolePermissions = async (req, res) => {
 export const createCustomRole = async (req, res) => {
   try {
     const { name, description } = req.body;
+    const tenant = tenantWhere(req);
 
     if (!name || name.trim() === '') {
       return res.status(400).json({
@@ -264,9 +270,9 @@ export const createCustomRole = async (req, res) => {
       });
     }
 
-    // Check if role already exists
-    const existingRole = await prisma.roleConfig.findUnique({
-      where: { name: name.toLowerCase() }
+    // Check if role already exists (scoped to tenant)
+    const existingRole = await prisma.roleConfig.findFirst({
+      where: { name: name.toLowerCase(), ...tenant }
     });
 
     if (existingRole) {
@@ -276,13 +282,14 @@ export const createCustomRole = async (req, res) => {
       });
     }
 
-    // Create new role
+    // Create new role (scoped to tenant)
     const newRole = await prisma.roleConfig.create({
       data: {
         name: name.toLowerCase(),
         description: description || null,
         isCustom: true,
-        isActive: true
+        isActive: true,
+        ...tenant
       }
     });
 
@@ -312,9 +319,10 @@ export const createCustomRole = async (req, res) => {
 export const deleteCustomRole = async (req, res) => {
   try {
     const { id } = req.params;
+    const tenant = tenantWhere(req);
 
-    const role = await prisma.roleConfig.findUnique({
-      where: { id: parseInt(id) }
+    const role = await prisma.roleConfig.findFirst({
+      where: { id: parseInt(id), ...tenant }
     });
 
     if (!role) {
@@ -359,8 +367,9 @@ export const getPermissionAuditLog = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 50;
     const roleId = req.query.roleId ? parseInt(req.query.roleId) : null;
+    const tenant = tenantWhere(req);
 
-    const where = roleId ? { roleId } : {};
+    const where = { ...tenant, ...(roleId ? { roleId } : {}) };
 
     const auditLogs = await prisma.permissionAudit.findMany({
       where,
@@ -415,6 +424,7 @@ export const checkUserPermission = async (req, res) => {
   try {
     const { module, action } = req.query;
     const userId = req.user.id;
+    const tenant = tenantWhere(req);
 
     if (!module || !action) {
       return res.status(400).json({
@@ -424,8 +434,8 @@ export const checkUserPermission = async (req, res) => {
     }
 
     // Get user's role
-    const user = await prisma.employee.findUnique({
-      where: { id: userId }
+    const user = await prisma.employee.findFirst({
+      where: { id: userId, ...tenant }
     });
 
     if (!user) {
@@ -435,9 +445,9 @@ export const checkUserPermission = async (req, res) => {
       });
     }
 
-    // Get role config
-    const roleConfig = await prisma.roleConfig.findUnique({
-      where: { name: user.role }
+    // Get role config (scoped to tenant)
+    const roleConfig = await prisma.roleConfig.findFirst({
+      where: { name: user.role, ...tenant }
     });
 
     if (!roleConfig) {
@@ -483,10 +493,11 @@ export const checkUserPermission = async (req, res) => {
 export const getSidebarPermissions = async (req, res) => {
   try {
     const userId = req.user.id;
+    const tenant = tenantWhere(req);
 
     // Get user's role
-    const user = await prisma.employee.findUnique({
-      where: { id: userId }
+    const user = await prisma.employee.findFirst({
+      where: { id: userId, ...tenant }
     });
 
     if (!user) {
@@ -496,9 +507,9 @@ export const getSidebarPermissions = async (req, res) => {
       });
     }
 
-    // Get role config
-    const roleConfig = await prisma.roleConfig.findUnique({
-      where: { name: user.role },
+    // Get role config (scoped to tenant)
+    const roleConfig = await prisma.roleConfig.findFirst({
+      where: { name: user.role, ...tenant },
       include: { permissions: true }
     });
 

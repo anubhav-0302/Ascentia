@@ -1,12 +1,14 @@
 import prisma from '../lib/prisma.js';
 import fs from 'fs';
 import path from 'path';
+import { tenantWhere } from '../helpers/tenantHelper.js';
 
 // POST /api/documents/upload - Upload document
 export const uploadDocument = async (req, res) => {
   try {
     const { employeeId } = req.body;
     const userId = req.user.id;
+    const tenant = tenantWhere(req);
     
     // Check if user is admin or uploading their own document
     const isAdmin = req.user.role === 'admin';
@@ -17,6 +19,16 @@ export const uploadDocument = async (req, res) => {
         success: false,
         message: 'Access denied: You can only upload documents for yourself or need admin privileges'
       });
+    }
+    
+    // Verify the target employee belongs to the same tenant
+    if (isAdmin) {
+      const targetEmployee = await prisma.employee.findFirst({
+        where: { id: parseInt(employeeId), ...tenant }
+      });
+      if (!targetEmployee) {
+        return res.status(403).json({ success: false, message: 'Access denied: Employee not found in your organization' });
+      }
     }
     
     if (!req.file) {
@@ -36,7 +48,8 @@ export const uploadDocument = async (req, res) => {
         fileName: req.file.filename,
         originalName: req.file.originalname,
         fileUrl: fileUrl,
-        fileSize: req.file.size
+        fileSize: req.file.size,
+        organizationId: req.user.organizationId
       }
     });
     
@@ -51,8 +64,7 @@ export const uploadDocument = async (req, res) => {
     console.error('❌ Upload document error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to upload document',
-      error: error.message
+      message: 'Failed to upload document'
     });
   }
 };
@@ -62,6 +74,7 @@ export const getEmployeeDocuments = async (req, res) => {
   try {
     const { employeeId } = req.params;
     const userId = req.user.id;
+    const tenant = tenantWhere(req);
     
     // Check if user is admin or viewing their own documents
     const isAdmin = req.user.role === 'admin';
@@ -74,9 +87,20 @@ export const getEmployeeDocuments = async (req, res) => {
       });
     }
     
+    // Verify the target employee belongs to the same tenant
+    if (isAdmin) {
+      const targetEmployee = await prisma.employee.findFirst({
+        where: { id: parseInt(employeeId), ...tenant }
+      });
+      if (!targetEmployee) {
+        return res.status(403).json({ success: false, message: 'Access denied: Employee not found in your organization' });
+      }
+    }
+    
     const documents = await prisma.document.findMany({
       where: {
-        employeeId: parseInt(employeeId)
+        employeeId: parseInt(employeeId),
+        ...tenant
       },
       orderBy: {
         uploadedAt: 'desc'
@@ -91,8 +115,7 @@ export const getEmployeeDocuments = async (req, res) => {
     console.error('❌ Get documents error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch documents',
-      error: error.message
+      message: 'Failed to fetch documents'
     });
   }
 };
@@ -102,10 +125,11 @@ export const deleteDocument = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
+    const tenant = tenantWhere(req);
     
-    // Get document to verify ownership
-    const document = await prisma.document.findUnique({
-      where: { id: parseInt(id) },
+    // Get document to verify ownership (scoped to tenant)
+    const document = await prisma.document.findFirst({
+      where: { id: parseInt(id), ...tenant },
       include: { employee: true }
     });
     
@@ -127,8 +151,12 @@ export const deleteDocument = async (req, res) => {
       });
     }
     
-    // Delete file from filesystem
-    const filePath = path.join(process.cwd(), document.fileUrl);
+    // Delete file from filesystem — resolve against uploads dir to prevent path traversal
+    const uploadsDir = path.resolve(process.cwd(), 'uploads', 'documents');
+    const filePath = path.resolve(uploadsDir, document.fileName);
+    if (!filePath.startsWith(uploadsDir + path.sep)) {
+      return res.status(400).json({ success: false, message: 'Invalid file path' });
+    }
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
@@ -148,8 +176,7 @@ export const deleteDocument = async (req, res) => {
     console.error('❌ Delete document error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to delete document',
-      error: error.message
+      message: 'Failed to delete document'
     });
   }
 };
@@ -159,10 +186,11 @@ export const downloadDocument = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
+    const tenant = tenantWhere(req);
     
-    // Get document to verify ownership
-    const document = await prisma.document.findUnique({
-      where: { id: parseInt(id) },
+    // Get document to verify ownership (scoped to tenant)
+    const document = await prisma.document.findFirst({
+      where: { id: parseInt(id), ...tenant },
       include: { employee: true }
     });
     
@@ -184,7 +212,12 @@ export const downloadDocument = async (req, res) => {
       });
     }
     
-    const filePath = path.join(process.cwd(), document.fileUrl);
+    // Resolve against uploads dir to prevent path traversal
+    const uploadsDir = path.resolve(process.cwd(), 'uploads', 'documents');
+    const filePath = path.resolve(uploadsDir, document.fileName);
+    if (!filePath.startsWith(uploadsDir + path.sep)) {
+      return res.status(400).json({ success: false, message: 'Invalid file path' });
+    }
     
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({
@@ -203,8 +236,7 @@ export const downloadDocument = async (req, res) => {
     console.error('❌ Download document error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to download document',
-      error: error.message
+      message: 'Failed to download document'
     });
   }
 };

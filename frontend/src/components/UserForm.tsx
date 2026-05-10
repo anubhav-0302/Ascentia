@@ -26,8 +26,6 @@ const UserForm: React.FC<UserFormProps> = ({
   employees = [],
   currentUserId
 }) => {
-  console.log('🔍 UserForm: Component rendered, isOpen:', isOpen, 'initialData:', initialData);
-  
   const [formData, setFormData] = useState<CreateUserData & { jobTitle?: string; department?: string; managerId?: number; }>(() => ({
     name: '',
     email: '',
@@ -76,12 +74,7 @@ const UserForm: React.FC<UserFormProps> = ({
   };
 
   const handleChange = (field: keyof (CreateUserData & { jobTitle?: string; department?: string; managerId?: number; }), value: string | number) => {
-    console.log(`🔤 UserForm: ${String(field)} change:`, value);
-    setFormData(prev => {
-      const newData = { ...prev, [field]: value };
-      console.log('🔤 UserForm: New formData:', newData);
-      return newData;
-    });
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -97,12 +90,10 @@ const UserForm: React.FC<UserFormProps> = ({
           label="Name"
           value={formData.name}
           onChange={(e) => {
-            console.log('🔤 UserForm: Name onChange triggered, value:', e.target.value);
             e.stopPropagation();
             handleChange('name', e.target.value);
           }}
           onKeyDown={(e) => {
-            console.log('🔤 UserForm: Name keydown:', e.key);
             e.stopPropagation();
           }}
           placeholder="Enter user name"
@@ -114,12 +105,10 @@ const UserForm: React.FC<UserFormProps> = ({
           type="email"
           value={formData.email}
           onChange={(e) => {
-            console.log('🔤 UserForm: Email onChange triggered, value:', e.target.value);
             e.stopPropagation();
             handleChange('email', e.target.value);
           }}
           onKeyDown={(e) => {
-            console.log('🔤 UserForm: Email keydown:', e.key);
             e.stopPropagation();
           }}
           placeholder="Enter email address"
@@ -131,12 +120,10 @@ const UserForm: React.FC<UserFormProps> = ({
             type="password"
             value={formData.password}
             onChange={(e) => {
-              console.log('🔤 UserForm: Password onChange triggered, value:', e.target.value);
               e.stopPropagation();
               handleChange('password', e.target.value);
             }}
             onKeyDown={(e) => {
-              console.log('🔤 UserForm: Password keydown:', e.key);
               e.stopPropagation();
             }}
             placeholder="Enter password (min 6 characters)"

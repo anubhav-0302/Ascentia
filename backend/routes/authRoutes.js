@@ -27,12 +27,6 @@ const generalLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Debug logging
-router.use((req, res, next) => {
-  console.log("🔍 AUTH ROUTE:", req.method, req.url);
-  next();
-});
-
 // Validation middleware
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
@@ -62,11 +56,7 @@ router.post('/register',
       .isLength({ min: 6 })
       .withMessage('Password must be at least 6 characters long')
       .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-      .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
-    body('role')
-      .optional()
-      .isIn(['admin', 'hr', 'manager', 'employee'])
-      .withMessage('Invalid role specified')
+      .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number')
   ],
   handleValidationErrors,
   register

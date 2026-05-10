@@ -1,10 +1,12 @@
 import prisma from '../lib/prisma.js';
+import { tenantWhere } from '../helpers/tenantHelper.js';
 
 // Get advanced analytics with role-based filtering
 export const getAnalytics = async (req, res) => {
   try {
     const userRole = req.user.role;
     const userId = req.user.id;
+    const tenantFilter = tenantWhere(req);
     
     console.log(`📊 Analytics request for role: ${userRole}`);
 
@@ -16,12 +18,12 @@ export const getAnalytics = async (req, res) => {
       warnings: []
     };
 
-    // Role-based data filtering
-    const employeeFilter = userRole === 'admin' ? {} : 
-                          userRole === 'hr' ? {} :
-                          userRole === 'manager' ? { managerId: userId } :
-                          userRole === 'teamlead' ? { managerId: userId } :
-                          { id: userId };
+    // Role-based data filtering (scoped to tenant)
+    const employeeFilter = userRole === 'admin' ? tenantFilter : 
+                          userRole === 'hr' ? tenantFilter :
+                          userRole === 'manager' ? { ...tenantFilter, managerId: userId } :
+                          userRole === 'teamlead' ? { ...tenantFilter, managerId: userId } :
+                          { ...tenantFilter, id: userId };
 
     // 1. Employee Insights
     const employeeStats = await getEmployeeStats(employeeFilter, userRole);
@@ -74,8 +76,7 @@ export const getAnalytics = async (req, res) => {
     console.error('❌ Error fetching analytics:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch analytics',
-      error: error.message
+      message: 'Failed to fetch analytics'
     });
   }
 };

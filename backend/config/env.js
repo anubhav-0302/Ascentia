@@ -119,7 +119,7 @@ export const env = Object.freeze({
 
   // Server
   PORT:         asInt(process.env.PORT, 5000),
-  CORS_ORIGIN:  process.env.CORS_ORIGIN || '*',
+  CORS_ORIGIN:  process.env.CORS_ORIGIN || (IS_PROD ? '' : '*'),  // Must set in production
 
   // Database
   DATABASE_URL: process.env.DATABASE_URL || 'file:./dev.db',
@@ -174,6 +174,13 @@ console.log(
 if (!IS_PROD && KNOWN_WEAK_SECRETS.has(env.JWT_SECRET)) {
   console.warn(
     `⚠️  [config/env] Using demo JWT_SECRET — OK for dev, MUST change before production.`
+  );
+}
+
+if (IS_PROD && (!env.CORS_ORIGIN || env.CORS_ORIGIN === '*' || env.CORS_ORIGIN === '')) {
+  console.warn(
+    `⚠️  [config/env] CORS_ORIGIN not set in production — all origins allowed. ` +
+    `Set CORS_ORIGIN in .env to your frontend domain(s).`
   );
 }
 

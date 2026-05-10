@@ -4,6 +4,7 @@ import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
+import { tenantWhere } from '../helpers/tenantHelper.js';
 
 const JWT_SECRET = env.JWT_SECRET;
 
@@ -12,9 +13,10 @@ export const getUserSettings = async (req, res) => {
   try {
     // console.log('Fetching settings for user:', req.user);
     const userId = req.user.id;
+    const tenant = tenantWhere(req);
     
-    const user = await prisma.employee.findUnique({
-      where: { id: userId },
+    const user = await prisma.employee.findFirst({
+      where: { id: userId, ...tenant },
       select: { settings: true }
     });
 
@@ -56,15 +58,25 @@ export const getUserSettings = async (req, res) => {
 export const updateUserSettings = async (req, res) => {
   try {
     const userId = req.user.id;
+    const tenant = tenantWhere(req);
     const { settings } = req.body;
 
-    const user = await prisma.employee.update({
-      where: { id: userId },
+    const user = await prisma.employee.updateMany({
+      where: { id: userId, ...tenant },
       data: { settings },
+    });
+
+    if (!user.count) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Fetch updated settings to return
+    const updated = await prisma.employee.findFirst({
+      where: { id: userId, ...tenant },
       select: { settings: true }
     });
 
-    res.json({ success: true, data: user.settings });
+    res.json({ success: true, data: updated.settings });
   } catch (error) {
     console.error('Error updating settings:', error);
     res.status(500).json({ success: false, message: 'Failed to update settings' });
@@ -75,10 +87,23 @@ export const updateUserSettings = async (req, res) => {
 export const changePassword = async (req, res) => {
   try {
     const userId = req.user.id;
+    const tenant = tenantWhere(req);
     const { currentPassword, newPassword } = req.body;
 
-    const user = await prisma.employee.findUnique({
-      where: { id: userId },
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Current password and new password are required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters long' });
+    }
+
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
+      return res.status(400).json({ success: false, message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number' });
+    }
+
+    const user = await prisma.employee.findFirst({
+      where: { id: userId, ...tenant },
       select: { password: true }
     });
 
@@ -115,8 +140,9 @@ export const changePassword = async (req, res) => {
 export const setup2FA = async (req, res) => {
   try {
     const userId = req.user.id;
-    const user = await prisma.employee.findUnique({
-      where: { id: userId },
+    const tenant = tenantWhere(req);
+    const user = await prisma.employee.findFirst({
+      where: { id: userId, ...tenant },
       select: { email: true }
     });
 
@@ -157,10 +183,11 @@ export const setup2FA = async (req, res) => {
 export const verifyAndEnable2FA = async (req, res) => {
   try {
     const userId = req.user.id;
+    const tenant = tenantWhere(req);
     const { token } = req.body;
 
-    const user = await prisma.employee.findUnique({
-      where: { id: userId },
+    const user = await prisma.employee.findFirst({
+      where: { id: userId, ...tenant },
       select: { twoFactorSecret: true }
     });
 
@@ -196,14 +223,19 @@ export const verifyAndEnable2FA = async (req, res) => {
 export const disable2FA = async (req, res) => {
   try {
     const userId = req.user.id;
+    const tenant = tenantWhere(req);
 
-    await prisma.employee.update({
-      where: { id: userId },
+    const result = await prisma.employee.updateMany({
+      where: { id: userId, ...tenant },
       data: { 
         twoFactorEnabled: false,
         twoFactorSecret: null
       }
     });
+
+    if (!result.count) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
 
     res.json({ success: true, message: '2FA disabled successfully' });
   } catch (error) {
@@ -216,11 +248,12 @@ export const disable2FA = async (req, res) => {
 export const deleteAccount = async (req, res) => {
   try {
     const userId = req.user.id;
+    const tenant = tenantWhere(req);
     const { password } = req.body;
 
     // Verify password
-    const user = await prisma.employee.findUnique({
-      where: { id: userId },
+    const user = await prisma.employee.findFirst({
+      where: { id: userId, ...tenant },
       select: { password: true }
     });
 
@@ -249,9 +282,10 @@ export const deleteAccount = async (req, res) => {
 export const exportUserData = async (req, res) => {
   try {
     const userId = req.user.id;
+    const tenant = tenantWhere(req);
 
-    const user = await prisma.employee.findUnique({
-      where: { id: userId },
+    const user = await prisma.employee.findFirst({
+      where: { id: userId, ...tenant },
       include: {
         leaveRequests: true,
         timesheets: true,
