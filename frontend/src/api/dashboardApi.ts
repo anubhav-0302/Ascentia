@@ -58,6 +58,24 @@ export interface DashboardStats {
       allocation?: number;
     }>;
   }>;
+  pendingTasks: Array<{
+    id: string;
+    title: string;
+    description: string;
+    count: number;
+    urgency: 'overdue' | 'pending' | 'info';
+    link: string;
+    icon: string;
+  }>;
+  // Leave balance
+  leaveBalance?: number;
+  totalLeaveDays?: number;
+  usedLeaveDays?: number;
+  // Status distribution
+  statusDistribution?: Array<{
+    name: string;
+    count: number;
+  }>;
 }
 
 // Get dashboard statistics

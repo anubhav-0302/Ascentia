@@ -14,12 +14,6 @@ import { requireAuth, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Debug logging
-router.use((req, res, next) => {
-  console.log("🔍 ROLE MANAGEMENT ROUTE:", req.method, req.url);
-  next();
-});
-
 // Specific routes BEFORE dynamic :id routes
 // GET /api/admin/permissions/audit - Get permission audit log (admin or superAdmin)
 router.get('/audit/logs', requireAuth, authorize('admin', 'superAdmin'), getPermissionAuditLog);
@@ -42,17 +36,7 @@ router.get('/', requireAuth, authorize('admin', 'superAdmin'), getRoles);
 router.get('/:id', requireAuth, authorize('admin', 'superAdmin'), getRolePermissions);
 
 // PUT /api/admin/roles/:id/permissions - Update role permissions (admin only)
-router.put('/:id/permissions', (req, res, next) => {
-  console.log('🎯 PERMISSION UPDATE ROUTE HIT:', req.method, req.url, 'Params:', req.params);
-  console.log('🔑 Auth Header:', req.headers.authorization ? 'Present' : 'Missing');
-  next();
-}, requireAuth, (req, res, next) => {
-  console.log('✅ Auth middleware passed');
-  next();
-}, authorize('admin', 'superAdmin'), (req, res, next) => {
-  console.log('✅ Admin authorization passed');
-  next();
-}, updateRolePermissions);
+router.put('/:id/permissions', requireAuth, authorize('admin', 'superAdmin'), updateRolePermissions);
 
 // POST /api/admin/roles - Create custom role (admin or superAdmin)
 router.post('/', requireAuth, authorize('admin', 'superAdmin'), createCustomRole);

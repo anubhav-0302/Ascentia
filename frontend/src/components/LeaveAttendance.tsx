@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { createLeave, getMyLeaves, getAllLeaves, updateLeaveStatus, cancelLeave, type LeaveRequest, type CreateLeaveRequest } from '../api/leaveApi';
 import { useIsAdmin, useCanApproveLeave, useUser } from '../store/useAuthStore';
@@ -24,8 +25,13 @@ const LeaveAttendance = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
 
-  // Tab state
-  const [activeTab, setActiveTab] = useState<'my' | 'team'>('my');
+  // Tab state - read from URL params for direct navigation to approvals
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<'my' | 'team'>(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'team' && canApproveLeave) return 'team';
+    return 'my';
+  });
 
   // Admin filter states
   const [searchTerm, setSearchTerm] = useState('');

@@ -20,11 +20,9 @@ import {
   ResponsiveContainer
 } from "recharts";
 import SkeletonLoader, { CardSkeleton, ChartSkeleton, TableSkeleton } from "./SkeletonLoader";
-import ActivityFeed from "./ActivityFeed";
-import LayoutWrapper from "./LayoutWrapper";
+import LayoutWrapper from './LayoutWrapper';
 import Button from "./Button";
 import StatusBadge from "./StatusBadge";
-import AdvancedAnalytics from "./AdvancedAnalytics";
 
 // Chart color schemes
 const DEPARTMENT_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
@@ -52,9 +50,10 @@ const Dashboard = () => {
   const isHR = userRole === 'hr';
   const isTeamLead = userRole === 'teamlead';
 
-  // Calculate leave balance using useMemo to prevent recalculation on every render
+  // Calculate leave balance using useMemo - prefer backend data, fall back to local calculation
   const leaveBalance = useMemo(() => {
-    const totalLeaveDays = 21; // Standard annual leave
+    if (stats?.leaveBalance != null) return stats.leaveBalance;
+    const totalLeaveDays = stats?.totalLeaveDays || 21;
     const usedLeaveDays = myLeaves
       .filter(l => l.status === 'Approved' || l.status === 'Pending')
       .reduce((acc, leave) => {
@@ -64,7 +63,7 @@ const Dashboard = () => {
         return acc + days;
       }, 0);
     return Math.max(0, totalLeaveDays - usedLeaveDays);
-  }, [myLeaves]);
+  }, [stats?.leaveBalance, stats?.totalLeaveDays, myLeaves]);
 
   const fetchStats = async () => {
     try {
@@ -99,11 +98,14 @@ const Dashboard = () => {
       case 'total-employees':
         updateFilters({ search: '', department: 'all', status: 'all' });
         break;
+      case 'active-employees':
+        updateFilters({ search: '', department: 'all', status: 'Active' });
+        break;
       case 'departments':
         updateFilters({ search: '', department: 'all', status: 'all', sortBy: 'department' });
         break;
       case 'remote-workers':
-        updateFilters({ search: '', employmentType: 'remote', department: 'all', status: 'all' });
+        updateFilters({ search: '', department: 'all', status: 'Remote' });
         break;
       default:
         updateFilters({ search: '', department: 'all', status: 'all' });
@@ -239,8 +241,8 @@ const Dashboard = () => {
             </Link>
 
             <Link 
-              to="/my-team"
-              onClick={() => handleNavigateToMyTeam()}
+              to="/directory"
+              onClick={() => handleNavigateToDirectory('active-employees')}
               className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-green-500/40 hover:shadow-green-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.2s' }}
             >
@@ -253,7 +255,7 @@ const Dashboard = () => {
               <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-green-100 transition-colors duration-300">{stats?.activeEmployees || 0}</h3>
               <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Active Employees</p>
               <div className="mt-4 flex items-center text-xs text-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <span>View Team</span>
+                <span>View Active</span>
                 <i className="fas fa-arrow-right ml-2"></i>
               </div>
             </Link>
@@ -278,7 +280,7 @@ const Dashboard = () => {
               </div>
             </Link>
 
-            <Link 
+            <Link
               to="/directory"
               onClick={() => handleNavigateToDirectory('departments')}
               className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-orange-500/40 hover:shadow-orange-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
@@ -288,12 +290,12 @@ const Dashboard = () => {
                 <div className="p-3 bg-orange-500/20 rounded-xl group-hover:bg-orange-500/30 transition-colors duration-300">
                   <i className="fas fa-building text-orange-400 text-xl"></i>
                 </div>
-                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Departments</span>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Org</span>
               </div>
               <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-orange-100 transition-colors duration-300">{stats?.departments || 0}</h3>
-              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Total Departments</p>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Departments</p>
               <div className="mt-4 flex items-center text-xs text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <span>View Departments</span>
+                <span>View Directory</span>
                 <i className="fas fa-arrow-right ml-2"></i>
               </div>
             </Link>
@@ -323,8 +325,8 @@ const Dashboard = () => {
               </div>
             </Link>
 
-            <Link 
-              to="/leave-attendance"
+            <Link
+              to="/leave-attendance?tab=team"
               onClick={() => handleNavigateToLeaveAttendance('leave-status')}
               className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-blue-500/40 hover:shadow-blue-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.2s' }}
@@ -343,38 +345,41 @@ const Dashboard = () => {
               </div>
             </Link>
 
-            <div className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn hover:border-purple-500/40 hover:shadow-purple-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-              style={{ animationDelay: '0.3s' }}>
+            <Link
+              to="/timesheet-entry?tab=approvals"
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-purple-500/40 hover:shadow-purple-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              style={{ animationDelay: '0.3s' }}
+            >
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-purple-500/20 rounded-xl group-hover:bg-purple-500/30 transition-colors duration-300">
-                  <i className="fas fa-project-diagram text-purple-400 text-xl"></i>
+                  <i className="fas fa-clock text-purple-400 text-xl"></i>
                 </div>
-                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Projects</span>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Pending</span>
               </div>
-              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-purple-100 transition-colors duration-300">{stats?.managedProjects?.length || 0}</h3>
-              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Assigned Projects</p>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-purple-100 transition-colors duration-300">{stats?.pendingTimesheetReviews || 0}</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Timesheet Reviews</p>
               <div className="mt-4 flex items-center text-xs text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <span>View Projects</span>
+                <span>Review Timesheets</span>
                 <i className="fas fa-arrow-right ml-2"></i>
               </div>
-            </div>
+            </Link>
 
-            <Link 
+            <Link
               to="/leave-attendance"
-              onClick={() => handleNavigateToLeaveAttendance('leave-status')}
+              onClick={() => handleNavigateToLeaveAttendance('leave-trends')}
               className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-orange-500/40 hover:shadow-orange-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.4s' }}
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-orange-500/20 rounded-xl group-hover:bg-orange-500/30 transition-colors duration-300">
-                  <i className="fas fa-calendar-check text-orange-400 text-xl"></i>
+                  <i className="fas fa-clipboard-check text-orange-400 text-xl"></i>
                 </div>
-                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Available</span>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Average</span>
               </div>
-              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-orange-100 transition-colors duration-300">{leaveBalance}</h3>
-              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">My Leave Days</p>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-orange-100 transition-colors duration-300">{stats?.teamAttendance != null ? `${stats.teamAttendance}%` : 'N/A'}</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Team Attendance</p>
               <div className="mt-4 flex items-center text-xs text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <span>Request Leave</span>
+                <span>View Attendance</span>
                 <i className="fas fa-arrow-right ml-2"></i>
               </div>
             </Link>
@@ -404,8 +409,8 @@ const Dashboard = () => {
               </div>
             </Link>
 
-            <Link 
-              to="/leave-attendance"
+            <Link
+              to="/leave-attendance?tab=team"
               onClick={() => handleNavigateToLeaveAttendance('leave-status')}
               className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-yellow-500/40 hover:shadow-yellow-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.2s' }}
@@ -424,8 +429,8 @@ const Dashboard = () => {
               </div>
             </Link>
 
-            <Link 
-              to="/timesheet-entry"
+            <Link
+              to="/timesheet-entry?tab=approvals"
               className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-purple-500/40 hover:shadow-purple-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.3s' }}
             >
@@ -487,8 +492,8 @@ const Dashboard = () => {
               </div>
             </Link>
 
-            <Link 
-              to="/leave-attendance"
+            <Link
+              to="/leave-attendance?tab=team"
               onClick={() => handleNavigateToLeaveAttendance('leave-status')}
               className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-yellow-500/40 hover:shadow-yellow-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.2s' }}
@@ -507,38 +512,41 @@ const Dashboard = () => {
               </div>
             </Link>
 
-            <div className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn hover:border-blue-500/40 hover:shadow-blue-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-              style={{ animationDelay: '0.3s' }}>
+            <Link
+              to="/timesheet-entry?tab=approvals"
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-blue-500/40 hover:shadow-blue-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              style={{ animationDelay: '0.3s' }}
+            >
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-blue-500/20 rounded-xl group-hover:bg-blue-500/30 transition-colors duration-300">
-                  <i className="fas fa-project-diagram text-blue-400 text-xl"></i>
+                  <i className="fas fa-clock text-blue-400 text-xl"></i>
                 </div>
-                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Projects</span>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Pending</span>
               </div>
-              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-blue-100 transition-colors duration-300">{stats?.managedProjects?.length || 0}</h3>
-              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Assigned Projects</p>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-blue-100 transition-colors duration-300">{stats?.pendingTimesheetReviews || 0}</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Timesheet Reviews</p>
               <div className="mt-4 flex items-center text-xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <span>View Projects</span>
+                <span>Review Timesheets</span>
                 <i className="fas fa-arrow-right ml-2"></i>
               </div>
-            </div>
+            </Link>
 
             <Link 
               to="/leave-attendance"
-              onClick={() => handleNavigateToLeaveAttendance('leave-status')}
+              onClick={() => handleNavigateToLeaveAttendance('leave-trends')}
               className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-purple-500/40 hover:shadow-purple-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.4s' }}
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-purple-500/20 rounded-xl group-hover:bg-purple-500/30 transition-colors duration-300">
-                  <i className="fas fa-calendar-check text-purple-400 text-xl"></i>
+                  <i className="fas fa-clipboard-check text-purple-400 text-xl"></i>
                 </div>
-                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Available</span>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Average</span>
               </div>
-              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-purple-100 transition-colors duration-300">{leaveBalance}</h3>
-              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">My Leave Days</p>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-purple-100 transition-colors duration-300">{stats?.teamAttendance != null ? `${stats.teamAttendance}%` : 'N/A'}</h3>
+              <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Team Attendance</p>
               <div className="mt-4 flex items-center text-xs text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <span>Request Leave</span>
+                <span>View Attendance</span>
                 <i className="fas fa-arrow-right ml-2"></i>
               </div>
             </Link>
@@ -548,7 +556,9 @@ const Dashboard = () => {
         {/* EMPLOYEE VIEW - Personal Focused Metrics */}
         {!isAdmin && !isManager && !isHR && !isTeamLead && (
           <>
-            <div className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn hover:border-blue-500/40 hover:shadow-blue-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+            <Link
+              to="/settings"
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-blue-500/40 hover:shadow-blue-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.1s' }}>
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-blue-500/20 rounded-xl group-hover:bg-blue-500/30 transition-colors duration-300">
@@ -562,7 +572,7 @@ const Dashboard = () => {
                 <span>View Profile</span>
                 <i className="fas fa-arrow-right ml-2"></i>
               </div>
-            </div>
+            </Link>
 
             <Link 
               to="/leave-attendance"
@@ -586,13 +596,15 @@ const Dashboard = () => {
               </div>
             </Link>
 
-            <div className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn hover:border-purple-500/40 hover:shadow-purple-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+            <Link
+              to="/timesheet-entry"
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-purple-500/40 hover:shadow-purple-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.3s' }}>
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-purple-500/20 rounded-xl group-hover:bg-purple-500/30 transition-colors duration-300">
                   <i className="fas fa-clock text-purple-400 text-xl"></i>
                 </div>
-                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">This Month</span>
+                <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Total</span>
               </div>
               <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-purple-100 transition-colors duration-300">{stats?.hoursLogged || 0}</h3>
               <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Hours Logged</p>
@@ -600,9 +612,11 @@ const Dashboard = () => {
                 <span>View Timesheet</span>
                 <i className="fas fa-arrow-right ml-2"></i>
               </div>
-            </div>
+            </Link>
 
-            <div className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn hover:border-orange-500/40 hover:shadow-orange-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+            <Link
+              to="/performance-goals"
+              className="group bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg p-6 animate-fadeIn cursor-pointer hover:border-orange-500/40 hover:shadow-orange-500/10 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               style={{ animationDelay: '0.4s' }}>
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-orange-500/20 rounded-xl group-hover:bg-orange-500/30 transition-colors duration-300">
@@ -610,262 +624,80 @@ const Dashboard = () => {
                 </div>
                 <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-300">Current</span>
               </div>
-              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-orange-100 transition-colors duration-300">{stats?.performanceRating || 'N/A'}/5</h3>
+              <h3 className="text-3xl font-bold text-white mb-1 group-hover:text-orange-100 transition-colors duration-300">{stats?.performanceRating ? `${stats.performanceRating}/5` : 'N/A'}</h3>
               <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors duration-300">Performance Rating</p>
               <div className="mt-4 flex items-center text-xs text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <span>View Reviews</span>
                 <i className="fas fa-arrow-right ml-2"></i>
               </div>
-            </div>
+            </Link>
           </>
         )}
       </div>
 
-      {/* Insights & Alerts Section - Role Based */}
-      {(isAdmin || isHR || isManager || isTeamLead) && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* AI Insights */}
-          <div className="lg:col-span-2 bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-6 animate-fadeIn" style={{ animationDelay: '0.8s' }}>
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-white flex items-center">
-                <i className="fas fa-brain text-purple-400 mr-2"></i>
-                AI Insights
-              </h3>
-              <span className="text-xs text-gray-500">Updated 2 hours ago</span>
-            </div>
-            
-            <div className="space-y-4">
-              {/* Admin/HR see organization-wide insights */}
-              {(isAdmin || isHR) && (
-                <>
-                  <div className="p-4 bg-gradient-to-r from-blue-500/5 to-transparent rounded-lg">
-                    <div className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <i className="fas fa-chart-line text-blue-400 text-sm"></i>
-                      </div>
-                      <div>
-                        <h4 className="text-white font-medium mb-1">Employee Engagement Trend</h4>
-                        <p className="text-gray-400 text-sm mb-2">
-                          Engagement scores have increased by 12% this month. The new remote work policy appears to be positively impacting team satisfaction.
-                        </p>
-                        <div className="flex items-center space-x-4 text-xs">
-                          <span className="text-green-400"><i className="fas fa-arrow-up mr-1"></i>12% vs last month</span>
-                          <span className="text-gray-500">Based on 156 responses</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-gradient-to-r from-green-500/5 to-transparent rounded-lg">
-                    <div className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <i className="fas fa-users text-green-400 text-sm"></i>
-                      </div>
-                      <div>
-                        <h4 className="text-white font-medium mb-1">Retention Risk Alert</h4>
-                        <p className="text-gray-400 text-sm mb-2">
-                          3 employees in the Engineering department show signs of potential turnover based on recent activity patterns and engagement metrics.
-                        </p>
-                        <div className="flex items-center space-x-4 text-xs">
-                          <span className="text-yellow-400"><i className="fas fa-exclamation-triangle mr-1"></i>Medium priority</span>
-                          <button 
-                            onClick={() => {
-                              alert('Opening retention management tools...\n\nThis would navigate to a detailed retention dashboard with employee engagement metrics, turnover risk analysis, and intervention strategies.');
-                            }}
-                            className="text-teal-400 hover:text-teal-300 transition-colors"
-                          >
-                            Take Action →
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-gradient-to-r from-yellow-500/5 to-transparent rounded-lg">
-                    <div className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-yellow-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <i className="fas fa-lightbulb text-yellow-400 text-sm"></i>
-                      </div>
-                      <div>
-                        <h4 className="text-white font-medium mb-1">Skills Gap Analysis</h4>
-                        <p className="text-gray-400 text-sm mb-2">
-                          Consider upskilling 5 team members in cloud technologies. Current demand exceeds available expertise by 40%.
-                        </p>
-                        <div className="flex items-center space-x-4 text-xs">
-                          <span className="text-blue-400"><i className="fas fa-graduation-cap mr-1"></i>Training opportunity</span>
-                          <button 
-                            onClick={() => {
-                              alert('Opening training management system...\n\nThis would navigate to a training dashboard with skills gap analysis, course recommendations, and employee development plans.');
-                            }}
-                            className="text-teal-400 hover:text-teal-300 transition-colors"
-                          >
-                            View Details →
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Manager/TeamLead sees team-specific insights */}
-              {(isManager || isTeamLead) && (
-                <>
-                  <div className="p-4 bg-gradient-to-r from-blue-500/5 to-transparent rounded-lg">
-                    <div className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <i className="fas fa-chart-line text-blue-400 text-sm"></i>
-                      </div>
-                      <div>
-                        <h4 className="text-white font-medium mb-1">Team Performance Update</h4>
-                        <p className="text-gray-400 text-sm mb-2">
-                          Your team's productivity increased by 8% this week. All project milestones are on track.
-                        </p>
-                        <div className="flex items-center space-x-4 text-xs">
-                          <span className="text-green-400"><i className="fas fa-arrow-up mr-1"></i>8% vs last week</span>
-                          <span className="text-gray-500">Based on team metrics</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-gradient-to-r from-green-500/5 to-transparent rounded-lg">
-                    <div className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <i className="fas fa-calendar-check text-green-400 text-sm"></i>
-                      </div>
-                      <div>
-                        <h4 className="text-white font-medium mb-1">Leave Balance Alert</h4>
-                        <p className="text-gray-400 text-sm mb-2">
-                          2 team members have low leave balance remaining. Consider planning coverage for upcoming projects.
-                        </p>
-                        <div className="flex items-center space-x-4 text-xs">
-                          <span className="text-yellow-400"><i className="fas fa-exclamation-triangle mr-1"></i>Needs attention</span>
-                          <button 
-                            onClick={() => {
-                              alert('Opening team leave management...\n\nThis would show team leave balances and help plan coverage.');
-                            }}
-                            className="text-teal-400 hover:text-teal-300 transition-colors"
-                          >
-                            View Team Leave →
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-6 animate-fadeIn" style={{ animationDelay: '0.9s' }}>
-            <h3 className="text-lg font-semibold text-white mb-6 flex items-center">
-              <i className="fas fa-bolt text-yellow-400 mr-2"></i>
-              Quick Actions
-            </h3>
-            
-            <div className="space-y-3">
-              {isAdmin && (
-                <Link 
-                  to="/permission-management"
-                  className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group block"
+      {/* Your Tasks Section - Role-Based Actionable Tasks */}
+      {stats?.pendingTasks && stats.pendingTasks.length > 0 && (
+        <div className="mb-8 animate-fadeIn" style={{ animationDelay: '0.5s' }}>
+          <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+            <i className="fas fa-tasks text-teal-400 mr-2"></i>
+            Your Tasks
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {stats.pendingTasks.map((task) => {
+              const urgencyStyles = {
+                overdue: 'border-red-500/30 bg-red-500/5 hover:border-red-500/50',
+                pending: 'border-yellow-500/30 bg-yellow-500/5 hover:border-yellow-500/50',
+                info: 'border-blue-500/30 bg-blue-500/5 hover:border-blue-500/50'
+              };
+              const urgencyBadge = {
+                overdue: 'bg-red-500/20 text-red-400',
+                pending: 'bg-yellow-500/20 text-yellow-400',
+                info: 'bg-blue-500/20 text-blue-400'
+              };
+              const urgencyLabel = {
+                overdue: 'Action Required',
+                pending: 'Pending',
+                info: 'Info'
+              };
+              return (
+                <Link
+                  key={task.id}
+                  to={task.link}
+                  className={`block p-4 rounded-xl border ${urgencyStyles[task.urgency]} transition-all duration-200 hover:shadow-lg group`}
                 >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-teal-500/20 rounded-lg flex items-center justify-center group-hover:bg-teal-500/30 transition-colors duration-200">
-                      <i className="fas fa-user-plus text-teal-400 text-sm"></i>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${urgencyBadge[task.urgency]}`}>
+                        <i className={`fas ${task.icon} text-sm`}></i>
+                      </div>
+                      <div>
+                        <h3 className="text-white font-medium text-sm group-hover:text-teal-300 transition-colors">{task.title}</h3>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${urgencyBadge[task.urgency]}`}>{urgencyLabel[task.urgency]}</span>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-white font-medium text-sm">Add Employee</p>
-                      <p className="text-gray-500 text-xs">Onboard new team member</p>
-                    </div>
+                    {task.count > 0 && (
+                      <span className={`text-lg font-bold ${task.urgency === 'overdue' ? 'text-red-400' : task.urgency === 'pending' ? 'text-yellow-400' : 'text-blue-400'}`}>
+                        {task.count}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-gray-400 text-xs leading-relaxed">{task.description}</p>
+                  <div className="mt-3 flex items-center text-xs text-teal-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <span>Take action</span>
+                    <i className="fas fa-arrow-right ml-1.5"></i>
                   </div>
                 </Link>
-              )}
-              {isHR && (
-                <Link 
-                  to="/directory"
-                  className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group block"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center group-hover:bg-indigo-500/30 transition-colors duration-200">
-                      <i className="fas fa-user-tie text-indigo-400 text-sm"></i>
-                    </div>
-                    <div>
-                      <p className="text-white font-medium text-sm">Manage Employees</p>
-                      <p className="text-gray-500 text-xs">Update employee records</p>
-                    </div>
-                  </div>
-                </Link>
-              )}
-              {(isAdmin || isHR || isManager || isTeamLead) && (
-                <Link 
-                  to="/leave-attendance"
-                  className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group block"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center group-hover:bg-blue-500/30 transition-colors duration-200">
-                      <i className="fas fa-calendar-plus text-blue-400 text-sm"></i>
-                    </div>
-                    <div>
-                      <p className="text-white font-medium text-sm">Approve Leave</p>
-                      <p className="text-gray-500 text-xs">{stats?.leaveStatus?.find(l => l.status === 'Pending')?.count || 0} pending requests</p>
-                    </div>
-                  </div>
-                </Link>
-              )}
-
-              {(isAdmin || isHR) && (
-                <button 
-                  onClick={() => {
-                    alert('Opening report generator...\n\nThis would navigate to a comprehensive report generation tool with customizable templates, data filters, and export options.');
-                  }}
-                  className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center group-hover:bg-purple-500/30 transition-colors duration-200">
-                      <i className="fas fa-chart-bar text-purple-400 text-sm"></i>
-                    </div>
-                    <div>
-                      <p className="text-white font-medium text-sm">Generate Report</p>
-                      <p className="text-gray-500 text-xs">Monthly analytics</p>
-                    </div>
-                  </div>
-                </button>
-              )}
-
-              <button 
-                onClick={() => {
-                  alert('Opening announcement composer...\n\nThis would open a rich text editor for creating company-wide announcements with scheduling and targeting options.');
-                }}
-                className="w-full p-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-left transition-all duration-200 group"
-                disabled={!isAdmin}
-                title={!isAdmin ? 'Only admins can send announcements' : 'Send announcement'}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${
-                    isAdmin 
-                      ? 'bg-green-500/20 group-hover:bg-green-500/30' 
-                      : 'bg-gray-500/20 group-hover:bg-gray-500/20'
-                  }`}>
-                    <i className={`fas fa-bullhorn text-sm ${isAdmin ? 'text-green-400' : 'text-gray-400'}`}></i>
-                  </div>
-                  <div>
-                    <p className={`font-medium text-sm ${isAdmin ? 'text-white' : 'text-gray-500'}`}>Send Announcement</p>
-                    <p className="text-gray-500 text-xs">{isAdmin ? 'Company-wide notice' : 'Admin only'}</p>
-                  </div>
-                </div>
-              </button>
-            </div>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Charts Section - Admin/HR only */}
+      {/* Charts Section - Role Based */}
       {(isAdmin || isHR) && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Department Distribution Pie Chart */}
-          <Link 
+          <Link
             to="/directory"
             onClick={() => handleNavigateToDirectory('departments')}
             className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
@@ -888,9 +720,9 @@ const Dashboard = () => {
                     <Cell key={`cell-${index}`} fill={DEPARTMENT_COLORS[index % DEPARTMENT_COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#1e293b', 
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1e293b',
                     border: '1px solid #475569',
                     borderRadius: '8px'
                   }}
@@ -900,8 +732,8 @@ const Dashboard = () => {
           </Link>
 
           {/* Leave Status Bar Chart */}
-          <Link 
-            to="/leave-attendance"
+          <Link
+            to="/leave-attendance?tab=team"
             onClick={() => handleNavigateToLeaveAttendance('leave-status')}
             className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
             style={{ animationDelay: '0.6s' }}
@@ -910,24 +742,24 @@ const Dashboard = () => {
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={stats?.leaveStatus || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
-                <XAxis 
-                  dataKey="status" 
+                <XAxis
+                  dataKey="status"
                   stroke="#94a3b8"
                   tick={{ fill: '#94a3b8' }}
                 />
-                <YAxis 
+                <YAxis
                   stroke="#94a3b8"
                   tick={{ fill: '#94a3b8' }}
                 />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#1e293b', 
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1e293b',
                     border: '1px solid #475569',
                     borderRadius: '8px'
                   }}
                 />
-                <Bar 
-                  dataKey="count" 
+                <Bar
+                  dataKey="count"
                   fill="#3B82F6"
                   radius={[8, 8, 0, 0]}
                 >
@@ -940,7 +772,7 @@ const Dashboard = () => {
           </Link>
 
           {/* Leave Trends Line Chart */}
-          <Link 
+          <Link
             to="/reports"
             onClick={() => handleNavigateToReports()}
             className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
@@ -950,45 +782,45 @@ const Dashboard = () => {
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={stats?.leaveTrends || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
-                <XAxis 
-                  dataKey="month" 
+                <XAxis
+                  dataKey="month"
                   stroke="#94a3b8"
                   tick={{ fill: '#94a3b8' }}
                 />
-                <YAxis 
+                <YAxis
                   stroke="#94a3b8"
                   tick={{ fill: '#94a3b8' }}
                 />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#1e293b', 
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1e293b',
                     border: '1px solid #475569',
                     borderRadius: '8px'
                   }}
                 />
-                <Legend 
+                <Legend
                   wrapperStyle={{ color: '#94a3b8' }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="approved" 
-                  stroke={TREND_COLORS.approved} 
+                <Line
+                  type="monotone"
+                  dataKey="approved"
+                  stroke={TREND_COLORS.approved}
                   strokeWidth={2}
                   dot={{ fill: TREND_COLORS.approved, r: 4 }}
                   activeDot={{ r: 6 }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="pending" 
-                  stroke={TREND_COLORS.pending} 
+                <Line
+                  type="monotone"
+                  dataKey="pending"
+                  stroke={TREND_COLORS.pending}
                   strokeWidth={2}
                   dot={{ fill: TREND_COLORS.pending, r: 4 }}
                   activeDot={{ r: 6 }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="rejected" 
-                  stroke={TREND_COLORS.rejected} 
+                <Line
+                  type="monotone"
+                  dataKey="rejected"
+                  stroke={TREND_COLORS.rejected}
                   strokeWidth={2}
                   dot={{ fill: TREND_COLORS.rejected, r: 4 }}
                   activeDot={{ r: 6 }}
@@ -999,52 +831,271 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Recent Employees - Admin/HR only */}
-      {(isAdmin || isHR) && (
-        <Link 
-          to="/directory"
-          onClick={() => handleNavigateToDirectory()}
-          className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
-          style={{ animationDelay: '0.8s' }}
-        >
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-white">Recent Employees</h2>
-            <span className="text-sm text-gray-400">Last 5 added</span>
+      {/* Manager/TeamLead Charts - Leave Status */}
+      {(isManager || isTeamLead) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <Link
+            to="/leave-attendance?tab=team"
+            onClick={() => handleNavigateToLeaveAttendance('leave-status')}
+            className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
+            style={{ animationDelay: '0.5s' }}
+          >
+            <h3 className="text-lg font-semibold text-white mb-4">Team Leave Status</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={stats?.leaveStatus || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
+                <XAxis dataKey="status" stroke="#94a3b8" tick={{ fill: '#94a3b8' }} />
+                <YAxis stroke="#94a3b8" tick={{ fill: '#94a3b8' }} />
+                <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px' }} />
+                <Bar dataKey="count" fill="#3B82F6" radius={[8, 8, 0, 0]}>
+                  {(stats?.leaveStatus || []).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={LEAVE_STATUS_COLORS[entry.status as keyof typeof LEAVE_STATUS_COLORS] || '#3B82F6'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </Link>
+
+          <Link
+            to="/reports"
+            onClick={() => handleNavigateToReports()}
+            className="bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl shadow-lg card-hover p-6 animate-fadeIn cursor-pointer hover:border-teal-500/30 transition-all duration-200 block"
+            style={{ animationDelay: '0.6s' }}
+          >
+            <h3 className="text-lg font-semibold text-white mb-4">Leave Trends (6 Months)</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={stats?.leaveTrends || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
+                <XAxis dataKey="month" stroke="#94a3b8" tick={{ fill: '#94a3b8' }} />
+                <YAxis stroke="#94a3b8" tick={{ fill: '#94a3b8' }} />
+                <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px' }} />
+                <Legend wrapperStyle={{ color: '#94a3b8' }} />
+                <Line type="monotone" dataKey="approved" stroke={TREND_COLORS.approved} strokeWidth={2} dot={{ fill: TREND_COLORS.approved, r: 4 }} activeDot={{ r: 6 }} />
+                <Line type="monotone" dataKey="pending" stroke={TREND_COLORS.pending} strokeWidth={2} dot={{ fill: TREND_COLORS.pending, r: 4 }} activeDot={{ r: 6 }} />
+                <Line type="monotone" dataKey="rejected" stroke={TREND_COLORS.rejected} strokeWidth={2} dot={{ fill: TREND_COLORS.rejected, r: 4 }} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </Link>
+        </div>
+      )}
+
+      {/* Insights & Alerts Section - All Roles */}
+      {(
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Insights & Alerts */}
+          <div className="lg:col-span-2 bg-slate-800/60 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-6 animate-fadeIn" style={{ animationDelay: '0.8s' }}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-white flex items-center">
+                <i className="fas fa-lightbulb text-purple-400 mr-2"></i>
+                Insights & Alerts
+              </h3>
+            </div>
+            
+            <div className="space-y-4 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+              {/* Admin/HR see organization-wide insights */}
+              {(isAdmin || isHR) && (
+                <>
+                  {stats?.payrollStatus && (
+                    <div className="p-4 bg-gradient-to-r from-emerald-500/5 to-transparent rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-8 h-8 bg-emerald-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <i className="fas fa-money-check-alt text-emerald-400 text-sm"></i>
+                        </div>
+                        <div>
+                          <h4 className="text-white font-medium mb-1">Payroll Status</h4>
+                          <p className="text-gray-400 text-sm mb-2">
+                            This month's payroll is <span className={stats.payrollStatus === 'Completed' ? 'text-green-400' : stats.payrollStatus === 'Pending' ? 'text-yellow-400' : 'text-gray-400'}>{stats.payrollStatus}</span>.
+                          </p>
+                          <Link to="/payroll-benefits" className="text-xs text-teal-400 hover:text-teal-300 transition-colors">
+                            Manage Payroll →
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {stats?.totalEmployees && (
+                    <div className="p-4 bg-gradient-to-r from-blue-500/5 to-transparent rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <i className="fas fa-chart-line text-blue-400 text-sm"></i>
+                        </div>
+                        <div>
+                          <h4 className="text-white font-medium mb-1">Workforce Growth</h4>
+                          <p className="text-gray-400 text-sm mb-2">
+                            Organization has {stats.totalEmployees} employees{stats.activeEmployees ? ` (${stats.activeEmployees} active)` : ''}.
+                          </p>
+                          <Link to="/directory" onClick={() => handleNavigateToDirectory()} className="text-xs text-teal-400 hover:text-teal-300 transition-colors">
+                            View Directory →
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {stats?.departments && (
+                    <div className="p-4 bg-gradient-to-r from-indigo-500/5 to-transparent rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-8 h-8 bg-indigo-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <i className="fas fa-building text-indigo-400 text-sm"></i>
+                        </div>
+                        <div>
+                          <h4 className="text-white font-medium mb-1">Department Overview</h4>
+                          <p className="text-gray-400 text-sm mb-2">
+                            {stats.departments} department{stats.departments > 1 ? 's' : ''} across the organization.
+                          </p>
+                          <Link to="/directory" onClick={() => handleNavigateToDirectory('departments')} className="text-xs text-teal-400 hover:text-teal-300 transition-colors">
+                            View Departments →
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Manager/TeamLead sees team-specific insights */}
+              {(isManager || isTeamLead) && (
+                <>
+                  {stats?.managedProjects && stats.managedProjects.length > 0 && (
+                    <div className="p-4 bg-gradient-to-r from-cyan-500/5 to-transparent rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-8 h-8 bg-cyan-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <i className="fas fa-project-diagram text-cyan-400 text-sm"></i>
+                        </div>
+                        <div>
+                          <h4 className="text-white font-medium mb-1">Active Projects</h4>
+                          <p className="text-gray-400 text-sm mb-2">
+                            You are managing {stats.managedProjects.length} active project{stats.managedProjects.length > 1 ? 's' : ''}.
+                          </p>
+                          <Link to="/project-management" className="text-xs text-teal-400 hover:text-teal-300 transition-colors">
+                            View Projects →
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+
+                  {stats?.avgPerformance != null && (
+                    <div className="p-4 bg-gradient-to-r from-green-500/5 to-transparent rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <i className="fas fa-star text-green-400 text-sm"></i>
+                        </div>
+                        <div>
+                          <h4 className="text-white font-medium mb-1">Team Performance</h4>
+                          <p className="text-gray-400 text-sm mb-2">
+                            Average team performance rating is {stats.avgPerformance.toFixed(1)}/5.0.
+                          </p>
+                          <Link to="/performance-goals" className="text-xs text-teal-400 hover:text-teal-300 transition-colors">
+                            View Details →
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {stats?.statusDistribution && stats.statusDistribution.length > 0 && (
+                    <div className="p-4 bg-gradient-to-r from-indigo-500/5 to-transparent rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-8 h-8 bg-indigo-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <i className="fas fa-users-cog text-indigo-400 text-sm"></i>
+                        </div>
+                        <div>
+                          <h4 className="text-white font-medium mb-1">Team Status Distribution</h4>
+                          <div className="flex flex-wrap gap-3 mt-1">
+                            {stats.statusDistribution.map((s) => (
+                              <span key={s.name} className="text-xs text-gray-400">
+                                <span className="text-white font-medium">{s.count}</span> {s.name}
+                              </span>
+                            ))}
+                          </div>
+                          <Link to="/directory" onClick={() => handleNavigateToMyTeam()} className="text-xs text-teal-400 hover:text-teal-300 transition-colors mt-1 inline-block">
+                            View My Team →
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Employee sees personal insights */}
+              {!isAdmin && !isHR && !isManager && !isTeamLead && (
+                <>
+                  {stats?.performanceRating != null && (
+                    <div className="p-4 bg-gradient-to-r from-orange-500/5 to-transparent rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-8 h-8 bg-orange-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <i className="fas fa-star text-orange-400 text-sm"></i>
+                        </div>
+                        <div>
+                          <h4 className="text-white font-medium mb-1">Performance Rating</h4>
+                          <p className="text-gray-400 text-sm mb-2">
+                            Your current rating is <span className="text-white font-medium">{stats.performanceRating}/5</span>.
+                          </p>
+                          <Link to="/performance-goals" className="text-xs text-teal-400 hover:text-teal-300 transition-colors">
+                            View Goals →
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="p-4 bg-gradient-to-r from-blue-500/5 to-transparent rounded-lg">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i className="fas fa-bell text-blue-400 text-sm"></i>
+                      </div>
+                      <div>
+                        <h4 className="text-white font-medium mb-1">Timesheet Reminder</h4>
+                        <p className="text-gray-400 text-sm mb-2">
+                          Submit your timesheet by end of day to ensure accurate payroll processing.
+                        </p>
+                        <Link to="/timesheet-entry" className="text-xs text-teal-400 hover:text-teal-300 transition-colors">
+                          Submit Timesheet →
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-r from-green-500/5 to-transparent rounded-lg">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i className="fas fa-heart text-green-400 text-sm"></i>
+                      </div>
+                      <div>
+                        <h4 className="text-white font-medium mb-1">Wellness Tip</h4>
+                        <p className="text-gray-400 text-sm mb-2">
+                          Remember to take regular breaks and maintain a healthy work-life balance.
+                        </p>
+                        <Link to="/settings" className="text-xs text-teal-400 hover:text-teal-300 transition-colors">
+                          View Settings →
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+
+                  {stats?.performanceRating == null && (
+                    <div className="p-4 bg-gradient-to-r from-teal-500/5 to-transparent rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-8 h-8 bg-teal-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <i className="fas fa-check-circle text-teal-400 text-sm"></i>
+                        </div>
+                        <div>
+                          <h4 className="text-white font-medium mb-1">Welcome!</h4>
+                          <p className="text-gray-400 text-sm">Your insights will appear here as data becomes available.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
-          <div className="space-y-4">
-            {stats?.recentEmployees?.map((employee, index) => (
-              <div
-                key={employee.id}
-                className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg border border-slate-600/50 table-row-hover animate-fadeIn"
-                style={{ animationDelay: `${0.9 + index * 0.1}s` }}
-              >
-                <div className="flex items-center space-x-4">
-                  <img
-                    src={`https://picsum.photos/seed/${employee.id}/40/40.jpg`}
-                    alt={employee.name}
-                    className="w-10 h-10 rounded-full border-2 border-slate-600 transition-transform duration-200 hover:scale-110"
-                  />
-                  <div>
-                    <p className="text-white font-medium">{employee.name}</p>
-                    <p className="text-gray-400 text-sm">{employee.jobTitle}</p>
-                    {employee.department && (
-                      <p className="text-gray-500 text-xs">{employee.department}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <span className="badge-hover">
-                    <StatusBadge status={employee.status} />
-                  </span>
-                  <span className="text-gray-500 text-sm">
-                    {new Date(employee.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Link>
+        </div>
       )}
 
       {/* Managed Projects Section - Manager/TeamLead */}
@@ -1148,18 +1199,6 @@ const Dashboard = () => {
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* Activity Feed - Admin/HR/Manager only */}
-      {(isAdmin || isHR || isManager) && (
-        <ActivityFeed />
-      )}
-
-      {/* Advanced Analytics - Admin/HR only */}
-      {(isAdmin || isHR) && (
-        <div className="mt-8">
-          <AdvancedAnalytics />
         </div>
       )}
     </LayoutWrapper>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   getMyTimesheet, 
   getAllTimesheets, 
@@ -56,8 +57,15 @@ const TimesheetEntry: React.FC = () => {
   // Debug authentication state
   // console.log('🔐 Auth state:', { user, token: token ? 'exists' : 'missing', isAuthenticated });
   
-  // Initialize activeTab from localStorage, default to 'my-timesheet'
+  // Initialize activeTab from URL params or localStorage, default to 'my-timesheet'
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(() => {
+    // Check URL params first (for direct navigation from dashboard)
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'approvals' && canApproveTimesheet) return 'approvals';
+    if (tabParam === 'history') return 'history';
+    if (tabParam === 'manage-activities' && canManageActivities) return 'manage-activities';
+    // Fall back to localStorage
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('timesheet-active-tab') || 'my-timesheet';
       // Prevent restricted tabs from being loaded for unauthorized roles
@@ -435,11 +443,16 @@ const TimesheetEntry: React.FC = () => {
       setError(null);
 
       if (editingEntry) {
+        const editActivities = activityRows.filter(row => row.hours > 0).map(row => ({
+          activityId: row.activityId,
+          hours: row.hours
+        }));
+        const editTotalHours = editActivities.reduce((sum: number, a: any) => sum + a.hours, 0);
         const response = await updateTimesheetEntry(editingEntry.id, {
-          hours: formData.hours,
+          hours: editTotalHours || formData.hours,
           description: formData.description,
-          activityId: formData.activityId,
-          activities: formData.activities
+          activityId: editActivities[0]?.activityId || null,
+          activities: editActivities.length > 0 ? editActivities : undefined
         });
         setSuccess(response.message || 'Timesheet entry updated successfully');
       } else {
@@ -453,6 +466,7 @@ const TimesheetEntry: React.FC = () => {
       setShowForm(false);
       setEditingEntry(null);
       setFormData({ date: '', hours: 0, description: '', activityId: null, activities: undefined });
+      setActivityRows([{ activityId: null, hours: 8 }]);
       fetchTimesheets();
     } catch (err: any) {
       // console.error('❌ Form submission error:', err);
@@ -471,6 +485,12 @@ const TimesheetEntry: React.FC = () => {
       activityId: entry.activityId || null,
       activities: entry.activities || undefined
     });
+    // Populate activityRows from the entry's activities array for multi-activity editing
+    if (entry.activities && Array.isArray(entry.activities) && entry.activities.length > 0) {
+      setActivityRows(entry.activities.map((a: any) => ({ activityId: a.activityId || null, hours: a.hours || 0 })));
+    } else {
+      setActivityRows([{ activityId: entry.activityId || null, hours: entry.hours || 0 }]);
+    }
     setShowForm(true);
   };
 
@@ -584,6 +604,7 @@ const TimesheetEntry: React.FC = () => {
   const resetForm = () => {
     setEditingEntry(null);
     setFormData({ date: '', hours: 0, description: '', activityId: null });
+    setActivityRows([{ activityId: null, hours: 8 }]);
     setShowForm(false);
   };
 
@@ -1029,6 +1050,7 @@ const TimesheetEntry: React.FC = () => {
                   />
                 </div>
 
+                {!editingEntry && (
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Hours *
@@ -1045,22 +1067,60 @@ const TimesheetEntry: React.FC = () => {
                     className="appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [moz-appearance:textfield]"
                   />
                 </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Activity
+                    Activities & Hours
                   </label>
-                  <UnifiedDropdown
-                    value={formData.activityId || ''}
-                    onChange={(value) => setFormData(prev => ({ ...prev, activityId: value ? Number(value) : null }))}
-                    options={[
-                      { value: '', label: 'No Activity' },
-                      ...activities.map(a => ({ value: a.id, label: a.name }))
-                    ]}
-                    size="md"
-                    showLabel={false}
-                    className="w-full"
-                  />
+                  <div className="space-y-3">
+                    {activityRows.map((row, index) => (
+                      <div key={index} className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <UnifiedDropdown
+                            value={row.activityId || ''}
+                            onChange={(value) => updateActivityRow(index, 'activityId', value ? Number(value) : null)}
+                            options={[
+                              { value: '', label: 'No Activity' },
+                              ...activities.map(a => ({ value: a.id, label: a.name }))
+                            ]}
+                            size="sm"
+                            showLabel={false}
+                            className="w-full"
+                          />
+                        </div>
+                        <div className="w-24">
+                          <Input
+                            type="number"
+                            value={row.hours || ''}
+                            onChange={(e) => updateActivityRow(index, 'hours', parseFloat(e.target.value) || 0)}
+                            min="0"
+                            max="24"
+                            step="0.5"
+                            placeholder="Hours"
+                            className="appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [moz-appearance:textfield]"
+                          />
+                        </div>
+                        {activityRows.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeActivityRow(index)}
+                            className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded"
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addActivityRow}
+                    className="flex items-center gap-1.5 text-sm text-teal-400 hover:text-teal-300 mt-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Activity
+                  </button>
                 </div>
 
                 <div>

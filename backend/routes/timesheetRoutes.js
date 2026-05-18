@@ -55,7 +55,7 @@ router.post('/', requireAuth, checkPermission('timesheet', 'create'), timesheetS
 router.post('/bulk-create', requireAuth, checkPermission('timesheet', 'create'), timesheetSubmissionLimiter, bulkCreateTimesheet);
 
 // PUT /api/timesheet/:id - Update timesheet entry
-router.put('/', requireAuth, checkPermission('timesheet', 'edit'), timesheetSubmissionLimiter, updateTimesheetEntry);
+router.put('/:id', requireAuth, checkPermission('timesheet', 'edit'), timesheetSubmissionLimiter, updateTimesheetEntry);
 
 // PUT /api/timesheet/:id/approve - Approve/reject timesheet entry
 router.put('/:id/approve', requireAuth, checkPermission('timesheet', 'approve'), timesheetApprovalLimiter, approveTimesheetEntry);
